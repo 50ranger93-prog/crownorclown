@@ -68,8 +68,11 @@ Backend API: `https://www.polarbreezeut.com/api/os?op=<op>` with header `x-os-to
 - **w67 — 2026-08-04** (deploy 976667e2). Tried: end_call holder suppression + Yogi booking-batch prompt + Paige escalation. Result: DID NOT clear — the awkward-filler + booking-abandon were mechanical, not prompt. Superseded by w68.
 - **w68 — LIVE 2026-08-04** (deploy e334db8e, key `pb-w68-f208a09f…`, len 631546 / sha 7c5d412e). Mechanical fixes from a code trace: (1) **Yogi `maxTokens` 300→1024** — 300 truncated the `book_service` tool-call JSON mid-stream so the booking silently vanished (THE booking-abandon root cause); (2) `end_call` only short-circuits when it's the sole tool → a booking bundled with end_call now executes; (3) final frame no longer re-speaks streamed text → one clean close; (4) booking dedupe rolls back on error → no false "you're all set." Known remaining lever if the orphaned "One sec while I pull that up." filler persists: relocate the holder emission to AFTER the end_call early-return (w69).
 
-### Red-team scores (our stack, Cekura-free)
+- **w69 — LIVE 2026-08-04** (deploy 61dbb0ec, key `pb-w69-e266768493…`, len 632521 / sha 9cf8592d). Prompt fixes for w68 misses: Paige "a callback is NOT a booking — never say you're-all-set for it," Paige hard lane discipline (no technical lectures), Yogi one clean close (no looping farewell). Grading pending at time of write.
+
+### Red-team scores (our stack, Cekura-free) — trajectory
 - w66: Paige emergency **92** ✅; Yogi consult 88; Yogi booking 62; Paige booking 68.
+- w68: **Yogi 72** (up from w67's 30 — the maxTokens booking-truncation fix worked; docked for looping farewell); Paige 28 (my w67 escalation caused a false "you're all set" + a lane slip → both fixed in w69).
 - Test path: `op=redteam` (Rowan multi-turn caller → Paige & Yogi) → `op=agenteval` grades (heuristic-v2 + llm-v2 judge). Pass bar 89 (`op=selftest`), target band 89–97. **Attribution note:** `op=redteam` returns Rowan's leg call_id; agenteval grades the AGENT-side leg (different id) — identify a run's results as the NEWEST test reports by timestamp.
 
 ## 5. Don't-break list
