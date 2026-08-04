@@ -79,6 +79,12 @@ Once the w68 `maxTokens` fix let the booking tool actually FIRE, both agents now
 - **QUEUED next-session (not yet applied): the EVAL honesty fix** in `api/os.js` agenteval — credit a booking when the booking TOOL returned booked:true (the tools are REAL — they POST the n8n booking webhooks), so a completed booking stops being auto-capped at ≤30 as "unverifiable." Exact edits (B0–B4) are in the scratchpad trace. This is what stops the oscillation on booking calls.
 - **Model panel:** `PB Model Panel` n8n workflow calls Gemini + Perplexity via the Vercel AI Gateway (cred HP5ZOtrZqhD9kYFZ) for outside diagnosis — built this session at John's request.
 
+### VERIFICATION (2026-08-04 ~05:10) — grader fix LIVE; new real bug exposed
+Fresh w70 calls under the new grader (PR #124):
+- **Yogi 88** — booking rubric now carries `toolOk` (proves the honest grader is LIVE). Judge: "No fabricated booking claim — agent correctly did NOT claim a booking when the tool did not confirm." → **w70's anti-fabrication gate WORKS**: the same consult that used to score 30 for faking "you're all set" now scores 88 for being honest. Real same-scenario lift.
+- **Paige 42** — `toolOk:false`. Caller committed ("let's go with Aug 5th at 2PM") but the booking tool NEVER completed; transcript cut off mid-confirmation. No `booked:true`.
+- **CONCLUSION:** grader honesty = fixed/live; fabrication = fixed; the remaining real problem is **bookings don't COMPLETE** — `book_appointment`/`book_service` isn't returning `booked:true` before the call ends. `maxTokens` is 1024 everywhere (not the cause). Likely: the booking webhook erroring/timing out, OR the agent reaches the tool too late (call ends first). **THIS IS THE #1 NEXT BUG — a booking agent that can't book is the core failure.** Webhooks: `paige-book` (@ worker 91405) / `yogi-book-service` (@91574).
+
 ### What is SOLID and real (don't re-litigate)
 - Booking tool now FIRES (was silently dropped by maxTokens truncation). Yogi content-driven score moved 30→72 at w68.
 - Emergency handling: **92**.
