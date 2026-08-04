@@ -4,6 +4,11 @@
 
 _Last verified: 2026-08-04._
 
+## 0. STATUS — READ FIRST (2026-08-04)
+- **Cekura AND Coval are CANCELLED.** Do not build the product on them, do not treat their scores as the goal. (Cekura org 5365 shows subscription inactive; $20.35 credit expires 2026-08-15 — usable only for a one-time cross-check, never the plan.)
+- **THE PRODUCT = our own in-house conversational agent-tester, built INTO the CRM (`/api/os`), that tests the way Coval/Cekura do but BETTER, and hardens Paige & Yogi to top-tier.** Their method (reverse-engineered from tonight's data): scenario + persona → multi-turn simulated caller talks to the live agent → LLM judge scores vs expected outcome on a metric suite (Response Consistency, Tool-Call Success, Expected Outcome, Stop-Time-after-Interruption, WPM/Talk-Ratio/pace, Transcription Accuracy, adversarial red-team resistance) → log + remediate. Our edge to add: multi-turn adversarial caller, richer earned-outcome metrics, and an auto-remediation loop, all surfaced in the CRM.
+- Existing in-house pieces to BUILD ON (don't rebuild): QA Harness `yCLTgUDhY24Yfnl1` (text, shadow, single-turn — upgrade to multi-turn); `PB Continuous QA — Daily Scenario Runner` `IZUtTr64Svv20Tsg`; `/api/os?op=agenteval`; the real-test-call runner (task #52).
+
 ---
 
 ## 1. The two agents (source of truth for IDs)
