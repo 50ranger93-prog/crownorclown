@@ -65,7 +65,12 @@ Backend API: `https://www.polarbreezeut.com/api/os?op=<op>` with header `x-os-to
 
 ## 4b. LIVE DEPLOY LOG
 - **w66 — LIVE 2026-08-04** (Cloudflare deploy `e1fcf81f6ebb4d4aa8e851d6551a1861`, cf_success, gates len 630283 / sha 68669714…, key `pb-w66-ea2e1df…` in n8n deploy workflow only). Ships: Paige date-grounding (no self-reckoned dates; trust check_availability; don't re-open availability after acceptance), hold-$399 minimum, fire+confirm send_text on ask, complete emergency protocol, business hours; Yogi intro↔BOOKING-TRUTH harmonize. Base = w65 (already had booking-truth anti-fabrication on both). Shipped via PR #119 → main → Vercel prod → n8n `oZdRqnzTVpR0MXkK`.
-- Test path (Cekura-free): trigger `op=redteam` (Rowan multi-turn caller → Paige & Yogi), then `op=agenteval` grades. Pass bar 89 (`op=selftest`), target band 89–97. Baseline for comparison = w65.
+- **w67 — 2026-08-04** (deploy 976667e2). Tried: end_call holder suppression + Yogi booking-batch prompt + Paige escalation. Result: DID NOT clear — the awkward-filler + booking-abandon were mechanical, not prompt. Superseded by w68.
+- **w68 — LIVE 2026-08-04** (deploy e334db8e, key `pb-w68-f208a09f…`, len 631546 / sha 7c5d412e). Mechanical fixes from a code trace: (1) **Yogi `maxTokens` 300→1024** — 300 truncated the `book_service` tool-call JSON mid-stream so the booking silently vanished (THE booking-abandon root cause); (2) `end_call` only short-circuits when it's the sole tool → a booking bundled with end_call now executes; (3) final frame no longer re-speaks streamed text → one clean close; (4) booking dedupe rolls back on error → no false "you're all set." Known remaining lever if the orphaned "One sec while I pull that up." filler persists: relocate the holder emission to AFTER the end_call early-return (w69).
+
+### Red-team scores (our stack, Cekura-free)
+- w66: Paige emergency **92** ✅; Yogi consult 88; Yogi booking 62; Paige booking 68.
+- Test path: `op=redteam` (Rowan multi-turn caller → Paige & Yogi) → `op=agenteval` grades (heuristic-v2 + llm-v2 judge). Pass bar 89 (`op=selftest`), target band 89–97. **Attribution note:** `op=redteam` returns Rowan's leg call_id; agenteval grades the AGENT-side leg (different id) — identify a run's results as the NEWEST test reports by timestamp.
 
 ## 5. Don't-break list
 - Never commit the `x-os-token` or any prompt/master token to the repo.
