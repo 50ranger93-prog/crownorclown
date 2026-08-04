@@ -68,7 +68,21 @@ Backend API: `https://www.polarbreezeut.com/api/os?op=<op>` with header `x-os-to
 - **w67 — 2026-08-04** (deploy 976667e2). Tried: end_call holder suppression + Yogi booking-batch prompt + Paige escalation. Result: DID NOT clear — the awkward-filler + booking-abandon were mechanical, not prompt. Superseded by w68.
 - **w68 — LIVE 2026-08-04** (deploy e334db8e, key `pb-w68-f208a09f…`, len 631546 / sha 7c5d412e). Mechanical fixes from a code trace: (1) **Yogi `maxTokens` 300→1024** — 300 truncated the `book_service` tool-call JSON mid-stream so the booking silently vanished (THE booking-abandon root cause); (2) `end_call` only short-circuits when it's the sole tool → a booking bundled with end_call now executes; (3) final frame no longer re-speaks streamed text → one clean close; (4) booking dedupe rolls back on error → no false "you're all set." Known remaining lever if the orphaned "One sec while I pull that up." filler persists: relocate the holder emission to AFTER the end_call early-return (w69).
 
-- **w69 — LIVE 2026-08-04** (deploy 61dbb0ec, key `pb-w69-e266768493…`, len 632521 / sha 9cf8592d). Prompt fixes for w68 misses: Paige "a callback is NOT a booking — never say you're-all-set for it," Paige hard lane discipline (no technical lectures), Yogi one clean close (no looping farewell). Grading pending at time of write.
+- **w69 — LIVE 2026-08-04** (deploy 61dbb0ec, key `pb-w69-e266768493…`, len 632521 / sha 9cf8592d). Prompt fixes for w68 misses: Paige "a callback is NOT a booking," Paige lane discipline, Yogi one clean close. **Graded: Yogi 30, Paige 30** — see the finding below; this is NOT a clean agent regression.
+
+### KEY FINDING (2026-08-04) — the evaluation is now the bottleneck, not the agents
+Once the w68 `maxTokens` fix let the booking tool actually FIRE, both agents now *complete* a booking and say "you're all set." But the w69 calls scored 30 because of TWO things, only one of which is the agent:
+1. **Measurement gap (not the agent):** the `llm-v2` judge grades from the transcript ALONE and cannot see the job ledger, so it treats ANY "you're all set" as an unverifiable/fabricated booking. The heuristic's `jobFound` cross-check also can't confirm a *test* booking against the real ledger. So a **successfully completed test booking is structurally capped at ≤30.** We fixed booking and the eval punished it. → NEXT-SESSION FIX (eval, in `api/os.js` agenteval): credit a booking when the booking tool returned success and/or a test-lane ledger row exists; don't assume fabrication from the transcript.
+2. **Real agent/code issue (timing):** during the actual booking there is ~6s of dead air (the tool runs with no/So-so holder cover), then a premature "you're all set" spoken over the caller, then an abrupt `agent_hangup`. Plus Yogi's looping farewell on backchannels. These are CODE-level (holder/turn/backchannel handling), NOT prompt. → NEXT-SESSION FIX (worker code): (a) relocate the holder emission to AFTER the end_call early-return (the deferred "Defect 1" from the w67 trace — full recipe in scratchpad build notes); (b) don't emit a fresh full response to a bare backchannel ("thanks"/"bye") — end decisively; (c) hold the line until the booking tool actually returns before speaking confirmation.
+
+### What is SOLID and real (don't re-litigate)
+- Booking tool now FIRES (was silently dropped by maxTokens truncation). Yogi content-driven score moved 30→72 at w68.
+- Emergency handling: **92**.
+- Technical/consult content: rated expert by the judge on every single call.
+- The auto-remediate loop (#64) works end-to-end on our own stack (op=redteam → op=agenteval), no Cekura/Coval.
+
+### Recommendation
+Accept w69 as the live baseline (it is genuinely better than w65/w68 — booking fires, no fabrication guard-hole). The path to 89–97 is now (1) the eval fix so completed bookings aren't auto-failed, then (2) the worker-code timing fixes above — NOT more prompt edits. Judge agents on a 3–5 call AVERAGE, never one adversarial shot.
 
 ### Red-team scores (our stack, Cekura-free) — trajectory
 - w66: Paige emergency **92** ✅; Yogi consult 88; Yogi booking 62; Paige booking 68.
