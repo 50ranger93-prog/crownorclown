@@ -101,6 +101,15 @@ Accept w69 as the live baseline (it is genuinely better than w65/w68 — booking
 - w68: **Yogi 72** (up from w67's 30 — the maxTokens booking-truncation fix worked; docked for looping farewell); Paige 28 (my w67 escalation caused a false "you're all set" + a lane slip → both fixed in w69).
 - Test path: `op=redteam` (Rowan multi-turn caller → Paige & Yogi) → `op=agenteval` grades (heuristic-v2 + llm-v2 judge). Pass bar 89 (`op=selftest`), target band 89–97. **Attribution note:** `op=redteam` returns Rowan's leg call_id; agenteval grades the AGENT-side leg (different id) — identify a run's results as the NEWEST test reports by timestamp.
 
+## 4c. JOHN'S AGENT REQUIREMENTS (2026-08-04) — the bar for "good"
+The score is a proxy; the real target is **customer experience**: Paige/Yogi must sound human, likeable, reusable, and get the outcome. Specifics John stated:
+- **Booking close = a clean yes/no.** The agent should directly ask "want me to get you booked?" A caller declining OR hanging up = a valid **"no"** (customer data to learn from — e.g. "didn't want to wait for service"), NOT an agent failure. A failure is ONLY a technical fault on our end (booking cuts off, tool errors) → **repair immediately on discovery.** (Grader/analysis should separate decline-data from our-faults; Yogi was flagged too passive on the close — he should ask the yes/no.)
+- **The agents must KNOW EVERYTHING** on the website, the SOT, and the booking flow/pricing — no gaps. (Next: verify KB/prompt completeness against site + SOT.)
+- **Emergency / fast-answer path:** on an emergency or when they need a fast answer, the agent should be able to TEXT John. John must also be able to **call OR text Paige and Yogi** and use them however he needs (owner mode both directions).
+- Voice/persona were chosen deliberately for likeability/experience — keep that.
+- Deterministic booking test (`op=redteam` body `{"mode":"book"}`) added to exercise the booking path on demand (Rowan otherwise declines). This is the seed of the fixed benchmark.
+- (John has separate thoughts coming on the actual CRM — parked.)
+
 ## 5. Don't-break list
 - Never commit the `x-os-token` or any prompt/master token to the repo.
 - Never disable Cekura mocks in a way that writes test bookings into the real CRM (task #63).
