@@ -63,6 +63,10 @@ Backend API: `https://www.polarbreezeut.com/api/os?op=<op>` with header `x-os-to
 5. **Re-run** the Cekura battery (costs credits — confirm credits first) to confirm the lift.
 6. Update this SOT with the new wNN and scores. Never forget it again.
 
+## 4b. LIVE DEPLOY LOG
+- **w66 — LIVE 2026-08-04** (Cloudflare deploy `e1fcf81f6ebb4d4aa8e851d6551a1861`, cf_success, gates len 630283 / sha 68669714…, key `pb-w66-ea2e1df…` in n8n deploy workflow only). Ships: Paige date-grounding (no self-reckoned dates; trust check_availability; don't re-open availability after acceptance), hold-$399 minimum, fire+confirm send_text on ask, complete emergency protocol, business hours; Yogi intro↔BOOKING-TRUTH harmonize. Base = w65 (already had booking-truth anti-fabrication on both). Shipped via PR #119 → main → Vercel prod → n8n `oZdRqnzTVpR0MXkK`.
+- Test path (Cekura-free): trigger `op=redteam` (Rowan multi-turn caller → Paige & Yogi), then `op=agenteval` grades. Pass bar 89 (`op=selftest`), target band 89–97. Baseline for comparison = w65.
+
 ## 5. Don't-break list
 - Never commit the `x-os-token` or any prompt/master token to the repo.
 - Never disable Cekura mocks in a way that writes test bookings into the real CRM (task #63).
