@@ -1032,9 +1032,11 @@
             (l.espnId?'<a style="color:var(--gold)" href="'+espnStandingsUrl(l.espnId)+'" target="_blank" rel="noopener">View them on ESPN &#8599;</a>':'')
         )+'</div>';
       } else {
+        // pre-season everyone sits on 0.0 — don't gild a podium that hasn't been earned
+        var scored = s.teams.some(function(t){ return t.pf>0; });
         body='<table class="res-table"><tr><th></th><th>Team</th><th>Rec</th><th>PF</th></tr>'+
           s.teams.map(function(t,i){
-            var cls = i<3 ? 'pay' : (i===s.teams.length-1 ? 'last' : '');
+            var cls = !scored ? '' : (i<3 ? 'pay' : (i===s.teams.length-1 ? 'last' : ''));
             return '<tr class="'+cls+'"><td class="r">'+(i+1)+'</td>'+
               '<td>'+esc(t.name)+'</td>'+
               '<td class="rec">'+t.w+'-'+t.l+(t.t?'-'+t.t:'')+'</td>'+
@@ -1050,7 +1052,8 @@
       var all=[];
       sets.forEach(function(s){
         if(!s.teams) return;
-        s.teams.forEach(function(t){ all.push({n:t.name,pf:t.pf,lg:s.league.name}); });
+        // only teams that have actually scored — no crowning anyone off a 0.0
+        s.teams.forEach(function(t){ if(t.pf>0) all.push({n:t.name,pf:t.pf,lg:s.league.name}); });
       });
       if(all.length<2){ el.innerHTML=''; return; }
       all.sort(function(a,b){ return b.pf-a.pf; });
@@ -1070,9 +1073,12 @@
       var stamp=document.getElementById('res-stamp');
       if(!stamp) return;
       var live=sets.filter(function(s){return s.teams&&s.teams.length}).length;
-      stamp.textContent = live
-        ? 'Live from ESPN · '+live+' of '+LEAGUES.length+' leagues reporting · updated '+new Date().toLocaleString()
-        : 'Standings go live once the leagues draft · crown and vest are decided on points-for across all three';
+      var scoring=sets.some(function(s){return s.teams&&s.teams.some(function(t){return t.pf>0})});
+      stamp.textContent = !live
+        ? 'Standings go live once the leagues draft · crown and vest are decided on points-for across all three'
+        : scoring
+          ? 'Live from ESPN · '+live+' of '+LEAGUES.length+' leagues reporting · updated '+new Date().toLocaleString()
+          : 'All '+live+' leagues connected to ESPN · standings and the crown/vest race light up when Week 1 scores land';
     });
   })();
 
