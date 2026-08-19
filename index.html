@@ -680,8 +680,8 @@
       <div class="datecard lock">
         <div class="k">Lock your seat by</div>
         <div class="big disp">Sep 3</div>
-        <div class="sub">Thursday · 5:00 PM Mountain</div>
-        <div class="fine">Entry and payment both due by 5 PM MT. Paid late, you don't draft. Simple. First in, first locked — when it's full, it's full.</div>
+        <div class="sub">Thursday · 11:59 PM Mountain</div>
+        <div class="fine">Entry and payment both due by midnight — the end of Thursday the 3rd. Paid late, you don't draft. Simple. First in, first locked — when it's full, it's full.</div>
       </div>
       <div class="datecard draft">
         <div class="k">Draft night · live · all three</div>
@@ -699,7 +699,7 @@
     <div class="eyebrow rise">The format · why skill wins</div>
     <div class="spec-table rise">
       <div class="spec-row"><div class="kk">Leagues</div><div class="vv"><b>3 separate 12-man leagues</b> <span class="mono">· The Expansion League · The Expansion League 2 · The Expansion League 3</span></div></div>
-      <div class="spec-row"><div class="kk">Entry</div><div class="vv"><b>$50 per team</b>, paid through LeagueSafe <span class="mono">· entry and payment due Thu Sep 3, 5:00 PM MT · escrowed until payout</span></div></div>
+      <div class="spec-row"><div class="kk">Entry</div><div class="vv"><b>$50 per team</b>, paid through LeagueSafe <span class="mono">· entry and payment due Thu Sep 3 by midnight MT · escrowed until payout</span></div></div>
       <div class="spec-row"><div class="kk">Pot</div><div class="vv"><b>$600 per league</b> <span class="mono">· 12 seats × $50 · each league pays its own top three</span></div></div>
       <div class="spec-row"><div class="kk">Payouts</div><div class="vv"><b>1st $400 · 2nd $125 · 3rd $75</b> <span class="mono">· $600 in, $600 out</span></div></div>
       <div class="spec-row"><div class="kk">Rake</div><div class="vv"><b>0%.</b> No house cut, no admin fee, no commissioner take <span class="mono">· every dollar returns to the managers</span></div></div>
@@ -857,7 +857,7 @@
       <div class="step">
         <div class="num disp">01</div>
         <div>
-          <h3>Pick a league and pay $50 on its LeagueSafe by <b>Thu Sep 3, 5 PM MT</b></h3>
+          <h3>Pick a league and pay $50 on its LeagueSafe by <b>midnight Thu Sep 3</b></h3>
           <p>Each league has its own LeagueSafe page — pay the one you want a seat in. Escrowed and safe, released only to the winners. No chasing Venmo, no IOUs, no "I'll get you next week."</p>
         </div>
       </div>
@@ -1082,8 +1082,9 @@
     });
   })();
 
-  // Countdown to buy-in lock: Thu Sep 3, 2026, 5:00:00 PM Mountain (MDT = UTC-6)
-  var target = new Date("2026-09-03T17:00:00-06:00").getTime();
+  // Countdown to buy-in lock: midnight ending Thu Sep 3, 2026 Mountain (MDT = UTC-6)
+  // i.e. 00:00 on Sep 4 — LeagueSafe fixes the cutoff at midnight, it isn't adjustable.
+  var target = new Date("2026-09-04T00:00:00-06:00").getTime();
   var d=document.getElementById('cd-d'),h=document.getElementById('cd-h'),
       m=document.getElementById('cd-m'),s=document.getElementById('cd-s');
   function pad(n){return String(n).padStart(2,'0')}
