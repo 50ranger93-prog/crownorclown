@@ -955,9 +955,9 @@
   var LEAGUES = [
     // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
     // closed:true hides the pay button and shows `note` instead. Standings stay live.
-    { name:"The Expansion League",   draft:"Fri Sep 4 · 6 PM MT", espnId:951407474,  leaguesafe:"",                                        seatsTaken:7, closed:true, note:"Private league · not open to public entry" },
-    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:1 },
-    { name:"The Expansion League 3", draft:"Sat Sep 5 · 9 PM MT", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:1 }
+    { name:"The Expansion League",   draft:"Fri Sep 4 · 6 PM MT", espnId:951407474,  leaguesafe:"",                                        seatsTaken:8, autoSeats:true, closed:true, note:"Private league · not open to public entry" },
+    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:1, autoSeats:true },
+    { name:"The Expansion League 3", draft:"Sat Sep 5 · 9 PM MT", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:1, autoSeats:true }
   ];
   /* ====================== end of config ==================================== */
 
@@ -1007,6 +1007,51 @@
         '<div class="lg-actions">'+pay+espn+'</div>'+
       '</div>';
     }).join('');
+  })();
+
+
+  // ---- auto seat counts from ESPN ----
+  // The seat meter used to be a hand-typed number and drifted out of date. It now
+  // counts ESPN teams that actually have a manager attached, repaints the card in
+  // place after renderLeagues(), and re-checks every 60s so a join shows up without
+  // a reload. Hardcoded seatsTaken is only a fallback if ESPN is slow or blocked.
+  (function autoSeats(){
+    if(!window.fetch||!window.Promise) return;
+    var grid=document.getElementById("lg-grid");
+    if(!grid) return;
+    var API="https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/"+SEASON+"/segments/0/leagues/";
+
+    function paint(){
+      var cards=grid.querySelectorAll(".lg-card");
+      LEAGUES.forEach(function(l,i){
+        if(!l.autoSeats || !l.espnId || !cards[i]) return;
+        fetch(API+l.espnId+"?view=mTeam",{credentials:"omit",cache:"no-store"})
+          .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+          .then(function(j){
+            var teams=(j&&j.teams)||[];
+            if(!teams.length) return;
+            var taken=Math.max(0,Math.min(SEATS,teams.filter(function(t){
+              return t.owners && t.owners.length>0;
+            }).length));
+            var card=cards[i];
+            var bar=card.querySelector(".lg-bar > i");
+            var num=card.querySelector(".lg-seatn");
+            if(bar) bar.style.width=Math.round(taken/SEATS*100)+"%";
+            if(num) num.textContent=taken+" of "+SEATS+" seats "+(l.closed?"filled":"paid in");
+            if(!l.closed){
+              var badge=card.querySelector(".lg-badge");
+              if(badge){
+                if(taken>=SEATS){ badge.textContent="Full"; badge.className="lg-badge full"; }
+                else if(taken>0){ badge.textContent=(SEATS-taken)+" seats left"; badge.className="lg-badge filling"; }
+                else { badge.textContent="Open"; badge.className="lg-badge open"; }
+              }
+            }
+          })
+          .catch(function(){});
+      });
+    }
+    paint();
+    setInterval(paint,60000);
   })();
 
   // ---- live standings from ESPN ----
