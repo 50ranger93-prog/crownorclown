@@ -370,6 +370,10 @@
   .lg-badge.open{background:var(--gold);color:#0A0D0A;font-weight:700;border-color:var(--gold)}
   .lg-badge.filling{border-color:var(--gold);color:var(--gold)}
   .lg-badge.full{background:var(--clown);color:var(--bone);font-weight:700;border-color:var(--clown)}
+  .lg-badge.closed{border-color:var(--line-soft,#3A492E);color:var(--bone-dim)}
+  .lg-card.closed{opacity:.86;border-style:dashed}
+  .lg-card.closed .lg-idx{color:var(--bone-dim)}
+  .lg-card.closed:hover{border-color:var(--line);transform:none}
   .lg-name{font-family:var(--disp);text-transform:uppercase;font-size:23px;line-height:1;margin:14px 0 5px;color:var(--bone)}
   .lg-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)}
   .lg-facts{margin-top:18px;border-top:1px solid var(--line)}
@@ -529,7 +533,7 @@
       <span class="or rise">or</span>
       <span class="clown rise">Clown</span>
     </h1>
-    <p class="hero-sub rise">This isn't your office pool. <b>Three twelve-man leagues</b>, fifty dollars a seat, eighteen weeks of war. Each league runs its own escrowed <b>$600 pot</b>, paid 100% to its own top three. But <b>the crown &mdash; and the vest &mdash; are decided across all three</b>. Luck gets exposed. Skill gets paid.</p>
+    <p class="hero-sub rise">This isn't your office pool. <b>Three twelve-man leagues</b>, fifty dollars a seat, eighteen weeks of war. Each league runs its own <b>$600 pot</b>, paid 100% to its own top three &mdash; <b>two boards are open to anyone</b>, escrowed through LeagueSafe. But <b>the crown &mdash; and the vest &mdash; are decided across all three</b>. Luck gets exposed. Skill gets paid.</p>
 
     <div class="stakes rise">
       <div><div class="n">3</div><div class="l">Leagues</div></div>
@@ -599,7 +603,7 @@
         <div class="rung mid"></div><div class="rung mid"></div>
         <div class="rung clown lit"><span class="tag">12 · Vest contender 🦺</span></div>
       </div>
-      <div class="ladder-note">One league's ladder — and all three pay the same. The <b>trophy</b> and the <b>vest</b> sit outside it: highest and lowest points-for in the <b>entire 36-team field</b>. Win your league and you might still not get the trophy.</div>
+      <div class="ladder-note">One league's ladder — and all three pay the same. The <b>trophy</b> and the <b>vest</b> sit outside it: highest and lowest points-for across <b>every team in all three leagues</b>. Win your league and you might still not get the trophy.</div>
     </div>
   </div>
 </section>
@@ -609,7 +613,7 @@
   <div class="wrap">
     <div class="eyebrow rise">Pick your league · three 12-man boards</div>
     <h2 class="disp rise" style="font-size:clamp(34px,6vw,64px);margin:14px 0 0">Three boards.<br><span style="color:var(--gold)">Same stakes.</span></h2>
-    <p class="rise" style="margin-top:16px;max-width:620px;color:var(--bone-dim);font-size:15.5px">Every league is identical &mdash; 12 seats, $50 in, $600 out, same rules, same scoring, same draft night. Pay the league you want on LeagueSafe and your ESPN invite comes straight back to you. <b style="color:var(--gold-bright)">Enter as many as you like &mdash; but only one team per league.</b></p>
+    <p class="rise" style="margin-top:16px;max-width:620px;color:var(--bone-dim);font-size:15.5px">Same stakes on every board &mdash; 12 seats, $50 in, $600 out, same rules, same scoring. <b style="color:var(--gold-bright)">Leagues 2 and 3 are open to anyone:</b> pay on LeagueSafe and your ESPN invite comes straight back to you. The Expansion League is a private, locally-run board &mdash; closed to public entry, but its standings run live below like the rest. Enter both open leagues if you like &mdash; <b style="color:var(--gold-bright)">one team per league.</b></p>
 
     <div class="lg-grid rise" id="lg-grid"></div>
     <noscript>
@@ -690,10 +694,10 @@
         <div class="fine">Entry and payment both due by midnight — the end of Thursday the 3rd. Paid late, you don't draft. Simple. First in, first locked — when it's full, it's full.</div>
       </div>
       <div class="datecard draft">
-        <div class="k">Draft night · live · all three</div>
-        <div class="big disp">Sep 5</div>
-        <div class="sub">Saturday · 6, 8 &amp; 10 PM Mountain</div>
-        <div class="fine">All three leagues draft back-to-back: <b>League 1 at 6 PM</b>, <b>League 2 at 8 PM</b>, <b>League 3 at 10 PM</b> Mountain. Staggered on purpose — enter more than one and you can draft them all. Autopick drags you toward the vest.</div>
+        <div class="k">Draft nights · live · all three</div>
+        <div class="big disp">Sep 4–5</div>
+        <div class="sub">Friday 6 PM · Saturday 6 &amp; 9 PM Mountain</div>
+        <div class="fine"><b>The Expansion League</b> drafts <b>Friday Sep 4, 6 PM</b>. The two open boards go Saturday: <b>League 2 at 6 PM</b>, <b>League 3 at 9 PM</b> Mountain — three hours apart, so if you're in both you can draft both. Autopick drags you toward the vest.</div>
       </div>
     </div>
   </div>
@@ -715,7 +719,7 @@
       <div class="spec-row"><div class="kk">Roster</div><div class="vv">20-man roster — 13 starters + 7 bench <span class="mono">· plus 4 IR · caps 3QB / 9RB / 9WR / 3TE / 3K / 3D/ST</span></div></div>
       <div class="spec-row"><div class="kk">Lineup protection</div><div class="vv"><b>On.</b> ESPN auto-swaps a starter ruled OUT for a healthy bench player at his position <span class="mono">· a safety net, not a strategy — it can't read your mind, and it won't save a questionable tag</span></div></div>
       <div class="spec-row"><div class="kk">Scoring</div><div class="vv"><b>Exact DraftKings scoring.</b> Whatever a player scores on DraftKings that week is his score here &mdash; nothing custom.</div></div>
-      <div class="spec-row"><div class="kk">Draft</div><div class="vv">12-team live snake draft, <b>Sat Sep 5</b> <span class="mono">· League 1 at 6 PM · League 2 at 8 PM · League 3 at 10 PM Mountain · 45 sec/pick · order randomized 1 hr before</span></div></div>
+      <div class="spec-row"><div class="kk">Draft</div><div class="vv">12-team live snake draft <span class="mono">· The Expansion League Fri Sep 4, 6 PM · League 2 Sat Sep 5, 6 PM · League 3 Sat Sep 5, 9 PM Mountain · 45 sec/pick · order randomized 1 hr before</span></div></div>
       <div class="spec-row"><div class="kk">Free agency</div><div class="vv">$100 FAAB <span class="mono">· continuous blind bidding — no waiver-priority luck</span></div></div>
       <div class="spec-row"><div class="kk">Playoffs</div><div class="vv">8 teams <span class="mono">· rounds 1 &amp; 2 are one week, championship is two · no reseeding · consolation ladder</span></div></div>
       <div class="spec-row"><div class="kk">Keepers</div><div class="vv">None <span class="mono">· full redraft, every seat earned every season</span></div></div>
@@ -858,7 +862,7 @@
 <section class="spec sec-pad" id="claim">
   <div class="wrap">
     <div class="eyebrow rise">Claim your seat</div>
-    <p class="rise" style="margin-top:16px;max-width:560px;color:var(--bone-dim);font-size:15.5px">Three boards are open — same stakes, same rules, same draft day. Each one runs its own escrowed <b>$600 pot</b>, paid to its top three inside that league. The <b>crown</b> and the <b>vest</b>, though, are <b>singular</b> — awarded overall across all three. Highest points-for anywhere wears the crown. Lowest anywhere wears the vest. <b>Multi-entry is allowed</b> — take a seat in one, two, or all three — but it's <b>one team per league, no exceptions</b>. Each entry is its own $50, paid on that league's own LeagueSafe page.</p>
+    <p class="rise" style="margin-top:16px;max-width:560px;color:var(--bone-dim);font-size:15.5px"><b>Two boards are open</b> — League 2 and League 3, same stakes, same rules. Each runs its own escrowed <b>$600 pot</b>, paid to its top three inside that league. The <b>crown</b> and the <b>vest</b>, though, are <b>singular</b> — awarded overall across all three leagues, the private one included. Highest points-for anywhere wears the crown. Lowest anywhere wears the vest. <b>Multi-entry is allowed</b> — take a seat in both open boards if you want — but it's <b>one team per league, no exceptions</b>. Each entry is its own $50, paid on that league's own LeagueSafe page.</p>
     <div class="steps rise">
       <div class="step">
         <div class="num disp">01</div>
@@ -878,7 +882,7 @@
         <div class="num disp">03</div>
         <div>
           <h3>Be at the live draft — <b>Sat Sep 5</b></h3>
-          <p><b>League 1 at 6 PM · League 2 at 8 PM · League 3 at 10 PM</b> Mountain. Staggered two hours apart so multi-entry managers can draft every board they paid into. Bring your board. Leave your excuses. Autopick is how careers end.</p>
+          <p><b>League 2 at 6 PM · League 3 at 9 PM</b> Mountain, three hours apart so you can draft both if you entered both. (The private Expansion League drafts Friday the 4th at 6 PM.) Bring your board. Leave your excuses. Autopick is how careers end.</p>
         </div>
       </div>
     </div>
@@ -886,7 +890,7 @@
     <div class="pay-box rise">
       <div>
         <h3>Pay through LeagueSafe</h3>
-        <p>Your $50 entry is held in escrow and paid back out in full to the top three — zero rake, no house cut. Twelve seats make $600, and all $600 goes to the podium: $400 / $125 / $75. Every league has its own LeagueSafe page, so pay the board you want a seat on and your ESPN invite comes straight back to you.</p>
+        <p>Your $50 entry is held in escrow and paid back out in full to the top three — zero rake, no house cut. Twelve seats make $600, and all $600 goes to the podium: $400 / $125 / $75. Both open leagues have their own LeagueSafe page, so pay the board you want a seat on and your ESPN invite comes straight back to you.</p>
         <a class="btn btn-gold" style="margin-top:20px" href="#leagues">Choose your league →</a>
       </div>
     </div>
@@ -897,7 +901,7 @@
 <section class="final sec-pad">
   <div class="wrap">
     <h2 class="disp rise"><span class="crown">Crown</span> <span class="or">or</span> <span class="clown">Clown</span>.</h2>
-    <p class="rise">Three leagues. Twelve seats each. $50 in, $600 out, zero rake. Each league pays its own top three &mdash; but only <b>one</b> manager takes the crown, and only <b>one</b> wears the vest, across all three. Which one are you?</p>
+    <p class="rise">Two open boards. Twelve seats each. $50 in, $600 out, zero rake. Every league pays its own top three &mdash; but only <b>one</b> manager takes the crown, and only <b>one</b> wears the vest, across all three. Which one are you?</p>
     <div class="hero-actions rise">
       <a href="#leagues" class="btn btn-gold">Pay in &amp; claim your seat</a>
     </div>
@@ -919,7 +923,7 @@
   </div>
   <div class="wrap">
     <div class="fineprint">
-      3 leagues · 12 seats each · $50 entry · $600 pot per league · paid $400 / $125 / $75 · 0% rake · multi-entry allowed, one team per league · escrowed by LeagueSafe · played on ESPN · one trophy and one vest across all 36 teams · TrophySmack hardware · last place funds its own legend
+      3 leagues · 12 seats each · $50 entry · $600 pot per league · paid $400 / $125 / $75 · 0% rake · multi-entry allowed, one team per league · escrowed by LeagueSafe · played on ESPN · one trophy and one vest across all three leagues · TrophySmack hardware · last place funds its own legend
     </div>
   </div>
 </footer>
@@ -948,9 +952,11 @@
   var PAYOUTS = [400, 125, 75];
 
   var LEAGUES = [
-    { name:"The Expansion League",   draft:"Sat Sep 5 · 6 PM MT",  espnId:951407474,  leaguesafe:"https://www.leaguesafe.com/join/4437857", seatsTaken:0 },
-    { name:"The Expansion League 2", draft:"Sat Sep 5 · 8 PM MT",  espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:0 },
-    { name:"The Expansion League 3", draft:"Sat Sep 5 · 10 PM MT", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:0 }
+    // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
+    // closed:true hides the pay button and shows `note` instead. Standings stay live.
+    { name:"The Expansion League",   draft:"Fri Sep 4 · 6 PM MT", espnId:951407474,  leaguesafe:"",                                        seatsTaken:7, closed:true, note:"Private league · not open to public entry" },
+    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:0 },
+    { name:"The Expansion League 3", draft:"Sat Sep 5 · 9 PM MT", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:0 }
   ];
   /* ====================== end of config ==================================== */
 
@@ -969,16 +975,19 @@
     if(!grid) return;
     grid.innerHTML=LEAGUES.map(function(l,i){
       var taken=Math.max(0,Math.min(SEATS,l.seatsTaken||0));
-      var st = taken>=SEATS ? {k:'full',t:'Full'}
+      var st = l.closed  ? {k:'closed',t:'Private'}
+             : taken>=SEATS ? {k:'full',t:'Full'}
              : taken>0      ? {k:'filling',t:(SEATS-taken)+' seats left'}
                             : {k:'open',t:'Open'};
-      var pay = taken>=SEATS
-        ? '<span class="pending">This league is full</span>'
-        : l.leaguesafe
-          ? '<a class="btn btn-gold" href="'+esc(l.leaguesafe)+'" target="_blank" rel="noopener">Pay '+money(ENTRY)+' on LeagueSafe &rarr;</a>'
-          : '<span class="pending">LeagueSafe link coming soon</span>';
+      var pay = l.closed
+        ? '<span class="pending">'+esc(l.note||'Closed to public entry')+'</span>'
+        : taken>=SEATS
+          ? '<span class="pending">This league is full</span>'
+          : l.leaguesafe
+            ? '<a class="btn btn-gold" href="'+esc(l.leaguesafe)+'" target="_blank" rel="noopener">Pay '+money(ENTRY)+' on LeagueSafe &rarr;</a>'
+            : '<span class="pending">LeagueSafe link coming soon</span>';
       var espn = l.espnId
-        ? '<a class="btn btn-ghost" href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">View league on ESPN</a>'
+        ? '<a class="btn btn-ghost" href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">'+(l.closed?'Follow it on ESPN':'View league on ESPN')+'</a>'
         : '<span class="pending">ESPN invite sent once you’re paid in</span>';
       return '<div class="lg-card '+st.k+'">'+
         '<div class="lg-top"><div class="lg-idx">0'+(i+1)+'</div>'+
@@ -993,7 +1002,7 @@
           '<div><span>Rake</span><span>0%</span></div>'+
         '</div>'+
         '<div class="lg-seats"><div class="lg-bar"><i style="width:'+Math.round(taken/SEATS*100)+'%"></i></div>'+
-          '<div class="lg-seatn">'+taken+' of '+SEATS+' seats paid in</div></div>'+
+          '<div class="lg-seatn">'+taken+' of '+SEATS+' seats '+(l.closed?'filled':'paid in')+'</div></div>'+
         '<div class="lg-actions">'+pay+espn+'</div>'+
       '</div>';
     }).join('');
