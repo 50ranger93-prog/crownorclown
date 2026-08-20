@@ -1,0 +1,33 @@
+name: Weekly DK reconciliation
+
+# Runs itself every Sunday during the season. By Sunday, ESPN's official stat
+# corrections for the prior week are final (their deadline is the Saturday
+# after the games), so it's safe to reconcile — adjusting earlier would
+# double-credit a team. The script auto-detects the settled week and silences
+# itself in the off-season (Feb–Jul).
+
+on:
+  schedule:
+    - cron: '0 16 * * 0'   # Sundays 16:00 UTC (~9–10am Mountain)
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'NFL week to reconcile (leave "auto" for the settled week)'
+        required: false
+        default: 'auto'
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reconcile ESPN vs DraftKings
+        env:
+          # Optional: add a Discord/Slack webhook as a repo secret named
+          # RECONCILE_WEBHOOK to get the report pushed to chat too. Without it,
+          # the report still shows in this job's summary every week.
+          RECONCILE_WEBHOOK: ${{ secrets.RECONCILE_WEBHOOK }}
+        run: node tools/reconcile.mjs --week "${{ github.event.inputs.week || 'auto' }}" --md

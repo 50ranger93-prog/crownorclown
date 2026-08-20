@@ -23,12 +23,25 @@ the next week kicks off.
 > ESPN then applies the same one automatically, the team gets **double-credited**.
 > Wait until the numbers are final, then true up.
 
-## How to run
+## It runs itself
+
+A GitHub Action (`.github/workflows/weekly-reconcile.yml`) runs this **every
+Sunday during the season** — by then ESPN's corrections for the prior week are
+final, so it's safe. It auto-detects the settled week and stays silent in the
+off-season. The report lands in the **Actions run summary** every week. Add a
+repo secret named **`RECONCILE_WEBHOOK`** (a Discord or Slack webhook URL) and
+the report also gets pushed to that chat. You never have to run anything.
+
+You can also trigger it by hand: **Actions → Weekly DK reconciliation → Run
+workflow** (optionally set a week).
+
+## Running it manually (optional)
 
 ```bash
-node tools/reconcile.mjs --season 2026 --week 1
-node tools/reconcile.mjs --week 1 --league 951407474   # just one league
-node tools/reconcile.mjs --week 1 --json               # machine-readable
+node tools/reconcile.mjs --week auto        # the most-recently-settled week
+node tools/reconcile.mjs --week 1           # a specific week
+node tools/reconcile.mjs --week auto --json # machine-readable
+RECONCILE_WEBHOOK=<url> node tools/reconcile.mjs --week auto  # also POST to chat
 ```
 
 It prints, per league and team, every starter sitting on a bonus line and every
