@@ -727,7 +727,7 @@
         <p class="lede2">Three leagues, one crown, one vest &mdash; and <b>one room where everybody has to answer for it</b>. The Discord is open to every manager on all three boards, and to anyone still deciding whether to take a seat.</p>
         <p class="lede2">A channel per league, one for the whole field, and <b>voice for all three draft nights</b>. Phone notifications too, so a Sunday collapse doesn't go uncommented until Tuesday.</p>
 
-        <div class="dc-live" id="dc-live"><i></i><span id="dc-live-t">Discord &mdash; not linked yet</span></div>
+        <div class="dc-live" id="dc-live"><i></i><span id="dc-live-t">The room is open &mdash; come talk</span></div>
         <div class="chat-actions" id="dc-actions"></div>
 
         <div class="espn-chats">
@@ -737,7 +737,7 @@
       </div>
 
       <div class="dc-embed" id="dc-embed">
-        <div class="dc-placeholder"><b>Discord widget</b>Goes live here once the server<br>is created and the widget is switched on.</div>
+        <div class="dc-placeholder"><b>The Expansion League</b>Join with the button on the left.<br>The live member panel appears here<br>once the server widget is switched on.</div>
       </div>
     </div>
   </div>
@@ -1071,7 +1071,7 @@
                   then copy the Server ID shown there.
        invite   : a permanent (never-expiring) invite link.
      Leave them blank and the site shows a tidy placeholder instead of a dead embed. */
-  var DISCORD = { serverId:"", invite:"" };
+  var DISCORD = { serverId:"1543364312028946432", invite:"https://discord.gg/gZtHxUFaBs" };
   /* ====================== end of config ==================================== */
 
   function esc(s){
@@ -1423,10 +1423,12 @@
         espn=document.getElementById('espn-chats');
 
     if(espn){
+      // ESPN has no direct-to-chat URL — it's a panel behind the chat icon,
+      // so link the league and say where the chat actually is.
       espn.innerHTML=LEAGUES.map(function(l){
         return '<div class="ec"><div class="n">'+esc(l.name)+
-          '<small>'+(l.closed?'Private board':'Open board')+' · members only</small></div>'+
-          (l.espnId?'<a href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">Open chat &#8599;</a>':'')+
+          '<small>Members only · chat icon, top right</small></div>'+
+          (l.espnId?'<a href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">Open league &#8599;</a>':'')+
           '</div>';
       }).join('');
     }
@@ -1442,23 +1444,27 @@
           'Invite link coming shortly</span>';
     }
 
-    if(id&&embed){
-      embed.innerHTML='<iframe title="Crown or Clown Discord" '+
-        'src="https://discord.com/widget?id='+id+'&theme=dark" '+
-        'allowtransparency="true" frameborder="0" '+
-        'sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>';
-    }
-
-    if(id&&live&&liveT&&window.fetch){
+    // Only embed the widget once Discord confirms it's switched on — otherwise
+    // the iframe renders Discord's own "Widget Disabled" error in the page.
+    if(id&&window.fetch){
       fetch('https://discord.com/api/guilds/'+id+'/widget.json',{credentials:'omit'})
         .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
         .then(function(j){
-          var n=j.presence_count;
-          if(typeof n!=='number') return;
-          live.className='dc-live on';
-          liveT.innerHTML='<b>'+n+'</b> manager'+(n===1?'':'s')+' online right now';
+          if(embed){
+            embed.innerHTML='<iframe title="Crown or Clown Discord" '+
+              'src="https://discord.com/widget?id='+id+'&theme=dark" '+
+              'allowtransparency="true" frameborder="0" '+
+              'sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>';
+          }
+          if(live&&liveT&&typeof j.presence_count==='number'){
+            var n=j.presence_count;
+            live.className='dc-live on';
+            liveT.innerHTML='<b>'+n+'</b> manager'+(n===1?'':'s')+' online right now';
+          }
         })
-        .catch(function(){});
+        .catch(function(){
+          if(liveT) liveT.innerHTML='The room is open &mdash; come talk';
+        });
     }
   })();
 
