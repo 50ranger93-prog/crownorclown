@@ -434,6 +434,82 @@
     .watch{grid-template-columns:1fr}
   }
 
+  /* ---- hero football fx ---- */
+  .hero-fx{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+  .hero-sweep{
+    position:absolute;inset:-25% -45%;z-index:0;pointer-events:none;
+    background:linear-gradient(100deg,transparent 43%,rgba(231,178,60,.085) 50%,transparent 57%);
+    animation:sweep 11s ease-in-out infinite;
+  }
+  @keyframes sweep{0%,100%{transform:translateX(-26%)}50%{transform:translateX(26%)}}
+  .hero .wrap{z-index:2}
+  .kraken{cursor:pointer}
+  .throw-hint{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--bone-dim);opacity:.5;margin-top:10px;transition:opacity .3s;
+  }
+  .kraken:hover + .throw-hint{opacity:.95;color:var(--gold)}
+  .stakes .n,.season-grid .sn{font-variant-numeric:tabular-nums}
+
+  /* ladder: rungs snap in like a scoreboard */
+  .rungs .rung{transform-origin:left center;transform:scaleX(.12);transition:transform .55s cubic-bezier(.2,.85,.25,1)}
+  .rungs.go .rung{transform:scaleX(1)}
+
+  /* per-league draft clock */
+  .lg-cd{
+    margin-top:14px;font-family:var(--mono);font-size:10.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);
+  }
+  .lg-cd b{color:var(--gold);font-size:12.5px;letter-spacing:.05em;font-variant-numeric:tabular-nums}
+  .lg-cd.live b{color:var(--clown)}
+
+  /* ---- the group chat ---- */
+  .chat-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:30px;margin-top:34px;align-items:start}
+  .lede2{color:var(--bone-dim);font-size:15.5px;margin-top:16px;max-width:54ch}
+  .lede2 b{color:var(--gold-bright)}
+  .dc-live{
+    display:inline-flex;align-items:center;gap:10px;margin-top:22px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--bone-dim);border:1px solid var(--line);border-radius:2px;padding:10px 15px;
+  }
+  .dc-live i{width:7px;height:7px;border-radius:50%;background:var(--bone-dim);display:block;flex:0 0 7px}
+  .dc-live.on i{background:#3BA55D;box-shadow:0 0 10px rgba(59,165,93,.85);animation:pulse 2.2s ease-in-out infinite}
+  .dc-live b{color:var(--bone)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .chat-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+  .dc-embed{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--ink-2)}
+  .dc-embed iframe{display:block;width:100%;height:500px;border:0}
+  .dc-placeholder{
+    padding:38px 26px;text-align:center;font-family:var(--mono);font-size:11px;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--bone-dim);line-height:2.2;
+  }
+  .dc-placeholder b{color:var(--gold);display:block;margin-bottom:8px;letter-spacing:.16em}
+  .espn-chats{margin-top:32px;border-top:1px solid var(--line)}
+  .espn-chats .ec{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:13px 2px;border-bottom:1px solid var(--line);
+  }
+  .espn-chats .ec .n{font-size:14px;color:var(--bone)}
+  .espn-chats .ec .n small{
+    display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--bone-dim);margin-top:4px;
+  }
+  .espn-chats .ec a{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);white-space:nowrap;
+  }
+  .espn-chats .ec a:hover{text-decoration:underline}
+  .espn-chats .ec-head{
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold);padding:14px 2px 10px;
+  }
+  @media(max-width:900px){ .chat-grid{grid-template-columns:1fr} }
+  @media(prefers-reduced-motion:reduce){
+    .hero-sweep{animation:none}
+    .rungs .rung,.rungs.go .rung{transform:none}
+    .dc-live.on i{animation:none}
+  }
+
   /* ---- reveal animation ---- */
   .rise{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
   .rise.in{opacity:1;transform:none}
@@ -512,6 +588,8 @@
 <!-- HERO -->
 <header class="hero">
   <div class="hero-glow"></div>
+  <div class="hero-sweep" aria-hidden="true"></div>
+  <canvas class="hero-fx" id="heroFx" aria-hidden="true"></canvas>
   <svg class="hero-art" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
     <defs>
       <pattern id="xo" width="200" height="150" patternUnits="userSpaceOnUse" patternTransform="rotate(-9)">
@@ -533,6 +611,7 @@
       <span class="or rise">or</span>
       <span class="clown rise">Clown</span>
     </h1>
+    <div class="throw-hint" id="throwHint">Tap the name to throw it</div>
     <p class="hero-sub rise">This isn't your office pool. <b>Three twelve-man leagues</b>, fifty dollars a seat, eighteen weeks of war. Each league runs its own <b>$600 pot</b>, paid 100% to its own top three &mdash; <b>two boards are open to anyone</b>, escrowed through LeagueSafe. But <b>the crown &mdash; and the vest &mdash; are decided across all three</b>. Luck gets exposed. Skill gets paid.</p>
 
     <div class="stakes rise">
@@ -634,6 +713,33 @@
     <div class="watch rise" id="watch"></div>
     <div class="res-grid rise" id="res-grid"></div>
     <div class="pay-note rise" id="res-stamp" style="margin-top:22px"></div>
+  </div>
+</section>
+
+<!-- THE GROUP CHAT -->
+<section class="sec-pad" id="chat">
+  <div class="wrap">
+    <div class="eyebrow rise">The group chat · talk your trash</div>
+    <h2 class="disp rise" style="font-size:clamp(34px,6vw,64px);margin:14px 0 0">Say it<br><span style="color:var(--gold)">out loud.</span></h2>
+
+    <div class="chat-grid rise">
+      <div class="chat-copy">
+        <p class="lede2">Three leagues, one crown, one vest &mdash; and <b>one room where everybody has to answer for it</b>. The Discord is open to every manager on all three boards, and to anyone still deciding whether to take a seat.</p>
+        <p class="lede2">A channel per league, one for the whole field, and <b>voice for all three draft nights</b>. Phone notifications too, so a Sunday collapse doesn't go uncommented until Tuesday.</p>
+
+        <div class="dc-live" id="dc-live"><i></i><span id="dc-live-t">Discord &mdash; not linked yet</span></div>
+        <div class="chat-actions" id="dc-actions"></div>
+
+        <div class="espn-chats">
+          <div class="ec-head">Or use your league's own chat</div>
+          <div id="espn-chats"></div>
+        </div>
+      </div>
+
+      <div class="dc-embed" id="dc-embed">
+        <div class="dc-placeholder"><b>Discord widget</b>Goes live here once the server<br>is created and the widget is switched on.</div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -955,10 +1061,17 @@
   var LEAGUES = [
     // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
     // closed:true hides the pay button and shows `note` instead. Standings stay live.
-    { name:"The Expansion League",   draft:"Fri Sep 4 · 7 PM MT", espnId:951407474,  leaguesafe:"",                                        seatsTaken:8, autoSeats:true, closed:true, note:"Private league · not open to public entry" },
-    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:1, autoSeats:true },
-    { name:"The Expansion League 3", draft:"Sat Sep 5 · 9 PM MT", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:1, autoSeats:true }
+    { name:"The Expansion League",   draft:"Fri Sep 4 · 7 PM MT", draftAt:"2026-09-04T19:00:00-06:00", espnId:951407474,  leaguesafe:"",                                        seatsTaken:8, autoSeats:true, closed:true, note:"Private league · not open to public entry" },
+    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", draftAt:"2026-09-05T18:00:00-06:00", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:1, autoSeats:true },
+    { name:"The Expansion League 3", draft:"Sat Sep 5 · 9 PM MT", draftAt:"2026-09-05T21:00:00-06:00", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:1, autoSeats:true }
   ];
+
+  /* Discord — fill these two in once the server exists, then it all switches on.
+       serverId : Discord → Server Settings → Widget → tick "Enable Server Widget",
+                  then copy the Server ID shown there.
+       invite   : a permanent (never-expiring) invite link.
+     Leave them blank and the site shows a tidy placeholder instead of a dead embed. */
+  var DISCORD = { serverId:"", invite:"" };
   /* ====================== end of config ==================================== */
 
   function esc(s){
@@ -1004,6 +1117,7 @@
         '</div>'+
         '<div class="lg-seats"><div class="lg-bar"><i style="width:'+Math.round(taken/SEATS*100)+'%"></i></div>'+
           '<div class="lg-seatn">'+taken+' of '+SEATS+' seats '+(l.closed?'filled':'paid in')+'</div></div>'+
+        '<div class="lg-cd" data-cd="'+i+'"></div>'+
         '<div class="lg-actions">'+pay+espn+'</div>'+
       '</div>';
     }).join('');
@@ -1162,6 +1276,191 @@
     d.textContent=pad(days);h.textContent=pad(hrs);m.textContent=pad(min);s.textContent=pad(sec);
   }
   tick();setInterval(tick,1000);
+
+  // ---- the throw: a football spirals across the hero on load, and on tap ----
+  (function football(){
+    var cv=document.getElementById('heroFx'), hero=document.querySelector('.hero');
+    if(!cv||!hero||!cv.getContext) return;
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    if(reduce){ var hint=document.getElementById('throwHint'); if(hint) hint.style.display='none'; return; }
+
+    var ctx=cv.getContext('2d'), W=0, H=0, dpr=Math.min(window.devicePixelRatio||1,2);
+    function size(){
+      W=hero.offsetWidth; H=hero.offsetHeight;
+      cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    size();
+    window.addEventListener('resize',size);
+
+    function ball(x,y,r,rot,alpha){
+      ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); ctx.rotate(rot);
+      ctx.fillStyle='#6E3A1F';
+      ctx.beginPath(); ctx.ellipse(0,0,r,r*0.6,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(236,228,208,.92)'; ctx.lineWidth=Math.max(1,r*0.075); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(r*0.5,0); ctx.stroke();
+      for(var i=-2;i<=2;i++){
+        ctx.beginPath(); ctx.moveTo(i*r*0.15,-r*0.15); ctx.lineTo(i*r*0.15,r*0.15); ctx.stroke();
+      }
+      ctx.strokeStyle='rgba(231,178,60,.5)'; ctx.lineWidth=Math.max(1,r*0.05);
+      ctx.beginPath(); ctx.ellipse(0,0,r,r*0.6,0,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
+    var raf=null, start=0, DUR=2500, trail=[];
+    function frame(ts){
+      if(!start) start=ts;
+      var p=(ts-start)/DUR;
+      ctx.clearRect(0,0,W,H);
+      if(p>=1){ raf=null; return; }
+      // flat-ish arc, left to right, dipping under gravity
+      var x=-70+(W+150)*p;
+      var y=H*0.82-(H*0.55)*Math.sin(Math.PI*p)-H*0.06*p;
+      var r=Math.max(15,Math.min(30,W*0.022));
+      var rot=p*Math.PI*7;
+      trail.push({x:x,y:y,rot:rot});
+      if(trail.length>13) trail.shift();
+      for(var i=0;i<trail.length-1;i++){
+        var t=trail[i], a=(i/trail.length)*0.16;
+        ball(t.x,t.y,r*(0.72+0.28*i/trail.length),t.rot,a);
+      }
+      var fade=p>0.88?(1-p)/0.12:1;
+      ball(x,y,r,rot,fade);
+      raf=requestAnimationFrame(frame);
+    }
+    function throwIt(){
+      if(raf) cancelAnimationFrame(raf);
+      start=0; trail=[]; size();
+      raf=requestAnimationFrame(frame);
+    }
+    setTimeout(throwIt,700);
+    var k=document.querySelector('.kraken');
+    if(k){
+      k.addEventListener('click',throwIt);
+      k.setAttribute('tabindex','0');
+      k.setAttribute('role','button');
+      k.setAttribute('aria-label','Throw the football');
+      k.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); throwIt(); } });
+    }
+  })();
+
+  // ---- stat numbers count up when they scroll into view ----
+  (function countUp(){
+    if(!window.IntersectionObserver) return;
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    var nodes=document.querySelectorAll('.stakes .n, .season-grid .sn');
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(!e.isIntersecting) return;
+        io.unobserve(e.target);
+        var el=e.target, raw=el.textContent.trim();
+        var m=raw.match(/^(\D*)([\d,]+)(\D*)$/);
+        if(!m){ return; }
+        var pre=m[1], target=parseInt(m[2].replace(/,/g,''),10), suf=m[3];
+        if(!isFinite(target)||reduce) return;
+        var t0=null, DUR=900;
+        function step(ts){
+          if(!t0) t0=ts;
+          var p=Math.min(1,(ts-t0)/DUR);
+          var eased=1-Math.pow(1-p,3);
+          el.textContent=pre+Math.round(target*eased).toLocaleString('en-US')+suf;
+          if(p<1) requestAnimationFrame(step);
+        }
+        el.textContent=pre+'0'+suf;
+        requestAnimationFrame(step);
+      });
+    },{threshold:.5});
+    Array.prototype.forEach.call(nodes,function(n){ io.observe(n); });
+  })();
+
+  // ---- ladder rungs snap in like a scoreboard ----
+  (function ladder(){
+    var rungs=document.getElementById('rungs');
+    if(!rungs||!window.IntersectionObserver) return;
+    Array.prototype.forEach.call(rungs.children,function(r,i){
+      r.style.transitionDelay=(i*0.045)+'s';
+    });
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ rungs.classList.add('go'); io.disconnect(); } });
+    },{threshold:.25});
+    io.observe(rungs);
+  })();
+
+  // ---- live countdown to each league's draft, on its card ----
+  (function draftClocks(){
+    var cells=document.querySelectorAll('.lg-cd[data-cd]');
+    if(!cells.length) return;
+    var items=[];
+    Array.prototype.forEach.call(cells,function(el){
+      var l=LEAGUES[+el.getAttribute('data-cd')];
+      if(l&&l.draftAt){ var at=new Date(l.draftAt).getTime(); if(isFinite(at)) items.push({el:el,at:at}); }
+    });
+    if(!items.length) return;
+    function tick(){
+      items.forEach(function(o){
+        var left=o.at-Date.now();
+        if(left>0){
+          var d=Math.floor(left/86400000),h=Math.floor(left%86400000/3600000),
+              m=Math.floor(left%3600000/60000),s=Math.floor(left%60000/1000);
+          o.el.className='lg-cd';
+          o.el.innerHTML='Drafts in <b>'+(d>0?(d+'d '+h+'h '+m+'m'):(h+'h '+m+'m '+s+'s'))+'</b>';
+        } else if(left>-4*3600000){
+          o.el.className='lg-cd live'; o.el.innerHTML='<b>Drafting now</b>';
+        } else {
+          o.el.className='lg-cd'; o.el.innerHTML='<b>Drafted</b> · season underway';
+        }
+      });
+    }
+    tick(); setInterval(tick,1000);
+  })();
+
+  // ---- the group chat: Discord widget + per-league ESPN chat links ----
+  (function chat(){
+    var actions=document.getElementById('dc-actions'),
+        embed=document.getElementById('dc-embed'),
+        live=document.getElementById('dc-live'),
+        liveT=document.getElementById('dc-live-t'),
+        espn=document.getElementById('espn-chats');
+
+    if(espn){
+      espn.innerHTML=LEAGUES.map(function(l){
+        return '<div class="ec"><div class="n">'+esc(l.name)+
+          '<small>'+(l.closed?'Private board':'Open board')+' · members only</small></div>'+
+          (l.espnId?'<a href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">Open chat &#8599;</a>':'')+
+          '</div>';
+      }).join('');
+    }
+
+    var id=(DISCORD&&DISCORD.serverId||'').replace(/\D/g,'');
+    var inv=DISCORD&&DISCORD.invite||'';
+
+    if(actions){
+      actions.innerHTML = inv
+        ? '<a class="btn btn-gold" href="'+esc(inv)+'" target="_blank" rel="noopener">Join the Discord &rarr;</a>'
+        : '<span class="pending" style="border:1px dashed var(--line);padding:13px 16px;border-radius:2px;'+
+          'font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-dim)">'+
+          'Invite link coming shortly</span>';
+    }
+
+    if(id&&embed){
+      embed.innerHTML='<iframe title="Crown or Clown Discord" '+
+        'src="https://discord.com/widget?id='+id+'&theme=dark" '+
+        'allowtransparency="true" frameborder="0" '+
+        'sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>';
+    }
+
+    if(id&&live&&liveT&&window.fetch){
+      fetch('https://discord.com/api/guilds/'+id+'/widget.json',{credentials:'omit'})
+        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function(j){
+          var n=j.presence_count;
+          if(typeof n!=='number') return;
+          live.className='dc-live on';
+          liveT.innerHTML='<b>'+n+'</b> manager'+(n===1?'':'s')+' online right now';
+        })
+        .catch(function(){});
+    }
+  })();
 
   // Scroll reveal
   var io=new IntersectionObserver(function(entries){
