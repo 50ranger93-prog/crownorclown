@@ -1456,10 +1456,17 @@
               'allowtransparency="true" frameborder="0" '+
               'sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>';
           }
+          // presence_count is 0 whenever everyone is offline OR set to Invisible —
+          // "0 managers online" reads as a dead room, so only boast when it's > 0.
           if(live&&liveT&&typeof j.presence_count==='number'){
             var n=j.presence_count;
-            live.className='dc-live on';
-            liveT.innerHTML='<b>'+n+'</b> manager'+(n===1?'':'s')+' online right now';
+            if(n>0){
+              live.className='dc-live on';
+              liveT.innerHTML='<b>'+n+'</b> manager'+(n===1?'':'s')+' online right now';
+            } else {
+              live.className='dc-live';
+              liveT.innerHTML='The room is open &mdash; come talk';
+            }
           }
         })
         .catch(function(){
