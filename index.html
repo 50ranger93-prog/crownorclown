@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Crown or Clown — The Proving Ground 2026</title>
 <meta name="description" content="Three twelve-man leagues. $50 to enter. $600 per league, 100% paid to the top three. Eighteen weeks. Win the crown or wear the loser vest. The Proving Ground, 2026." />
+
+<!-- Link previews: what shows up when this gets texted, posted or DM'd -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Crown or Clown" />
+<meta property="og:url" content="https://crownorclown.com/" />
+<meta property="og:title" content="Crown or Clown — $50 in, $600 out, zero rake" />
+<meta property="og:description" content="Three 12-man fantasy leagues. Win your league, take $400. Finish dead last across all three and you wear the vest — in public, with photos. Two boards still open." />
+<meta property="og:image" content="https://crownorclown.com/og.jpg" />
+<meta property="og:image:secure_url" content="https://crownorclown.com/og.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Crown or Clown — the hi-vis loser vest reading &quot;Please be patient, I suck at fantasy football&quot;" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Crown or Clown — $50 in, $600 out, zero rake" />
+<meta name="twitter:description" content="Three 12-man fantasy leagues. Win your league, take $400. Finish dead last across all three and you wear the vest — in public, with photos." />
+<meta name="twitter:image" content="https://crownorclown.com/og.jpg" />
+<meta name="theme-color" content="#0A0D0A" />
+<link rel="canonical" href="https://crownorclown.com/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
@@ -503,6 +522,19 @@
     font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
     color:var(--gold);padding:14px 2px 10px;
   }
+  /* share / no-team hook */
+  .share{margin-top:30px;border-top:1px solid var(--line);padding-top:26px}
+  .share-k{
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--gold);
+  }
+  .share-note{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);margin-top:12px;min-height:14px;opacity:0;transition:opacity .2s;
+  }
+  .share-note.on{opacity:1}
+  button.btn{border:0;cursor:pointer;font-family:var(--mono)}
+
   @media(max-width:900px){ .chat-grid{grid-template-columns:1fr} }
   @media(prefers-reduced-motion:reduce){
     .hero-sweep{animation:none}
@@ -729,6 +761,16 @@
 
         <div class="dc-live" id="dc-live"><i></i><span id="dc-live-t">The room is open &mdash; come talk</span></div>
         <div class="chat-actions" id="dc-actions"></div>
+
+        <div class="share">
+          <div class="share-k">No team? You can still get loud</div>
+          <p class="lede2" style="margin-top:10px">You don't need a seat to talk. <b>#cheerleaders</b> is open to anyone &mdash; back a manager, heckle the field, and watch somebody earn that vest in real time.</p>
+          <div class="chat-actions">
+            <button class="btn btn-gold" id="shareBtn" type="button">Share this &rarr;</button>
+            <a class="btn btn-ghost" id="smsBtn" href="#">Text it to the group</a>
+          </div>
+          <div class="share-note" id="shareNote" aria-live="polite"></div>
+        </div>
 
         <div class="espn-chats">
           <div class="ec-head">Or use your league's own chat</div>
@@ -1473,6 +1515,43 @@
           if(liveT) liveT.innerHTML='The room is open &mdash; come talk';
         });
     }
+  })();
+
+  // ---- share: native sheet on phones, clipboard everywhere else ----
+  (function share(){
+    var btn=document.getElementById('shareBtn'),
+        sms=document.getElementById('smsBtn'),
+        note=document.getElementById('shareNote');
+    var URL_='https://crownorclown.com',
+        TXT='Crown or Clown — 3 fantasy leagues, $50 in, $600 out, 0% rake. '+
+            'Win your league for $400. Finish dead last across all three and you wear the vest, in public. Two boards still open.';
+
+    if(sms) sms.href='sms:?&body='+encodeURIComponent(TXT+' '+URL_);
+
+    function say(m){ if(!note) return; note.textContent=m; note.classList.add('on');
+      setTimeout(function(){ note.classList.remove('on'); },2600); }
+
+    if(!btn) return;
+    btn.addEventListener('click',function(){
+      if(navigator.share){
+        navigator.share({title:'Crown or Clown',text:TXT,url:URL_})
+          .then(function(){ say('Thanks for spreading it'); })
+          .catch(function(){});
+        return;
+      }
+      var done=function(){ say('Link copied — go paste it'); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(TXT+' '+URL_).then(done).catch(fallback);
+      } else fallback();
+      function fallback(){
+        try{
+          var ta=document.createElement('textarea');
+          ta.value=TXT+' '+URL_; ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta); done();
+        }catch(e){ say('Copy this: crownorclown.com'); }
+      }
+    });
   })();
 
   // Scroll reveal
