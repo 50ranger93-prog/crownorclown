@@ -523,6 +523,7 @@
   .nfl-sc{font-family:var(--mono);font-weight:700;font-size:21px;color:var(--gold);line-height:1;white-space:nowrap}
   .nfl-when{margin-left:auto;text-align:right;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim);line-height:1.8}
   .nfl-when b{color:var(--bone);display:block;letter-spacing:.13em;font-size:10.5px}
+  .nfl-when .nfl-where{display:block;color:var(--gold);opacity:.9}
   .nfl-bar{height:2px;background:rgba(236,228,208,.10);margin-top:9px;border-radius:2px;overflow:hidden}
   .nfl-bar i{display:block;height:100%;width:0;background:var(--gold);opacity:.65}
   .nfl-fade{animation:nflIn .45s ease-out both}
@@ -1524,8 +1525,12 @@
           return {ab:t.team.abbreviation||'', logo:t.team.logo||'', color:t.team.color||'2a2a2a',
                   rec:(((t.records||[])[0]||{}).summary)||'', score:t.score};
         }
+        // neutral site matters: nobody is the home team in Melbourne
+        var v=c.venue||{}, ad=v.address||{};
+        var where = ad.city ? (ad.city+(ad.state?(', '+ad.state):(ad.country?(', '+ad.country):''))) : '';
         out.push({date:e.date, state:st.state, detail:st.shortDetail||st.description||'',
                   tv:((((c.broadcasts||[])[0])||{}).names||[])[0]||'',
+                  neutral:!!c.neutralSite, where:where,
                   home:side(home), away:side(away)});
       });
       // anything actually being played jumps the queue — that's the part worth watching
@@ -1540,10 +1545,12 @@
       sec.classList.toggle('nfl-live',live);
       var mid = (live||done)
         ? '<div class="nfl-sc">'+hx(g.away.score)+' &ndash; '+hx(g.home.score)+'</div>'
-        : '<div class="nfl-at">at</div>';
+        : '<div class="nfl-at">'+(g.neutral?'vs':'at')+'</div>';
       var when = live ? '<b>'+hx(g.detail)+'</b>'+hx(g.tv)
                : done ? '<b>Final</b>'+hx(g.detail)
                : '<b>'+hx(mt(g.date))+'</b>'+hx(g.tv);
+      // only call out where it's being played when it isn't somebody's own stadium
+      if(g.neutral&&g.where) when+='<span class="nfl-where">'+hx(g.where)+'</span>';
       function team(t){
         return '<div class="nfl-team"><img src="'+hx(t.logo)+'" alt="" loading="lazy">'+
                '<div><div class="nfl-ab">'+hx(t.ab)+'</div><div class="nfl-rec">'+hx(t.rec)+'</div></div></div>';
