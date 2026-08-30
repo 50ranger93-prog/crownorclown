@@ -501,6 +501,8 @@
     color:var(--bone-dim);opacity:.5;margin-top:10px;transition:opacity .3s;
   }
   .kraken:hover + .throw-hint{opacity:.95;color:var(--gold)}
+  /* a football sails across the whole page every so often — never in the way */
+  .fly-fx{position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
   .stakes .n,.season-grid .sn{font-variant-numeric:tabular-nums}
 
   /* ladder: rungs snap in like a scoreboard */
@@ -644,6 +646,8 @@
 </style>
 </head>
 <body>
+
+<canvas class="fly-fx" id="flyFx" aria-hidden="true"></canvas>
 
 <div class="topbar">
   <div class="brand"><b>CROWN</b> <span class="slash">/</span> CLOWN</div>
@@ -1367,23 +1371,16 @@
   }
   tick();setInterval(tick,1000);
 
-  // ---- the throw: a football spirals across the hero on load, and on tap ----
+  // ---- footballs in flight: the hero throw, plus one that sails the whole page ----
   (function football(){
-    var cv=document.getElementById('heroFx'), hero=document.querySelector('.hero');
-    if(!cv||!hero||!cv.getContext) return;
     var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
     if(reduce){ var hint=document.getElementById('throwHint'); if(hint) hint.style.display='none'; return; }
 
-    var ctx=cv.getContext('2d'), W=0, H=0, dpr=Math.min(window.devicePixelRatio||1,2);
-    function size(){
-      W=hero.offsetWidth; H=hero.offsetHeight;
-      cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    size();
-    window.addEventListener('resize',size);
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+    function rand(a,b){ return a+Math.random()*(b-a); }
 
-    function ball(x,y,r,rot,alpha){
+    // one ball, drawn the same everywhere it shows up
+    function drawBall(ctx,x,y,r,rot,alpha){
       ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); ctx.rotate(rot);
       ctx.fillStyle='#6E3A1F';
       ctx.beginPath(); ctx.ellipse(0,0,r,r*0.6,0,0,Math.PI*2); ctx.fill();
@@ -1397,41 +1394,111 @@
       ctx.restore();
     }
 
-    var raf=null, start=0, DUR=2500, trail=[];
-    function frame(ts){
-      if(!start) start=ts;
-      var p=(ts-start)/DUR;
-      ctx.clearRect(0,0,W,H);
-      if(p>=1){ raf=null; return; }
-      // flat-ish arc, left to right, dipping under gravity
-      var x=-70+(W+150)*p;
-      var y=H*0.82-(H*0.55)*Math.sin(Math.PI*p)-H*0.06*p;
-      var r=Math.max(15,Math.min(30,W*0.022));
-      var rot=p*Math.PI*7;
-      trail.push({x:x,y:y,rot:rot});
-      if(trail.length>13) trail.shift();
-      for(var i=0;i<trail.length-1;i++){
-        var t=trail[i], a=(i/trail.length)*0.16;
-        ball(t.x,t.y,r*(0.72+0.28*i/trail.length),t.rot,a);
+    // a spiralling pass with a fading trail — arc, spin and speed all come from the caller
+    function pass(ctx,W,H,o){
+      var trail=[], start=0, raf=null;
+      function frame(ts){
+        if(!start) start=ts;
+        var p=(ts-start)/o.dur;
+        ctx.clearRect(0,0,W,H);
+        if(p>=1){ raf=null; o.done&&o.done(); return; }
+        var x=o.x0+(o.x1-o.x0)*p;
+        var y=o.y0+(o.y1-o.y0)*p-o.lift*Math.sin(Math.PI*p);
+        var rot=p*Math.PI*o.spin;
+        trail.push({x:x,y:y,rot:rot});
+        if(trail.length>13) trail.shift();
+        for(var i=0;i<trail.length-1;i++){
+          var t=trail[i];
+          drawBall(ctx,t.x,t.y,o.r*(0.72+0.28*i/trail.length),t.rot,(i/trail.length)*0.16*o.alpha);
+        }
+        var fade=p<0.06?p/0.06:(p>0.88?(1-p)/0.12:1);
+        drawBall(ctx,x,y,o.r,rot,fade*o.alpha);
+        raf=requestAnimationFrame(frame);
       }
-      var fade=p>0.88?(1-p)/0.12:1;
-      ball(x,y,r,rot,fade);
       raf=requestAnimationFrame(frame);
+      return function(){ if(raf){ cancelAnimationFrame(raf); raf=null; } ctx.clearRect(0,0,W,H); };
     }
-    function throwIt(){
-      if(raf) cancelAnimationFrame(raf);
-      start=0; trail=[]; size();
-      raf=requestAnimationFrame(frame);
-    }
-    setTimeout(throwIt,700);
-    var k=document.querySelector('.kraken');
-    if(k){
-      k.addEventListener('click',throwIt);
-      k.setAttribute('tabindex','0');
-      k.setAttribute('role','button');
-      k.setAttribute('aria-label','Throw the football');
-      k.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); throwIt(); } });
-    }
+
+    // --- the hero throw: on load, on tap, and quietly again every so often ---
+    (function heroThrow(){
+      var cv=document.getElementById('heroFx'), hero=document.querySelector('.hero');
+      if(!cv||!hero||!cv.getContext) return;
+      var ctx=cv.getContext('2d'), W=0, H=0, cancel=null, timer=null;
+      function size(){
+        W=hero.offsetWidth; H=hero.offsetHeight;
+        cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+      }
+      size();
+      window.addEventListener('resize',size);
+
+      function schedule(){ clearTimeout(timer); timer=setTimeout(idle,rand(16000,26000)); }
+      // don't animate to an empty room: skip if the tab is hidden or the hero is scrolled past
+      function idle(){
+        if(document.hidden||hero.getBoundingClientRect().bottom<60){ schedule(); return; }
+        throwIt();
+      }
+      function throwIt(){
+        if(cancel) cancel();
+        size();
+        var ltr=Math.random()<0.72;
+        cancel=pass(ctx,W,H,{
+          x0: ltr?-70:W+70, x1: ltr?W+80:-80,
+          y0: H*rand(0.74,0.90), y1: H*rand(0.68,0.86),
+          lift: H*rand(0.42,0.62),
+          r: Math.max(15,Math.min(30,W*0.022))*rand(0.85,1.15),
+          spin: rand(5,9)*(ltr?1:-1),
+          dur: rand(2100,2900), alpha:1,
+          done:function(){ cancel=null; }
+        });
+        schedule();
+      }
+      setTimeout(throwIt,700);
+      var k=document.querySelector('.kraken');
+      if(k){
+        k.addEventListener('click',throwIt);
+        k.setAttribute('tabindex','0');
+        k.setAttribute('role','button');
+        k.setAttribute('aria-label','Throw the football');
+        k.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); throwIt(); } });
+      }
+    })();
+
+    // --- and every so often one sails clean across the page, wherever you're reading ---
+    (function flyby(){
+      var cv=document.getElementById('flyFx');
+      if(!cv||!cv.getContext) return;
+      var ctx=cv.getContext('2d'), W=0, H=0, cancel=null, timer=null;
+      function size(){
+        W=window.innerWidth; H=window.innerHeight;
+        cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+      }
+      size();
+      window.addEventListener('resize',size);
+
+      function schedule(){ clearTimeout(timer); timer=setTimeout(go,rand(38000,72000)); }
+      function go(){
+        if(document.hidden){ schedule(); return; }
+        if(cancel) cancel();
+        size();
+        var ltr=Math.random()<0.5;
+        cancel=pass(ctx,W,H,{
+          x0: ltr?-90:W+90, x1: ltr?W+100:-100,
+          y0: H*rand(0.18,0.70), y1: H*rand(0.18,0.70),
+          lift: H*rand(0.10,0.24),
+          r: Math.max(13,Math.min(26,W*0.017)),
+          spin: rand(4,7)*(ltr?1:-1),
+          dur: rand(2600,3400), alpha:0.85,
+          done:function(){ cancel=null; }
+        });
+        schedule();
+      }
+      document.addEventListener('visibilitychange',function(){
+        if(document.hidden&&cancel){ cancel(); cancel=null; }
+      });
+      setTimeout(go,rand(9000,16000));
+    })();
   })();
 
   // ---- stat numbers count up when they scroll into view ----
