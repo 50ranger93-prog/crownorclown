@@ -1708,7 +1708,11 @@
       size();
       window.addEventListener('resize',size);
 
-      function schedule(){ clearTimeout(timer); timer=setTimeout(go,rand(38000,72000)); }
+      // on draft night the balls come thick and fast; the rest of the week they don't
+      function schedule(){
+        clearTimeout(timer);
+        timer=setTimeout(go, window.__cocDraftLive?rand(11000,19000):rand(38000,72000));
+      }
       function go(){
         if(document.hidden){ schedule(); return; }
         if(cancel) cancel();
@@ -1785,6 +1789,7 @@
     });
     if(!items.length) return;
     function tick(){
+      var anyLive=false;
       items.forEach(function(o){
         var left=o.at-Date.now();
         if(left>0){
@@ -1792,12 +1797,20 @@
               m=Math.floor(left%3600000/60000),s=Math.floor(left%60000/1000);
           o.el.className='lg-cd';
           o.el.innerHTML='Drafts in <b>'+(d>0?(d+'d '+h+'h '+m+'m'):(h+'h '+m+'m '+s+'s'))+'</b>';
+          o.wasPending=true;
         } else if(left>-4*3600000){
           o.el.className='lg-cd live'; o.el.innerHTML='<b>Drafting now</b>';
+          anyLive=true;
+          // the moment a board actually goes on the clock — once, and only for
+          // whoever is here to see it happen
+          if(o.wasPending&&!o.popped&&typeof popConfetti==='function'){ o.popped=true; popConfetti(); }
         } else {
           o.el.className='lg-cd'; o.el.innerHTML='<b>Drafted</b> · season underway';
         }
       });
+      // draft night: the page picks up the pace on its own
+      window.__cocDraftLive=anyLive;
+      document.documentElement.classList.toggle('draft-live',anyLive);
     }
     tick(); setInterval(tick,1000);
   })();
