@@ -503,6 +503,41 @@
   .kraken:hover + .throw-hint{opacity:.95;color:var(--gold)}
   /* a football sails across the whole page every so often — never in the way */
   .fly-fx{position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
+  /* ---- around the league: the real NFL week, straight from ESPN ---- */
+  .nflstrip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--ink-2);padding:24px 0}
+  .nfl-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+  .nfl-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--bone-dim);display:flex;align-items:center;gap:9px}
+  .nfl-dot{width:6px;height:6px;border-radius:50%;background:var(--bone-dim);display:inline-block;flex:none}
+  .nfl-live .nfl-dot{background:var(--clown);animation:nflPulse 1.6s ease-in-out infinite}
+  @keyframes nflPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(214,59,42,.5)}50%{opacity:.5;box-shadow:0 0 0 5px rgba(214,59,42,0)}}
+  .nfl-count{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--bone-dim);flex:none}
+  .nfl-stage{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#0A0D0A;min-height:88px}
+  .nfl-wash{position:absolute;inset:0;opacity:.28;transition:background 1s ease}
+  .nfl-mark{position:absolute;right:-22px;top:50%;transform:translateY(-50%);height:165%;opacity:.10;filter:grayscale(1) contrast(1.15);pointer-events:none}
+  .nfl-game{position:relative;z-index:2;display:flex;align-items:center;gap:16px;padding:15px 20px;flex-wrap:wrap}
+  .nfl-team{display:flex;align-items:center;gap:10px;min-width:0}
+  .nfl-team img{width:36px;height:36px;object-fit:contain;flex:none}
+  .nfl-ab{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--bone);letter-spacing:.06em}
+  .nfl-rec{font-family:var(--mono);font-size:9.5px;color:var(--bone-dim);letter-spacing:.1em}
+  .nfl-at{font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.16em}
+  .nfl-sc{font-family:var(--mono);font-weight:700;font-size:21px;color:var(--gold);line-height:1;white-space:nowrap}
+  .nfl-when{margin-left:auto;text-align:right;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--bone-dim);line-height:1.8}
+  .nfl-when b{color:var(--bone);display:block;letter-spacing:.13em;font-size:10.5px}
+  .nfl-bar{height:2px;background:rgba(236,228,208,.10);margin-top:9px;border-radius:2px;overflow:hidden}
+  .nfl-bar i{display:block;height:100%;width:0;background:var(--gold);opacity:.65}
+  .nfl-fade{animation:nflIn .45s ease-out both}
+  @keyframes nflIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (max-width:640px){
+    .nfl-when{margin-left:0;text-align:left;width:100%}
+    .nfl-mark{opacity:.07}
+    .nfl-game{gap:12px;padding:14px 15px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .nfl-fade{animation:none}
+    .nfl-live .nfl-dot{animation:none}
+    .nfl-bar{display:none}
+  }
+
   /* standings settle in like a stadium board, one row after another */
   .res-table td.pf{animation:scoreSettle .5s ease-out both}
   @keyframes scoreSettle{
@@ -731,6 +766,24 @@
     </div>
   </div>
 </header>
+
+<!-- AROUND THE LEAGUE — the real NFL week, pulled live from ESPN, rotates on its own.
+     Stays hidden unless the fetch actually returns games, so a bad day shows nothing
+     rather than an empty box. -->
+<section class="nflstrip" id="nflstrip" hidden>
+  <div class="wrap">
+    <div class="nfl-head">
+      <div class="nfl-eyebrow"><span class="nfl-dot"></span><span id="nfl-title">Around the league</span></div>
+      <div class="nfl-count" id="nfl-count"></div>
+    </div>
+    <div class="nfl-stage">
+      <div class="nfl-wash" id="nfl-wash"></div>
+      <img class="nfl-mark" id="nfl-mark" alt="" aria-hidden="true">
+      <div class="nfl-game" id="nfl-game" aria-live="polite"></div>
+    </div>
+    <div class="nfl-bar"><i id="nfl-prog"></i></div>
+  </div>
+</section>
 
 <!-- PURSE + LADDER -->
 <section class="purse sec-pad" id="purse">
@@ -1434,6 +1487,113 @@
     d.textContent=pad(days);h.textContent=pad(hrs);m.textContent=pad(min);s.textContent=pad(sec);
   }
   tick();setInterval(tick,1000);
+
+  // ---- around the league: the real NFL week from ESPN, rotating on its own ----
+  (function nflWeek(){
+    var sec=document.getElementById('nflstrip');
+    if(!sec||!window.fetch) return;
+    var stage=document.getElementById('nfl-game'), wash=document.getElementById('nfl-wash'),
+        mark=document.getElementById('nfl-mark'), title=document.getElementById('nfl-title'),
+        count=document.getElementById('nfl-count'), prog=document.getElementById('nfl-prog');
+    if(!stage) return;
+
+    var games=[], idx=0, timer=null, raf=null, paused=false, elapsed=0, last=0;
+    var HOLD=5200;
+
+    function hx(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+    // kickoffs read in Mountain time — that's the clock every rule on this site uses
+    function mt(iso){
+      try{
+        var dt=new Date(iso);
+        return dt.toLocaleString('en-US',{timeZone:'America/Denver',weekday:'short',month:'short',day:'numeric'})
+          +' · '+dt.toLocaleString('en-US',{timeZone:'America/Denver',hour:'numeric',minute:'2-digit'})+' MT';
+      }catch(e){ return ''; }
+    }
+
+    function parse(d){
+      var out=[];
+      (d.events||[]).forEach(function(e){
+        var c=(e.competitions||[])[0]; if(!c) return;
+        var home=null, away=null;
+        (c.competitors||[]).forEach(function(t){ if(t.homeAway==='home') home=t; else away=t; });
+        if(!home||!away||!home.team||!away.team) return;
+        var st=(c.status&&c.status.type)||{};
+        function side(t){
+          return {ab:t.team.abbreviation||'', logo:t.team.logo||'', color:t.team.color||'2a2a2a',
+                  rec:(((t.records||[])[0]||{}).summary)||'', score:t.score};
+        }
+        out.push({date:e.date, state:st.state, detail:st.shortDetail||st.description||'',
+                  tv:((((c.broadcasts||[])[0])||{}).names||[])[0]||'',
+                  home:side(home), away:side(away)});
+      });
+      // anything actually being played jumps the queue — that's the part worth watching
+      function rank(g){ return g.state==='in'?0:(g.state==='pre'?1:2); }
+      out.sort(function(a,b){ return rank(a)-rank(b) || (new Date(a.date)-new Date(b.date)); });
+      return out;
+    }
+
+    function show(i){
+      var g=games[i]; if(!g) return;
+      var live=g.state==='in', done=g.state==='post';
+      sec.classList.toggle('nfl-live',live);
+      var mid = (live||done)
+        ? '<div class="nfl-sc">'+hx(g.away.score)+' &ndash; '+hx(g.home.score)+'</div>'
+        : '<div class="nfl-at">at</div>';
+      var when = live ? '<b>'+hx(g.detail)+'</b>'+hx(g.tv)
+               : done ? '<b>Final</b>'+hx(g.detail)
+               : '<b>'+hx(mt(g.date))+'</b>'+hx(g.tv);
+      function team(t){
+        return '<div class="nfl-team"><img src="'+hx(t.logo)+'" alt="" loading="lazy">'+
+               '<div><div class="nfl-ab">'+hx(t.ab)+'</div><div class="nfl-rec">'+hx(t.rec)+'</div></div></div>';
+      }
+      stage.className='nfl-game';
+      void stage.offsetWidth;              // restart the fade on every card
+      stage.className='nfl-game nfl-fade';
+      stage.innerHTML=team(g.away)+mid+team(g.home)+'<div class="nfl-when">'+when+'</div>';
+      wash.style.background='linear-gradient(100deg,#'+g.away.color+' 0%,transparent 46%,transparent 54%,#'+g.home.color+' 100%)';
+      if(g.home.logo) mark.src=g.home.logo;
+      count.textContent=(i+1)+' / '+games.length;
+    }
+
+    function step(ts){
+      if(!last) last=ts;
+      var dt=ts-last; last=ts;
+      if(!paused && !document.hidden && games.length>1) elapsed+=dt;
+      if(prog) prog.style.width=Math.min(100,elapsed/HOLD*100)+'%';
+      if(elapsed>=HOLD){ elapsed=0; idx=(idx+1)%games.length; show(idx); }
+      raf=requestAnimationFrame(step);
+    }
+
+    // let people actually read one if they stop on it
+    sec.addEventListener('mouseenter',function(){ paused=true; });
+    sec.addEventListener('mouseleave',function(){ paused=false; });
+
+    function load(){
+      fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(d){
+          if(!d) return;
+          var g=parse(d);
+          if(!g.length) return;
+          games=g;
+          if(idx>=games.length) idx=0;
+          var wk=(d.week&&d.week.number)||'';
+          var anyLive=games.some(function(x){ return x.state==='in'; });
+          title.textContent=anyLive ? 'Around the league · live now'
+                                    : 'Around the league'+(wk?(' · Week '+wk):'');
+          sec.hidden=false;
+          show(idx);
+          if(!raf) raf=requestAnimationFrame(step);
+          // hammer it on game day, leave it alone the rest of the week
+          clearTimeout(timer);
+          timer=setTimeout(load, anyLive?45000:600000);
+        })
+        .catch(function(){ /* strip stays hidden — better nothing than a broken box */ });
+    }
+    load();
+  })();
 
   // ---- footballs in flight: the hero throw, plus one that sails the whole page ----
   (function football(){
