@@ -453,6 +453,39 @@
     .watch{grid-template-columns:1fr}
   }
 
+  /* ---- seats-left urgency bar ---- */
+  .seatbar{
+    position:sticky;top:53px;z-index:49;
+    background:linear-gradient(90deg,rgba(214,59,42,.16),rgba(231,178,60,.10));
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(10px);
+  }
+  .seatbar .wrap{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:10px 24px;flex-wrap:wrap;
+  }
+  .sb-left{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .sb-n{font-family:var(--disp);font-size:26px;color:var(--gold);line-height:1}
+  .sb-t{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--bone);
+  }
+  .sb-t b{color:var(--clown)}
+  .sb-right{display:flex;gap:9px;flex-wrap:wrap}
+  .sb-btn{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    padding:9px 13px;border-radius:2px;white-space:nowrap;
+    background:var(--gold);color:#0A0D0A;font-weight:700;transition:.15s ease;
+  }
+  .sb-btn:hover{background:var(--gold-bright);transform:translateY(-1px)}
+  .sb-btn.full{background:transparent;border:1px solid var(--line);color:var(--bone-dim);font-weight:400}
+  @media(max-width:640px){
+    .seatbar{position:static}
+    .seatbar .wrap{padding:10px 20px;gap:10px}
+    .sb-n{font-size:22px}
+    .sb-btn{flex:1;text-align:center;font-size:10px;padding:10px 8px}
+  }
+
   /* ---- hero football fx ---- */
   .hero-fx{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
   .hero-sweep{
@@ -615,6 +648,17 @@
 <div class="topbar">
   <div class="brand"><b>CROWN</b> <span class="slash">/</span> CLOWN</div>
   <a href="#leagues" class="nav-cta">Claim your seat</a>
+</div>
+
+<!-- SEATS LEFT — pushes both open boards, counts read live from ESPN -->
+<div class="seatbar" id="seatbar">
+  <div class="wrap">
+    <div class="sb-left">
+      <span class="sb-n" id="sb-n">17</span>
+      <span class="sb-t" id="sb-t">seats left · <b>entry closes Thu Sep 3, midnight</b></span>
+    </div>
+    <div class="sb-right" id="sb-right"></div>
+  </div>
 </div>
 
 <!-- HERO -->
@@ -1518,6 +1562,49 @@
           if(liveT) liveT.innerHTML='The room is open &mdash; come talk';
         });
     }
+  })();
+
+  // ---- seats bar: live counts, a pay button per open board ----
+  (function seatbar(){
+    var right=document.getElementById('sb-right'),
+        nEl=document.getElementById('sb-n'),
+        tEl=document.getElementById('sb-t');
+    if(!right) return;
+
+    function paint(counts){
+      var open=0, html='';
+      LEAGUES.forEach(function(l,i){
+        if(l.closed) return;                       // private board, not for sale
+        var taken=(counts&&counts[i]!=null)?counts[i]:(l.seatsTaken||0);
+        var left=Math.max(0,SEATS-taken);
+        open+=left;
+        var label=l.name.replace('The Expansion League','League').trim();
+        if(label==='League') label='League 1';
+        html += left>0 && l.leaguesafe
+          ? '<a class="sb-btn" href="'+esc(l.leaguesafe)+'" target="_blank" rel="noopener">'+
+            esc(label)+' &mdash; '+left+' left · pay '+money(ENTRY)+'</a>'
+          : '<span class="sb-btn full">'+esc(label)+' &mdash; full</span>';
+      });
+      right.innerHTML=html;
+      if(nEl) nEl.textContent=open;
+      if(tEl) tEl.innerHTML=(open===1?'seat left':'seats left')+
+        ' · <b>entry closes Thu Sep 3, midnight</b>';
+      if(open===0) document.getElementById('seatbar').style.display='none';
+    }
+
+    paint(null);
+    if(!window.fetch||!window.Promise) return;
+    var API='https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'+SEASON+'/segments/0/leagues/';
+    Promise.all(LEAGUES.map(function(l){
+      if(!l.espnId) return Promise.resolve(null);
+      return fetch(API+l.espnId+'?view=mTeam',{credentials:'omit',cache:'no-store'})
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(j){
+          return ((j&&j.teams)||[]).filter(function(t){
+            return t.owners && t.owners.length>0; }).length;
+        })
+        .catch(function(){ return null; });
+    })).then(paint);
   })();
 
   // ---- share: native sheet on phones, clipboard everywhere else ----
