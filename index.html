@@ -383,9 +383,12 @@
      Deliberately an overlay and not a restyle: the board stays legible and obviously
      still there, so reopening a seat is one config change and the public can see
      exactly what happened either way. */
-  .lg-card.full{position:relative;overflow:hidden;opacity:.9}
-  .lg-card.full:hover{transform:none}
-  .lg-card.full::after{
+  /* .stamped is driven by capacity, not by state — League 1 is a private board that
+     happens to be full, League 2 is a public board that filled. Both are at twelve, so
+     both get the stamp; the badge underneath still says Private vs Full. */
+  .lg-card.stamped{position:relative;overflow:hidden;opacity:.9}
+  .lg-card.stamped:hover{transform:none}
+  .lg-card.stamped::after{
     content:"FULL";
     position:absolute;top:50%;left:50%;
     transform:translate(-50%,-50%) rotate(-13deg);
@@ -396,9 +399,9 @@
     border-radius:10px;padding:10px 30px 4px;
     pointer-events:none;z-index:3;
   }
-  .lg-card.full .lg-bar i{background:linear-gradient(90deg,var(--clown),#E8664F)}
+  .lg-card.stamped .lg-bar i{background:linear-gradient(90deg,var(--clown),#E8664F)}
   @media (prefers-reduced-motion:no-preference){
-    .lg-card.full::after{animation:stampIn .45s cubic-bezier(.2,1.6,.4,1) both}
+    .lg-card.stamped::after{animation:stampIn .45s cubic-bezier(.2,1.6,.4,1) both}
   }
   @keyframes stampIn{
     from{opacity:0;transform:translate(-50%,-50%) rotate(-13deg) scale(1.7)}
@@ -1349,7 +1352,7 @@
   var LEAGUES = [
     // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
     // closed:true hides the pay button and shows `note` instead. Standings stay live.
-    { name:"The Expansion League",   draft:"Fri Sep 4 · 7 PM MT", draftAt:"2026-09-04T19:00:00-06:00", espnId:951407474,  leaguesafe:"",                                        seatsTaken:8, autoSeats:true, closed:true, note:"Private league · not open to public entry" },
+    { name:"The Expansion League",   draft:"Fri Sep 4 · 7 PM MT", draftAt:"2026-09-04T19:00:00-06:00", espnId:951407474,  leaguesafe:"",                                        seatsTaken:12, autoSeats:true, closed:true, committed:12, note:"Private league · not open to public entry" },
     // `committed` is the ONE number to keep current. ESPN only counts teams a manager has
     // actually clicked into, so anyone paid or committed but not yet claimed is invisible
     // to it and the board reads emptier than it really is. The seat meter takes whichever
@@ -1402,7 +1405,7 @@
       var espn = l.espnId
         ? '<a class="btn btn-ghost" href="'+espnLeagueUrl(l.espnId)+'" target="_blank" rel="noopener">'+(l.closed?'Follow it on ESPN':'View league on ESPN')+'</a>'
         : '<span class="pending">ESPN invite sent once you’re paid in</span>';
-      return '<div class="lg-card '+st.k+'">'+
+      return '<div class="lg-card '+st.k+(taken>=SEATS?' stamped':'')+'">'+
         '<div class="lg-top"><div class="lg-idx">0'+(i+1)+'</div>'+
           '<span class="lg-badge '+st.k+'">'+st.t+'</span></div>'+
         '<div class="lg-name">'+esc(l.name)+'</div>'+
@@ -1456,18 +1459,21 @@
             if(bar) bar.style.width=Math.round(taken/SEATS*100)+"%";
             if(num) num.textContent=taken+" of "+SEATS+" seats "+
               (l.closed?"filled":"spoken for");
+            // the private board keeps its Private badge but still earns a stamp when it
+            // hits twelve, so the state class is computed for every board, not just the
+            // public ones
+            var k = l.closed ? "closed"
+                  : taken>=SEATS ? "full"
+                  : taken>0 ? "filling" : "open";
+            card.className="lg-card "+k+(taken>=SEATS?" stamped":"");
             if(!l.closed){
               var badge=card.querySelector(".lg-badge");
-              var k = taken>=SEATS ? "full" : (taken>0 ? "filling" : "open");
               if(badge){
                 badge.textContent = k==="full" ? "Full"
                                   : k==="filling" ? ((SEATS-taken)+" seats left")
                                   : "Open";
                 badge.className="lg-badge "+k;
               }
-              // the card itself carries the state too, so a board that fills while the
-              // page is open goes red instead of keeping its gold "open" edge
-              card.className="lg-card "+k;
               if(k==="full"){
                 var payBtn=card.querySelector(".btn-pay");
                 if(payBtn){
