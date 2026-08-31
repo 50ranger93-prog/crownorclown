@@ -493,6 +493,64 @@
   }
   .ros-empty{padding:16px 14px;font-size:13.5px;color:var(--bone-dim)}
 
+  /* ---- gameday: the line, the weather, and who is out ---- */
+  .gameday{background:var(--ink)}
+  .gd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:24px}
+  .gd-card{border:1px solid var(--line);border-radius:4px;background:var(--ink-2);overflow:hidden}
+  .gd-card.soon{border-color:rgba(231,178,60,.55)}
+  .gd-top{
+    padding:12px 15px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  }
+  .gd-mu{font-weight:600;font-size:15px;color:var(--bone)}
+  .gd-kick{font-family:var(--mono);font-size:10.5px;color:var(--bone-dim);white-space:nowrap}
+  .gd-card.soon .gd-kick{color:var(--gold)}
+  .gd-line{display:flex;border-bottom:1px solid var(--line)}
+  .gd-line div{flex:1;padding:10px 15px;text-align:center}
+  .gd-line div + div{border-left:1px solid var(--line)}
+  .gd-k{
+    font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--bone-dim);display:block;
+  }
+  .gd-v{font-family:var(--mono);font-size:15px;color:var(--gold);margin-top:5px;display:block}
+  .gd-imp{
+    display:flex;justify-content:space-between;gap:10px;padding:9px 15px;
+    border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--bone-dim);
+  }
+  .gd-imp b{color:var(--bone)}
+  .gd-wx{
+    padding:9px 15px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--bone-dim);
+  }
+  .gd-wx.rough{color:#F0A79C}
+  .gd-out{padding:11px 15px}
+  .gd-out h5{
+    font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--clown);margin:0 0 8px;font-weight:600;
+  }
+  .gd-out h5.final{color:var(--gold)}
+  .gd-out ul{list-style:none;margin:0;padding:0}
+  .gd-out li{display:flex;gap:8px;padding:2px 0;font-size:12.5px;color:var(--bone-dim)}
+  .gd-out li .st{font-family:var(--mono);font-size:9.5px;flex:none;width:24px;color:var(--clown)}
+  .gd-out li .st.q{color:var(--bone-dim)}
+  .gd-out li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gd-none{font-size:12.5px;color:var(--bone-dim)}
+
+  /* ---- scoring audit: prove the board matches DraftKings without anyone checking ---- */
+  .audit{margin-top:34px;border:1px solid var(--line);border-radius:4px;background:var(--ink-2);padding:18px 20px}
+  .audit.clean{border-color:rgba(107,166,90,.45)}
+  .audit.flag{border-color:var(--clown);border-left-width:3px}
+  .audit h4{
+    font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+    margin:0 0 10px;font-weight:600;color:var(--bone-dim);
+  }
+  .audit.clean h4{color:#8fd07a}
+  .audit.flag h4{color:var(--clown)}
+  .audit p{font-size:13.5px;color:var(--bone-dim);margin:0;line-height:1.7}
+  .audit ul{margin:11px 0 0;padding-left:18px;font-size:13px;color:var(--bone-dim);line-height:1.8}
+  .audit b{color:var(--bone)}
+  .audit .fix{font-family:var(--mono);color:var(--gold)}
+
   /* ---- season mode: the site stops selling and starts reporting ---- */
   html.season .preseason-only{display:none !important}
   .season-only{display:none}
@@ -1008,6 +1066,21 @@
     <div class="watch rise" id="watch"></div>
     <div class="res-grid rise" id="res-grid"></div>
     <div class="pay-note rise" id="res-stamp" style="margin-top:22px"></div>
+  </div>
+</section>
+
+<!-- GAMEDAY — the line, the weather and the out list. Game level only, on purpose:
+     spread and total move a whole slate, props move one guy and turn this into a betting
+     site. Hidden until the season is actually on. -->
+<section class="sec-pad gameday" id="gameday" hidden>
+  <div class="wrap">
+    <div class="eyebrow rise">The slate · lines, weather, inactives</div>
+    <h2 class="disp rise" style="font-size:clamp(34px,6vw,64px);margin:14px 0 0">Gameday</h2>
+    <p class="res-note rise">The <b>spread</b> and the <b>total</b> for every game this week, straight off ESPN's DraftKings feed &mdash; and the <b>implied team totals</b> worked out from them, which is the closest thing there is to a projected score. Outdoor games carry the forecast. <b>No props, no player lines</b> &mdash; that's a different game and it isn't this one. The only player-level thing here is <b>who's out</b>.</p>
+
+    <div class="gd-grid rise" id="gd-grid"></div>
+    <div class="audit rise" id="audit" hidden></div>
+    <div class="pay-note rise" id="gd-stamp" style="margin-top:20px"></div>
   </div>
 </section>
 
@@ -2215,6 +2288,292 @@
 
     function run(){ Promise.all(LEAGUES.map(pull)).then(paint); }
     run(); setInterval(run,45000);
+  })();
+
+  // ---- gameday: the line, the weather, and who is out ----
+  // Everything here is game level on purpose. A spread and a total tell you how a whole
+  // offence is expected to be used, which is a lineup decision. A player prop tells you
+  // about one man and turns this into a sportsbook, which this isn't. The only player-level
+  // data on the page is the out list, because a guy who isn't playing is a lineup problem.
+  (function gameday(){
+    var sec  = document.getElementById('gameday'),
+        grid = document.getElementById('gd-grid'),
+        stamp= document.getElementById('gd-stamp');
+    if(!sec || !grid || !window.fetch) return;
+
+    var SB  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
+        SUM = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
+
+    var games = [], outs = {};   // outs: eventId -> {list:[{nm,st,ab}], q:Number}
+
+    function esc(s){
+      return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+    function kickLabel(iso){
+      var d = new Date(iso);
+      if(isNaN(d.getTime())) return '';
+      return d.toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'});
+    }
+
+    // The spread and the total are two ways of saying the same thing. Together they pin each
+    // side's expected points, which is the number that actually moves a start/sit.
+    function implied(ou, details, homeAb, awayAb){
+      if(!ou || !isFinite(ou)) return null;
+      var m = /([A-Za-z]{2,4})\s*(-?\d+(?:\.\d+)?)/.exec(details||'');
+      if(!m) return { home: ou/2, away: ou/2 };          // pick'em
+      var team = m[1].toUpperCase(), sp = parseFloat(m[2]);
+      if(!isFinite(sp) || sp === 0) return { home: ou/2, away: ou/2 };
+      var margin = Math.abs(sp),
+          hi = (ou + margin)/2,
+          lo = (ou - margin)/2,
+          named = (team === String(homeAb).toUpperCase()) ? 'home'
+                : (team === String(awayAb).toUpperCase()) ? 'away' : null;
+      if(!named) return { home: ou/2, away: ou/2 };
+      var favHome = (named === 'home') ? (sp < 0) : (sp > 0);
+      return favHome ? { home: hi, away: lo } : { home: lo, away: hi };
+    }
+
+    function readScoreboard(j){
+      var list = [];
+      (j && j.events || []).forEach(function(ev){
+        var c = (ev.competitions||[])[0]; if(!c) return;
+        var cs = c.competitors||[],
+            home = cs.filter(function(x){ return x.homeAway==='home'; })[0] || cs[0] || {},
+            away = cs.filter(function(x){ return x.homeAway==='away'; })[0] || cs[1] || {};
+        var hAb = (home.team&&home.team.abbreviation)||'', aAb = (away.team&&away.team.abbreviation)||'';
+
+        // ESPN hands back several books; take DraftKings when it's there, since that is the
+        // scoring this league runs on and it keeps one number in one place.
+        var odds = c.odds||[], pick = null;
+        for(var i=0;i<odds.length;i++){
+          var nm = String((odds[i].provider&&odds[i].provider.name)||'').toLowerCase();
+          if(nm.indexOf('draft')>-1){ pick = odds[i]; break; }
+        }
+        if(!pick) pick = odds[0]||null;
+
+        list.push({
+          id: ev.id,
+          home: hAb, away: aAb,
+          kick: ev.date,
+          state: (ev.status&&ev.status.type&&ev.status.type.state)||'pre',
+          detail: (ev.status&&ev.status.type&&ev.status.type.shortDetail)||'',
+          spread: pick ? (pick.details||'') : '',
+          total : pick && pick.overUnder!=null ? Number(pick.overUnder) : null,
+          book  : pick && pick.provider ? pick.provider.name : '',
+          indoor: !!(c.venue && c.venue.indoor),
+          wx    : ev.weather || null
+        });
+      });
+      return list;
+    }
+
+    function card(g){
+      var mins = (new Date(g.kick).getTime() - Date.now())/60000,
+          soon = g.state==='pre' && mins <= 90 && mins > -30,
+          live = g.state==='in';
+
+      var head = '<div class="gd-top">'+
+        '<span class="gd-mu">'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
+        '<span class="gd-kick">'+esc(live ? g.detail : kickLabel(g.kick))+'</span></div>';
+
+      var line = '<div class="gd-line">'+
+        '<div><span class="gd-k">Spread</span><span class="gd-v">'+esc(g.spread||'—')+'</span></div>'+
+        '<div><span class="gd-k">Total</span><span class="gd-v">'+(g.total!=null?g.total.toFixed(1):'—')+'</span></div></div>';
+
+      var imp = implied(g.total, g.spread, g.home, g.away), impRow = '';
+      if(imp){
+        impRow = '<div class="gd-imp">'+
+          '<span>'+esc(g.away)+' <b>'+imp.away.toFixed(1)+'</b></span>'+
+          '<span>implied</span>'+
+          '<span><b>'+imp.home.toFixed(1)+'</b> '+esc(g.home)+'</span></div>';
+      }
+
+      var wxRow;
+      if(g.indoor){
+        wxRow = '<div class="gd-wx">Indoors · weather is not a factor</div>';
+      } else if(g.wx){
+        var t = g.wx.temperature, d = g.wx.displayValue||'',
+            rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
+        wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+esc(d)+(t!=null?(' · '+t+'°'):'')+'</div>';
+      } else {
+        wxRow = '<div class="gd-wx">Forecast not posted yet</div>';
+      }
+
+      // Inactives land about 90 minutes before kickoff. Before that this is the injury
+      // report and it can still change; after it, it's final and it's the thing to trust.
+      var o = outs[g.id], outRow;
+      if(!o){
+        outRow = '<div class="gd-out"><div class="gd-none">Loading the out list…</div></div>';
+      } else if(!o.list.length){
+        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
+                 (soon?'Inactives · final':'Injury report')+'</h5>'+
+                 '<div class="gd-none">Nobody ruled out'+(o.q?(' · '+o.q+' questionable'):'')+'</div></div>';
+      } else {
+        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
+          (soon?'Inactives · final':'Ruled out')+'</h5><ul>'+
+          o.list.map(function(p){
+            return '<li><span class="st">'+esc(p.ab)+'</span><span class="nm">'+esc(p.nm)+'</span></li>';
+          }).join('')+'</ul>'+
+          (o.q?('<div class="gd-none" style="margin-top:7px">'+o.q+' more questionable</div>'):'')+
+          '</div>';
+      }
+
+      return '<div class="gd-card'+(soon?' soon':'')+'">'+head+line+impRow+wxRow+outRow+'</div>';
+    }
+
+    function paint(){
+      if(!games.length){
+        grid.innerHTML = '<div class="ros-empty">No games on the board right now.</div>';
+        return;
+      }
+      grid.innerHTML = games.map(card).join('');
+      var book = games.filter(function(g){ return g.book; })[0];
+      stamp.textContent = 'Lines' + (book ? (' via '+book) : '') +
+        ' · weather and inactives via ESPN · refreshed automatically · game lines only, no props';
+    }
+
+    // Fill the out lists behind the render so the lines show up straight away instead of
+    // waiting on sixteen more requests.
+    function loadOuts(){
+      games.forEach(function(g){
+        fetch(SUM + encodeURIComponent(g.id), {cache:'no-store'})
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(s){
+            if(!s) return;
+            var list = [], q = 0;
+            (s.injuries||[]).forEach(function(grp){
+              (grp.injuries||[]).forEach(function(x){
+                var st = String(x.status||''),
+                    ab = (x.type && x.type.abbreviation) || st.slice(0,1).toUpperCase(),
+                    nm = (x.athlete && x.athlete.displayName) || '';
+                if(!nm) return;
+                if(/^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st)){
+                  list.push({ nm:nm, st:st, ab:ab });
+                } else if(/questionable/i.test(st)){ q++; }
+              });
+            });
+            outs[g.id] = { list:list, q:q };
+            paint();
+          })
+          .catch(function(){ outs[g.id] = { list:[], q:0 }; });
+      });
+    }
+
+    function run(){
+      if(!document.documentElement.classList.contains('season')) return;
+      sec.hidden = false;
+      fetch(SB, {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(!j) return;
+          games = readScoreboard(j);
+          paint();
+          loadOuts();
+        })
+        .catch(function(){});
+    }
+
+    run();
+    setInterval(run, 300000);   // five minutes; inactives move, lines move, nothing moves faster
+  })();
+
+  // ---- scoring audit: prove the boards match DraftKings without anybody checking ----
+  // The leagues are set to DraftKings scoring. This recomputes every skill player's week from
+  // his raw box score using DraftKings' own rules and compares it to what ESPN actually
+  // awarded, so a settings drift gets caught here instead of in an argument in December.
+  (function dkAudit(){
+    var box = document.getElementById('audit');
+    if(!box || !window.fetch) return;
+
+    var API = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'+SEASON+'/segments/0/leagues/';
+
+    function n(map,k){ var v = map && map[k]; return (v==null||isNaN(v)) ? 0 : Number(v); }
+
+    // DraftKings NFL classic, offence only. Kicker and D/ST are ESPN's own settings and have
+    // no DraftKings equivalent, so auditing them against DraftKings would be meaningless.
+    function dkPoints(s){
+      var py=n(s,'3'), ptd=n(s,'4'), ints=n(s,'20'),
+          ry=n(s,'24'), rtd=n(s,'25'),
+          wy=n(s,'42'), wtd=n(s,'43'), rec=n(s,'53'),
+          fl=n(s,'72'), two=n(s,'19')+n(s,'26')+n(s,'44');
+      var p = py*0.04 + ptd*4 - ints
+            + ry*0.1 + rtd*6
+            + wy*0.1 + wtd*6 + rec
+            - fl + two*2;
+      if(py >= 300) p += 3;
+      if(ry >= 100) p += 3;
+      if(wy >= 100) p += 3;
+      return Math.round(p*100)/100;
+    }
+
+    function check(l){
+      return fetch(API + l.espnId + '?view=mRoster&view=mTeam', {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(!j) return null;
+          var wk = j.scoringPeriodId, bad = [], seen = 0;
+          (j.teams||[]).forEach(function(t){
+            var entries = (t.roster && t.roster.entries) || [];
+            entries.forEach(function(e){
+              var p = e.playerPoolEntry && e.playerPoolEntry.player; if(!p) return;
+              if([1,2,3,4].indexOf(p.defaultPositionId) === -1) return;   // QB RB WR TE only
+              var act = null;
+              (p.stats||[]).forEach(function(st){
+                if(st.statSourceId===0 && st.statSplitTypeId===1 && st.scoringPeriodId===wk) act = st;
+              });
+              if(!act || !act.stats || !Object.keys(act.stats).length) return;
+              seen++;
+              var espn = Math.round(Number(act.appliedTotal||0)*100)/100,
+                  dk   = dkPoints(act.stats);
+              if(Math.abs(espn - dk) >= 0.05){
+                bad.push({ name:p.fullName, team:(t.name||('Team '+t.id)), espn:espn, dk:dk });
+              }
+            });
+          });
+          return { league:l.name, wk:wk, seen:seen, bad:bad };
+        })
+        .catch(function(){ return null; });
+    }
+
+    function render(rows){
+      rows = rows.filter(Boolean);
+      var seen = rows.reduce(function(a,r){ return a + r.seen; }, 0),
+          bad  = rows.reduce(function(a,r){ return a.concat(r.bad.map(function(b){
+                   b.league = r.league; return b; })); }, []),
+          wk   = rows.length ? rows[0].wk : null;
+
+      if(!seen){ box.hidden = true; return; }
+      box.hidden = false;
+
+      if(!bad.length){
+        box.className = 'audit clean rise';
+        box.innerHTML = '<h4>Scoring audit · clean</h4><p><b>'+seen+' scored players</b> checked'+
+          (wk?(' for week '+wk):'')+' across all three boards. Every one of them recomputed from '+
+          'his raw box score under DraftKings rules matches what ESPN awarded, to the decimal. '+
+          'Nothing to fix.</p>';
+        return;
+      }
+
+      box.className = 'audit flag rise';
+      box.innerHTML = '<h4>Scoring audit · '+bad.length+' to look at</h4>'+
+        '<p>These recomputed under DraftKings rules to something other than what ESPN awarded. '+
+        'ESPN is what settles the league, so the number on the right is what a corrected line '+
+        'should read &mdash; check that board\'s scoring settings.</p><ul>'+
+        bad.slice(0,25).map(function(b){
+          return '<li><b>'+b.name+'</b> · '+b.league+' · ESPN '+b.espn.toFixed(2)+
+                 ' <span class="fix">→ DraftKings '+b.dk.toFixed(2)+'</span></li>';
+        }).join('')+'</ul>';
+    }
+
+    function run(){
+      if(!document.documentElement.classList.contains('season')) return;
+      Promise.all(LEAGUES.map(check)).then(render).catch(function(){});
+    }
+
+    run();
+    setInterval(run, 600000);
   })();
 
   // ---- season clock: once the drafting is done, count to the next kickoff instead ----
