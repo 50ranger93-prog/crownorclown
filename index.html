@@ -2280,6 +2280,8 @@
       if(everyBoardDone && !allDone){
         allDone=true;
         document.documentElement.classList.add('season');
+        if(typeof window.__cocGameday==='function') window.__cocGameday();
+        if(typeof window.__cocAudit==='function')   window.__cocAudit();
         if(!firstPass && typeof popConfetti==='function'){ setTimeout(popConfetti,900); }
       }
       if(typeof window.__cocRosters==='function') window.__cocRosters(complete>0);
@@ -2475,6 +2477,9 @@
         .catch(function(){});
     }
 
+    // The draft watcher flips season mode on. Let it say so, instead of the slate sitting
+    // blank for up to five minutes on the one night everybody is actually looking.
+    window.__cocGameday = run;
     run();
     setInterval(run, 300000);   // five minutes; inactives move, lines move, nothing moves faster
   })();
@@ -2572,6 +2577,7 @@
       Promise.all(LEAGUES.map(check)).then(render).catch(function(){});
     }
 
+    window.__cocAudit = run;
     run();
     setInterval(run, 600000);
   })();
