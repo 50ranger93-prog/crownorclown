@@ -1813,17 +1813,26 @@
         var ltr=Math.random()<0.72;
         // A phone hero is tall and narrow, so the desktop fractions launch the ball
         // down around the buttons — it enters and exits low even though the arc is fine.
-        // Narrow screens fly it through the upper-middle band with a shallower arc,
-        // which keeps the whole flight on screen instead of just the top of the curve.
-        var narrow = W < 700;
-        var yStart = narrow ? rand(0.54,0.66) : rand(0.74,0.90);
-        var yEnd   = narrow ? rand(0.48,0.62) : rand(0.68,0.86);
-        var arc    = narrow ? rand(0.24,0.34) : rand(0.42,0.62);
+        // The canvas is pinned to the hero, but on a phone the hero is taller than the
+        // screen — so "60% of hero height" can sit below the fold entirely, and tapping
+        // the headline throws a ball you never see. Aim at the slice of the hero that is
+        // actually in the viewport right now instead of at the hero as a whole.
+        var box = hero.getBoundingClientRect();
+        var vh  = window.innerHeight || document.documentElement.clientHeight || H;
+        var top = Math.max(0, -box.top);          // hero-local y of the first visible row
+        var bot = Math.min(H, vh - box.top);      // hero-local y of the last visible row
+        var band = bot - top;
+        // if almost nothing is on screen, fall back to the hero itself
+        if(!(band > 120)){ top = 0; band = H; }
+        // fly through the lower-middle of whatever is visible, arcing up through it
+        var mid = top + band * 0.62;
         cancel=pass(ctx,W,H,{
           x0: ltr?-70:W+70, x1: ltr?W+80:-80,
-          y0: H*yStart, y1: H*yEnd,
-          lift: H*arc,
-          r: Math.max(15,Math.min(30,W*0.022))*rand(0.85,1.15),
+          y0: mid + band*rand(0.08,0.18),
+          y1: mid + band*rand(0.02,0.12),
+          lift: band*rand(0.34,0.48),
+          // a little bigger on a phone — at 15px it was easy to miss against the type
+          r: Math.max(W<700?19:15, Math.min(30, W*0.022))*rand(0.85,1.15),
           spin: rand(5,9)*(ltr?1:-1),
           dur: rand(2100,2900), alpha:1,
           done:function(){ cancel=null; }
