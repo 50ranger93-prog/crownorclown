@@ -379,19 +379,31 @@
   }
   .lg-card:hover{transform:translateY(-3px);border-color:rgba(231,178,60,.55)}
   .lg-card.open{border-color:rgba(231,178,60,.4)}
-  /* A full board should read as closed at a glance, not just carry a small badge —
-     the whole point is that nobody starts a payment they can't finish. Red edge,
-     red meter, and the seat line struck through. */
-  .lg-card.full{
-    opacity:.82;border-color:rgba(214,59,42,.55);
-    background:linear-gradient(var(--ink-2),var(--ink-2)) padding-box,
-               linear-gradient(160deg,rgba(214,59,42,.18),transparent 60%) border-box;
+  /* A full board keeps the same card as the others and takes a stamp across it.
+     Deliberately an overlay and not a restyle: the board stays legible and obviously
+     still there, so reopening a seat is one config change and the public can see
+     exactly what happened either way. */
+  .lg-card.full{position:relative;overflow:hidden;opacity:.9}
+  .lg-card.full:hover{transform:none}
+  .lg-card.full::after{
+    content:"FULL";
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%) rotate(-13deg);
+    font-family:var(--disp);font-size:clamp(46px,6.4vw,76px);line-height:1;
+    letter-spacing:.08em;white-space:nowrap;
+    color:rgba(214,59,42,.34);
+    border:6px solid rgba(214,59,42,.30);
+    border-radius:10px;padding:10px 30px 4px;
+    pointer-events:none;z-index:3;
   }
-  .lg-card.full:hover{transform:none;border-color:rgba(214,59,42,.55)}
-  .lg-card.full .lg-idx{color:var(--clown)}
   .lg-card.full .lg-bar i{background:linear-gradient(90deg,var(--clown),#E8664F)}
-  .lg-card.full .lg-seatn{color:var(--clown);text-decoration:line-through;text-decoration-thickness:1px}
-  .lg-card.full .lg-facts .gold{color:var(--bone-dim)}
+  @media (prefers-reduced-motion:no-preference){
+    .lg-card.full::after{animation:stampIn .45s cubic-bezier(.2,1.6,.4,1) both}
+  }
+  @keyframes stampIn{
+    from{opacity:0;transform:translate(-50%,-50%) rotate(-13deg) scale(1.7)}
+    to{opacity:1;transform:translate(-50%,-50%) rotate(-13deg) scale(1)}
+  }
   .lg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .lg-idx{font-family:var(--disp);font-size:40px;line-height:.9;color:var(--gold)}
   .lg-badge{
