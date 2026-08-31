@@ -379,7 +379,19 @@
   }
   .lg-card:hover{transform:translateY(-3px);border-color:rgba(231,178,60,.55)}
   .lg-card.open{border-color:rgba(231,178,60,.4)}
-  .lg-card.full{opacity:.72}
+  /* A full board should read as closed at a glance, not just carry a small badge —
+     the whole point is that nobody starts a payment they can't finish. Red edge,
+     red meter, and the seat line struck through. */
+  .lg-card.full{
+    opacity:.82;border-color:rgba(214,59,42,.55);
+    background:linear-gradient(var(--ink-2),var(--ink-2)) padding-box,
+               linear-gradient(160deg,rgba(214,59,42,.18),transparent 60%) border-box;
+  }
+  .lg-card.full:hover{transform:none;border-color:rgba(214,59,42,.55)}
+  .lg-card.full .lg-idx{color:var(--clown)}
+  .lg-card.full .lg-bar i{background:linear-gradient(90deg,var(--clown),#E8664F)}
+  .lg-card.full .lg-seatn{color:var(--clown);text-decoration:line-through;text-decoration-thickness:1px}
+  .lg-card.full .lg-facts .gold{color:var(--bone-dim)}
   .lg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .lg-idx{font-family:var(--disp);font-size:40px;line-height:.9;color:var(--gold)}
   .lg-badge{
@@ -1326,9 +1338,20 @@
     // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
     // closed:true hides the pay button and shows `note` instead. Standings stay live.
     { name:"The Expansion League",   draft:"Fri Sep 4 · 7 PM MT", draftAt:"2026-09-04T19:00:00-06:00", espnId:951407474,  leaguesafe:"",                                        seatsTaken:8, autoSeats:true, closed:true, note:"Private league · not open to public entry" },
-    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", draftAt:"2026-09-05T18:00:00-06:00", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:1, autoSeats:true },
-    { name:"The Expansion League 3", draft:"Sun Sep 6 · 5 PM MT", draftAt:"2026-09-06T17:00:00-06:00", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:1, autoSeats:true }
+    // `committed` is the ONE number to keep current. ESPN only counts teams a manager has
+    // actually clicked into, so anyone paid or committed but not yet claimed is invisible
+    // to it and the board reads emptier than it really is. The seat meter takes whichever
+    // is higher — ESPN's count or this. Set it to 12 and the board shows Full, the
+    // LeagueSafe button disappears, and it stops being counted as open anywhere on the page.
+    { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", draftAt:"2026-09-05T18:00:00-06:00", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:12, autoSeats:true, committed:12 },
+    { name:"The Expansion League 3", draft:"Sun Sep 6 · 5 PM MT", draftAt:"2026-09-06T17:00:00-06:00", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:3,  autoSeats:true, committed:3  }
   ];
+
+  // seats actually spoken for: ESPN's claimed count, floored by what we know is committed
+  function seatsHeld(l, espnCount){
+    var n = Math.max(espnCount||0, l.committed||0);
+    return Math.max(0, Math.min(SEATS, n));
+  }
 
   /* Discord — fill these two in once the server exists, then it all switches on.
        serverId : Discord → Server Settings → Widget → tick "Enable Server Widget",
@@ -1352,7 +1375,7 @@
     var grid=document.getElementById('lg-grid');
     if(!grid) return;
     grid.innerHTML=LEAGUES.map(function(l,i){
-      var taken=Math.max(0,Math.min(SEATS,l.seatsTaken||0));
+      var taken=seatsHeld(l,l.seatsTaken||0);
       var st = l.closed  ? {k:'closed',t:'Private'}
              : taken>=SEATS ? {k:'full',t:'Full'}
              : taken>0      ? {k:'filling',t:(SEATS-taken)+' seats left'}
@@ -1380,7 +1403,8 @@
           '<div><span>Rake</span><span>0%</span></div>'+
         '</div>'+
         '<div class="lg-seats"><div class="lg-bar"><i style="width:'+Math.round(taken/SEATS*100)+'%"></i></div>'+
-          '<div class="lg-seatn">'+taken+' of '+SEATS+' seats '+(l.closed?'filled':'paid in')+'</div></div>'+
+          '<div class="lg-seatn">'+taken+' of '+SEATS+' seats '+
+            (l.closed?'filled':'spoken for')+'</div></div>'+
         '<div class="lg-cd" data-cd="'+i+'"></div>'+
         '<div class="lg-actions">'+pay+espn+'</div>'+
       '</div>';
@@ -1408,20 +1432,38 @@
           .then(function(j){
             var teams=(j&&j.teams)||[];
             if(!teams.length) return;
-            var taken=Math.max(0,Math.min(SEATS,teams.filter(function(t){
+            var claimed=teams.filter(function(t){
               return t.owners && t.owners.length>0;
-            }).length));
+            }).length;
+            // floored by `committed`, or the poll would repaint the board emptier a
+            // minute after load — ESPN can't see anyone who hasn't claimed their team
+            var taken=seatsHeld(l,claimed);
             var card=cards[i];
             var bar=card.querySelector(".lg-bar > i");
             var num=card.querySelector(".lg-seatn");
             if(bar) bar.style.width=Math.round(taken/SEATS*100)+"%";
-            if(num) num.textContent=taken+" of "+SEATS+" seats "+(l.closed?"filled":"paid in");
+            if(num) num.textContent=taken+" of "+SEATS+" seats "+
+              (l.closed?"filled":"spoken for");
             if(!l.closed){
               var badge=card.querySelector(".lg-badge");
+              var k = taken>=SEATS ? "full" : (taken>0 ? "filling" : "open");
               if(badge){
-                if(taken>=SEATS){ badge.textContent="Full"; badge.className="lg-badge full"; }
-                else if(taken>0){ badge.textContent=(SEATS-taken)+" seats left"; badge.className="lg-badge filling"; }
-                else { badge.textContent="Open"; badge.className="lg-badge open"; }
+                badge.textContent = k==="full" ? "Full"
+                                  : k==="filling" ? ((SEATS-taken)+" seats left")
+                                  : "Open";
+                badge.className="lg-badge "+k;
+              }
+              // the card itself carries the state too, so a board that fills while the
+              // page is open goes red instead of keeping its gold "open" edge
+              card.className="lg-card "+k;
+              if(k==="full"){
+                var payBtn=card.querySelector(".btn-pay");
+                if(payBtn){
+                  var stop=document.createElement("span");
+                  stop.className="pending";
+                  stop.textContent="This league is full";
+                  payBtn.parentNode.replaceChild(stop,payBtn);
+                }
               }
             }
           })
@@ -2331,7 +2373,7 @@
       var open=0, html='';
       LEAGUES.forEach(function(l,i){
         if(l.closed) return;                       // private board, not for sale
-        var taken=(counts&&counts[i]!=null)?counts[i]:(l.seatsTaken||0);
+        var taken=seatsHeld(l,(counts&&counts[i]!=null)?counts[i]:(l.seatsTaken||0));
         var left=Math.max(0,SEATS-taken);
         open+=left;
         var label=l.name.replace('The Expansion League','League').trim();
