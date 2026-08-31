@@ -596,6 +596,39 @@
     animation:sweep 11s ease-in-out infinite;
   }
   @media (prefers-reduced-motion:reduce){ .hero-sweep{animation:none} }
+
+  /* ---- the catch (season mode only) ---- */
+  .catch-pop{position:absolute;z-index:3;pointer-events:none;transform:translate(-50%,-50%)}
+  .catch-ring{
+    position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;
+    border:3px solid var(--gold);border-radius:50%;
+    animation:catchRing .62s cubic-bezier(.16,.9,.3,1) forwards;
+  }
+  .catch-name{
+    position:absolute;left:50%;top:26px;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--bone-dim);white-space:nowrap;text-align:center;
+    animation:catchName 2.6s ease-out forwards;
+  }
+  .catch-name b{
+    display:block;margin-top:5px;font-family:var(--disp);font-size:19px;
+    letter-spacing:.03em;color:var(--gold);font-weight:400;
+  }
+  @keyframes catchRing{
+    0%{transform:scale(.35);opacity:0}
+    35%{opacity:1}
+    100%{transform:scale(3.6);opacity:0}
+  }
+  @keyframes catchName{
+    0%{opacity:0;transform:translate(-50%,7px)}
+    14%{opacity:1;transform:translate(-50%,0)}
+    76%{opacity:1;transform:translate(-50%,0)}
+    100%{opacity:0;transform:translate(-50%,-5px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .catch-ring{display:none}
+    .catch-name{animation:none;opacity:1}
+  }
   @keyframes sweep{0%,100%{transform:translateX(-26%)}50%{transform:translateX(26%)}}
   .hero .wrap{z-index:2}
   .kraken{cursor:pointer}
@@ -1825,7 +1858,7 @@
 
     // a spiralling pass with a fading trail — arc, spin and speed all come from the caller
     function pass(ctx,W,H,o){
-      var trail=[], start=0, raf=null;
+      var trail=[], start=0, raf=null, caught=false;
       function frame(ts){
         if(!start) start=ts;
         var p=(ts-start)/o.dur;
@@ -1834,18 +1867,85 @@
         var x=o.x0+(o.x1-o.x0)*p;
         var y=o.y0+(o.y1-o.y0)*p-o.lift*Math.sin(Math.PI*p);
         var rot=p*Math.PI*o.spin;
+
+        // in season the pass is completed rather than sailing off the page: the ball
+        // stops dead at the catch point, hands off to onCatch, and the loop ends there
+        if(o.catchAt && p>=o.catchAt){
+          if(!caught){
+            caught=true;
+            drawBall(ctx,x,y,o.r,rot,o.alpha);
+            o.onCatch&&o.onCatch(x,y);
+          }
+          raf=null; o.done&&o.done(); return;
+        }
+
         trail.push({x:x,y:y,rot:rot});
         if(trail.length>13) trail.shift();
         for(var i=0;i<trail.length-1;i++){
           var t=trail[i];
           drawBall(ctx,t.x,t.y,o.r*(0.72+0.28*i/trail.length),t.rot,(i/trail.length)*0.16*o.alpha);
         }
-        var fade=p<0.06?p/0.06:(p>0.88?(1-p)/0.12:1);
+        // a completed pass shouldn't fade out on approach — it's caught at full opacity
+        var fade = p<0.06 ? p/0.06
+                 : (o.catchAt ? 1 : (p>0.88?(1-p)/0.12:1));
         drawBall(ctx,x,y,o.r,rot,fade*o.alpha);
         raf=requestAnimationFrame(frame);
       }
       raf=requestAnimationFrame(frame);
       return function(){ if(raf){ cancelAnimationFrame(raf); raf=null; } ctx.clearRect(0,0,W,H); };
+    }
+
+    // --- who catches it: the NFL's actual season receiving leader ---
+    // ESPN's core leaders endpoint 404s until games have been played, and the athlete
+    // name lives behind a second $ref (served over http, which has to be upgraded or an
+    // https page blocks it as mixed content). Both are cached for a day so a tap on the
+    // headline never waits on the network.
+    var CATCHER = { name:'Puka Nacua', team:'LAR', yards:null, live:false };
+    (function seasonStar(){
+      if(!window.fetch) return;
+      var KEY='coc-catcher-'+SEASON;
+      try{
+        var hit=JSON.parse(localStorage.getItem(KEY)||'null');
+        if(hit && hit.at && (Date.now()-hit.at) < 864e5){ CATCHER=hit.v; return; }
+      }catch(e){}
+      var base='https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/'+SEASON+'/types/2/leaders';
+      fetch(base,{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){
+          if(!j||!j.categories) return null;
+          var cat=j.categories.filter(function(c){ return c.name==='receivingYards'; })[0];
+          var top=cat&&(cat.leaders||[])[0];
+          if(!top||!top.athlete||!top.athlete.$ref) return null;
+          var ref=String(top.athlete.$ref).replace(/^http:/,'https:');   // no mixed content
+          return fetch(ref,{cache:'no-store'})
+            .then(function(r){ return r.ok?r.json():null; })
+            .then(function(a){
+              if(!a) return null;
+              return { name:a.displayName||a.fullName, team:(a.team&&a.team.abbreviation)||'',
+                       yards:top.value||null, live:true };
+            });
+        })
+        .then(function(v){
+          if(!v||!v.name) return;
+          CATCHER=v;
+          try{ localStorage.setItem(KEY,JSON.stringify({at:Date.now(),v:v})); }catch(e){}
+        })
+        .catch(function(){});
+    })();
+
+    // the catch: a burst at the ball, then the receiver's name settles in under it
+    function completion(hero,x,y,r){
+      var wrap=document.createElement('div');
+      wrap.className='catch-pop';
+      wrap.setAttribute('aria-hidden','true');
+      wrap.style.left=x+'px'; wrap.style.top=y+'px';
+      var yd = CATCHER.live && CATCHER.yards ? (' · '+CATCHER.yards+' yds') : '';
+      wrap.innerHTML='<span class="catch-ring"></span>'+
+        '<span class="catch-name">CAUGHT<b>'+
+        String(CATCHER.name).replace(/[&<>"']/g,'')+
+        (CATCHER.team?(' · '+CATCHER.team):'')+yd+'</b></span>';
+      hero.appendChild(wrap);
+      setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); },2600);
     }
 
     // --- the hero throw: on load, on tap, and quietly again every so often ---
@@ -1886,6 +1986,7 @@
         if(!(band > 120)){ top = 0; band = H; }
         // fly through the lower-middle of whatever is visible, arcing up through it
         var mid = top + band * 0.62;
+        var inSeason = document.documentElement.classList.contains('season');
         cancel=pass(ctx,W,H,{
           x0: ltr?-70:W+70, x1: ltr?W+80:-80,
           y0: mid + band*rand(0.08,0.18),
@@ -1895,6 +1996,10 @@
           r: Math.max(W<700?19:15, Math.min(30, W*0.022))*rand(0.85,1.15),
           spin: rand(5,9)*(ltr?1:-1),
           dur: rand(2100,2900), alpha:1,
+          // once every board has drafted the page is reporting a season rather than
+          // selling one, so the pass gets completed instead of sailing off the edge
+          catchAt: inSeason ? rand(0.62,0.74) : 0,
+          onCatch: inSeason ? function(cx,cy){ completion(hero,cx,cy); } : null,
           done:function(){ cancel=null; }
         });
         schedule();
