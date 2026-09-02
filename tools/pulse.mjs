@@ -218,25 +218,39 @@ async function hottake() {
 
 // ── wiring ───────────────────────────────────────────────────────────────────
 
+// The two bots the server already knows by name. A webhook can borrow a name and face per
+// message, which is how these get faces at all - a real bot's avatar belongs to whoever owns
+// the bot, and Carl-bot gates it behind Premium.
+//
+// Chip helps you on gameday; Duece deals in numbers. Splitting the beats that way means the
+// name on a post already tells you whether it needs action or is just the story of the week.
+const CHIP  = { username: "Chip",  avatar_url: `${SITE}/img/chip.png` };
+const DUECE = { username: "Duece", avatar_url: `${SITE}/img/duece.png` };
+
 const BEATS = {
-  slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL" },
-  inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL" },
-  injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL" },
-  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST" },
-  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE" },
-  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE" },
+  slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
+  inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
+  injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
+  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
+  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
+  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
 };
 
-async function post(hookEnv, text) {
+async function post(hookEnv, text, as) {
   const url = process.env[hookEnv];
   if (!url) { console.log(`  (no ${hookEnv} set — not posted)`); return; }
   const r = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    // allowed_mentions empty: these post on a schedule, and a schedule should never ping anyone.
-    body: JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [] } }),
+    body: JSON.stringify({
+      content: text.slice(0, 1900),
+      username: as.username,
+      avatar_url: as.avatar_url,
+      // allowed_mentions empty: these post on a schedule, and a schedule should never ping anyone.
+      allowed_mentions: { parse: [] },
+    }),
   });
-  console.log(r.ok ? "  posted" : `  post failed: HTTP ${r.status}`);
+  console.log(r.ok ? `  posted as ${as.username}` : `  post failed: HTTP ${r.status}`);
 }
 
 // Feb–Jul there are no games and nothing truthful to say.
@@ -252,6 +266,6 @@ for (const name of which) {
   console.log(`\n=== ${name} ===`);
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say"); continue; }
-  console.log(text);
-  if (!DRY) await post(beat.hook, text);
+  console.log(`(as ${beat.as.username})\n${text}`);
+  if (!DRY) await post(beat.hook, text, beat.as);
 }
