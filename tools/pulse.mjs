@@ -224,8 +224,12 @@ async function hottake() {
 //
 // Chip helps you on gameday; Duece deals in numbers. Splitting the beats that way means the
 // name on a post already tells you whether it needs action or is just the story of the week.
-const CHIP  = { username: "Chip",  avatar_url: `${SITE}/img/chip.png` };
-const DUECE = { username: "Duece", avatar_url: `${SITE}/img/duece.png` };
+// Pinned to the www host on purpose: the bare domain 308s to www, and Discord fetches an
+// avatar_url once and caches whatever it gets. Handing it the final URL removes the redirect
+// as something that could ever quietly cost us the face.
+const AVATARS = "https://www.crownorclown.com/img";
+const CHIP  = { username: "Chip",  avatar_url: `${AVATARS}/chip.png` };
+const DUECE = { username: "Duece", avatar_url: `${AVATARS}/duece.png` };
 
 const BEATS = {
   slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
