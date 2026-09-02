@@ -1,0 +1,68 @@
+name: Channel pulse
+
+# Keeps the Discord moving on its own. Each beat runs on its own clock and writes to one
+# channel; a beat with nothing true to say posts nothing, so quiet weeks stay quiet instead of
+# filling up with filler.
+#
+# Times are UTC. Mountain is UTC-6 in season (MDT).
+
+on:
+  schedule:
+    - cron: '0 15 * * 0'   # Sun 09:00 MT — the slate, before anyone sets a lineup
+    - cron: '15 17 * * 0'  # Sun 11:15 MT — inactives, ~90 min before the 1pm ET kicks
+    - cron: '0 16 * * 2'   # Tue 10:00 MT — crown and vest for the week just settled
+    - cron: '0 16 * * 3'   # Wed 10:00 MT — first injury designations of the week
+    - cron: '0 16 * * 4'   # Thu 10:00 MT — FAAB check
+    - cron: '0 16 * * 5'   # Fri 10:00 MT — injuries again (Friday is when OUT gets real) + hot take
+  workflow_dispatch:
+    inputs:
+      beat:
+        description: 'Beat to run (slate, inactives, injuries, crownvest, faab, hottake, or all)'
+        required: false
+        default: 'all'
+      dry:
+        description: 'Print without posting'
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  pulse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Which beats fire depends on which cron woke us. On a manual run, do what was asked.
+      - name: Decide beats
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            '0 15 * * 0')  echo "beats=slate" >> $GITHUB_OUTPUT ;;
+            '15 17 * * 0') echo "beats=inactives" >> $GITHUB_OUTPUT ;;
+            '0 16 * * 2')  echo "beats=crownvest" >> $GITHUB_OUTPUT ;;
+            '0 16 * * 3')  echo "beats=injuries" >> $GITHUB_OUTPUT ;;
+            '0 16 * * 4')  echo "beats=faab" >> $GITHUB_OUTPUT ;;
+            '0 16 * * 5')  echo "beats=injuries hottake" >> $GITHUB_OUTPUT ;;
+            *)             echo "beats=${{ github.event.inputs.beat || 'all' }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Run pulse
+        env:
+          PULSE_WEBHOOK_GENERAL:   ${{ secrets.PULSE_WEBHOOK_GENERAL }}
+          PULSE_WEBHOOK_CROWNVEST: ${{ secrets.PULSE_WEBHOOK_CROWNVEST }}
+          PULSE_WEBHOOK_TRADE:     ${{ secrets.PULSE_WEBHOOK_TRADE }}
+          PULSE_WEBHOOK_HOTTAKE:   ${{ secrets.PULSE_WEBHOOK_HOTTAKE }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: |
+          FLAG=""
+          if [ "$DRY" = "true" ]; then FLAG="--dry"; fi
+          for b in ${{ steps.pick.outputs.beats }}; do
+            if [ "$b" = "all" ]; then
+              node tools/pulse.mjs --all $FLAG
+            else
+              node tools/pulse.mjs --beat "$b" $FLAG
+            fi
+          done
