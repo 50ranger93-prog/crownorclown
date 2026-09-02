@@ -887,7 +887,52 @@
     .count .u-n{font-size:22px}
     .laces{padding:6px 0 0}
     .laces svg{width:78px}
+    .rt-call{font-size:34px}
+    .rt-hud{padding:16px}
   }
+
+  /* ---- THE ROUTE: tap-timed catch sequence ---------------------------------
+     Five calls, each window tighter than the last. The whole thing is one
+     button so a thumb on a phone and a keyboard both hit the same target. */
+  .route .wrap{position:relative;z-index:1}
+  .route-note{color:var(--bone-dim);max-width:52ch;margin:14px 0 26px}
+  .rt-stage{position:relative;aspect-ratio:16/9;border:1px solid var(--line);
+    border-radius:4px;overflow:hidden;background:var(--ink-2)}
+  .rt-stage img{width:100%;height:100%;object-fit:cover;display:block;
+    transition:opacity .18s ease}
+  .rt-stage.swap img{opacity:.35}
+  /* Keeps the call and the track legible over a bright stadium light. */
+  .rt-veil{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to top,rgba(6,8,6,.92) 0%,rgba(6,8,6,.45) 38%,rgba(6,8,6,0) 68%)}
+  .rt-hud{position:absolute;left:0;right:0;bottom:0;padding:22px 26px;pointer-events:none}
+  .rt-call{font-family:var(--disp);text-transform:uppercase;letter-spacing:.03em;
+    font-size:clamp(30px,5.2vw,54px);line-height:1;color:var(--bone)}
+  .rt-call.good{color:var(--gold-bright)}
+  .rt-call.bad{color:var(--clown)}
+  .rt-track{position:relative;height:12px;margin:14px 0 10px;border-radius:999px;
+    background:rgba(236,228,208,.14);overflow:hidden}
+  .rt-track i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,
+    rgba(231,178,60,.55),var(--gold-bright),rgba(231,178,60,.55));border-radius:999px}
+  .rt-track b{position:absolute;top:-3px;width:4px;height:18px;border-radius:2px;
+    background:var(--bone);box-shadow:0 0 0 1px rgba(6,8,6,.7)}
+  .rt-hint{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--bone-dim)}
+  .rt-hit{position:absolute;inset:0;width:100%;border:0;background:transparent;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .rt-hit:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+  .rt-foot{display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+    justify-content:space-between;margin-top:18px}
+  .rt-score{font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--bone-dim)}
+  .rt-again{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;padding:12px 20px;border-radius:2px;cursor:pointer;
+    color:var(--ink);background:var(--gold);border:0}
+  .rt-again:hover{background:var(--gold-bright)}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  /* Without motion the sweep is the game, so slow it right down and widen the
+     window rather than removing the thing being played. */
+  @media (prefers-reduced-motion:reduce){ .rt-stage img{transition:none} }
 </style>
 </head>
 <body>
@@ -1333,6 +1378,35 @@
     </g>
   </svg>
 </div>
+
+<!-- THE ROUTE — five timed calls from the snap to the pylon. Playable on a phone with
+     one thumb; the whole frame is the button. -->
+<section class="sec-pad route" id="route">
+  <div class="wrap">
+    <div class="eyebrow rise">Five calls · one thumb</div>
+    <h2 class="disp rise" style="font-size:clamp(38px,7vw,84px);margin:10px 0 0">Go get it</h2>
+    <p class="route-note rise">Ball's in the air. Tap when the marker crosses the gold — reach,
+      secure, cut, stiff arm, dive. Miss one and you're watching it bounce.</p>
+
+    <div class="rt-stage rise" id="rt-stage">
+      <img id="rt-img" src="img/catch1.jpg" alt="" width="900" height="502">
+      <div class="rt-veil"></div>
+      <div class="rt-hud">
+        <div class="rt-call" id="rt-call">Reach</div>
+        <div class="rt-track"><i id="rt-zone"></i><b id="rt-mark"></b></div>
+        <div class="rt-hint" id="rt-hint">Tap · or press space</div>
+      </div>
+      <button class="rt-hit" id="rt-hit" type="button" aria-describedby="rt-call">
+        <span class="sr-only">Make the play</span>
+      </button>
+    </div>
+
+    <div class="rt-foot">
+      <div class="rt-score" id="rt-score" aria-live="polite">Best: none yet</div>
+      <button class="rt-again" id="rt-again" type="button" hidden>Run it again</button>
+    </div>
+  </div>
+</section>
 
 <!-- SEASON -->
 <section class="sec-pad gridiron-sec">
@@ -2937,6 +3011,124 @@
         }catch(e){ say('Copy this: crownorclown.com'); }
       }
     });
+  })();
+
+  // ---- the route: five timed calls, snap to pylon ----
+  (function route(){
+    var stage=document.getElementById('rt-stage');
+    if(!stage) return;
+    var img=document.getElementById('rt-img'), call=document.getElementById('rt-call'),
+        zone=document.getElementById('rt-zone'), mark=document.getElementById('rt-mark'),
+        hint=document.getElementById('rt-hint'), hit=document.getElementById('rt-hit'),
+        score=document.getElementById('rt-score'), again=document.getElementById('rt-again');
+
+    // Each call is tighter and quicker than the one before it, so the dive is the hard one.
+    var STAGES=[
+      {img:'catch1', call:'Reach',     w:.40, ms:1500, fail:'drop'},
+      {img:'catch2', call:'Secure',    w:.33, ms:1320, fail:'drop'},
+      {img:'catch3', call:'Cut',       w:.29, ms:1160, fail:'tackled'},
+      {img:'catch4', call:'Stiff arm', w:.25, ms:1020, fail:'tackled'},
+      {img:'catch5', call:'Dive',      w:.21, ms:900,  fail:'tackled'}
+    ];
+
+    // Reduced motion doesn't mean no game — it means a sweep slow enough to read.
+    var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    // Warm the cache so a hit never lands on a blank frame.
+    ['catch2','catch3','catch4','catch5','catch6','drop','tackled'].forEach(function(n){
+      var p=new Image(); p.src='img/'+n+'.jpg';
+    });
+
+    var i=0, centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, over=false;
+    var best=0;
+    try{ best=parseInt(localStorage.getItem('coc-route-best')||'0',10)||0; }catch(e){}
+
+    function showBest(){
+      score.textContent = best>=STAGES.length ? 'Best: the whole route — touchdown'
+        : best>0 ? 'Best: '+best+' of '+STAGES.length : 'Best: none yet';
+    }
+
+    function swap(name){
+      stage.classList.add('swap');
+      var n=new Image();
+      n.onload=function(){ img.src=n.src; stage.classList.remove('swap'); };
+      n.onerror=function(){ stage.classList.remove('swap'); };
+      n.src='img/'+name+'.jpg';
+    }
+
+    function stop(){ live=false; if(raf) cancelAnimationFrame(raf); raf=null; }
+
+    function frame(now){
+      if(!live) return;
+      if(!t0) t0=now;
+      // Ping-pong rather than wrap: the marker comes back through the zone, so a late
+      // thumb still gets a shot instead of waiting out a full reset.
+      var p=((now-t0)/span)%2;
+      var pos=p<1?p:2-p;
+      mark.style.left=(pos*100)+'%';
+      mark.dataset.pos=pos;
+      raf=requestAnimationFrame(frame);
+    }
+
+    function begin(n){
+      i=n;
+      var s=STAGES[i];
+      width=calm ? Math.min(.62,s.w*1.6) : s.w;
+      span =calm ? s.ms*2.1 : s.ms;
+      centre=(width/2+.06)+Math.random()*(1-width-.12);
+      zone.style.left=((centre-width/2)*100)+'%';
+      zone.style.width=(width*100)+'%';
+      call.className='rt-call'; call.textContent=s.call;
+      hint.textContent='Tap when the marker crosses the gold';
+      again.hidden=true; over=false;
+      swap(s.img);
+      t0=0; live=true; raf=requestAnimationFrame(frame);
+    }
+
+    function finish(good, text, pic){
+      stop(); over=true;
+      call.className='rt-call '+(good?'good':'bad');
+      call.textContent=text;
+      hint.textContent=good?'That’s the whole route.':'Tap Run it again.';
+      swap(pic);
+      again.hidden=false;
+      var got=good?STAGES.length:i;
+      if(got>best){ best=got; try{ localStorage.setItem('coc-route-best',String(best)); }catch(e){} }
+      showBest();
+    }
+
+    function tap(){
+      if(!live){ begin(0); return; }
+      var pos=parseFloat(mark.dataset.pos||'0');
+      if(Math.abs(pos-centre)<=width/2){
+        if(i+1<STAGES.length){
+          call.className='rt-call good';
+          stop();
+          setTimeout(function(){ begin(i+1); },170);
+        } else {
+          finish(true,'Touchdown','catch6');
+        }
+      } else {
+        finish(false, STAGES[i].fail==='drop'?'Dropped':'Wrapped up', STAGES[i].fail);
+      }
+    }
+
+    hit.addEventListener('click',function(e){ e.preventDefault(); tap(); });
+    again.addEventListener('click',function(){ begin(0); hit.focus(); });
+    // A game that keeps running in a hidden tab is just burning battery.
+    document.addEventListener('visibilitychange',function(){
+      if(document.hidden){ stop(); }
+      else if(!over && !raf && seen){ begin(i); }   // mid-round when they left: restart that call
+    });
+
+    showBest();
+    // Wait for the section to actually be on screen before the marker starts moving.
+    var seen=false;
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es,ob){
+        es.forEach(function(e){ if(e.isIntersecting&&!seen){ seen=true; begin(0); ob.disconnect(); } });
+      },{threshold:.35}).observe(stage);
+    } else { seen=true; begin(0); }
   })();
 
   // Scroll reveal
