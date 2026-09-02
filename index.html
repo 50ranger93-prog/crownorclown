@@ -1388,7 +1388,9 @@
     <p class="route-note rise">Ball's in the air. Tap when the marker crosses the gold — reach,
       secure, cut, stiff arm, dive. Miss one and you're watching it bounce.</p>
 
-    <div class="rt-stage rise" id="rt-stage">
+    <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
+         invisible while it happily played itself underneath. -->
+    <div class="rt-stage" id="rt-stage">
       <img id="rt-img" src="img/catch1.jpg" alt="" width="900" height="502">
       <div class="rt-veil"></div>
       <div class="rt-hud">
