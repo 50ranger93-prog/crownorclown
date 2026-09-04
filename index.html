@@ -999,7 +999,7 @@
     </div>
 
     <div class="count rise preseason-only" id="countdown" aria-live="polite">
-      <div class="ct-label">League 3 seats lock in</div>
+      <div class="ct-label">League 3 &mdash; the last board open. Seats lock in</div>
       <div class="unit"><div class="u-n" id="cd-d">--</div><div class="u-l">Days</div></div>
       <div class="unit"><div class="u-n" id="cd-h">--</div><div class="u-l">Hrs</div></div>
       <div class="unit"><div class="u-n" id="cd-m">--</div><div class="u-l">Min</div></div>
@@ -1769,7 +1769,9 @@
   // When the first lock passes the clock rolls onto League 3 rather than reading
   // "Seats are locked" while a board is still openly taking entries.
   var LOCK_WEEKEND = new Date("2026-09-04T00:00:00-06:00").getTime();  // end of Thu Sep 3
-  // ↓ the only date worth editing: push this out if a draft slips and the board keeps selling
+  // ↓ the only date worth editing: push this out if the board is still selling.
+  // Ceiling is the draft itself — Sun Sep 6, 5 PM MT. A seat can sell right up to the moment
+  // the board drafts and not one second past it, so never set this later than that.
   var LOCK_L3      = new Date("2026-09-06T00:00:00-06:00").getTime();  // end of Sat Sep 5
 
   // Both weekend boards are full, so League 3's seats are the only ones anyone can still buy.
@@ -1848,6 +1850,11 @@
 
   // Already pointed at League 3, so the hand-over below has nothing left to do.
   var cdWasLive=false, cdPopped=false, cdRolled=true;
+  // The draft is the hard floor: seats can sell until the board drafts, never after.
+  var DRAFT_L3 = new Date("2026-09-06T17:00:00-06:00").getTime();
+  // The seat bar owns the live count; it publishes here so the clock can ask whether there is
+  // still anything to sell before it declares the thing over.
+  function seatsStillOpen(){ return window.__cocSeatsOpen == null || window.__cocSeatsOpen > 0; }
   function tick(){
     var now=Date.now();
     var lab=document.getElementById('countdown').querySelector('.ct-label');
@@ -1860,6 +1867,14 @@
       }
     }
     var diff=target-now;
+    // A clock reading 00:00:00 over a board that still needs three managers tells every
+    // visitor they're too late when they aren't. While seats remain, run to the draft itself
+    // — that is genuinely the last moment anyone can join — and say so plainly.
+    if(diff<=0 && seatsStillOpen() && now < DRAFT_L3){
+      target = DRAFT_L3;
+      lab.textContent='Last call — League 3 drafts Sunday 5 PM';
+      diff = target - now;
+    }
     if(diff<=0){
       lab.textContent='Seats are locked';
       d.textContent=h.textContent=m.textContent=s.textContent='00';
@@ -2958,15 +2973,16 @@
       });
       right.innerHTML=html;
       if(nEl) nEl.textContent=open;
+      window.__cocSeatsOpen = open;   // the countdown reads this before it says "locked"
       // Quote only a deadline somebody can still act on. Once the weekend boards fill, their
       // Thursday cutoff is noise — League 3's Saturday midnight is the live one.
       if(tEl){
         var nowMs=Date.now();
-        var msg = (open===0 || nowMs >= new Date("2026-09-06T00:00:00-06:00").getTime())
+        var msg = (open===0 || nowMs >= new Date("2026-09-06T17:00:00-06:00").getTime())
           ? ' · <b>entry is closed for every board</b>'
           : (weekendLeft > 0 && nowMs < new Date("2026-09-04T00:00:00-06:00").getTime())
             ? ' · <b>entry closes Thu Sep 3 · League 3 open til Sat Sep 5</b>'
-            : ' · <b>League 3 entry closes Sat Sep 5, midnight</b>';
+            : ' · <b>League 3 is the last board open — the other two are locked · entry closes Sat Sep 5, midnight</b>';
         tEl.innerHTML=(open===1?'seat left':'seats left')+msg;
       }
       if(open===0) document.getElementById('seatbar').style.display='none';
