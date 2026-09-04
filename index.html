@@ -999,7 +999,7 @@
     </div>
 
     <div class="count rise preseason-only" id="countdown" aria-live="polite">
-      <div class="ct-label">Seats lock in</div>
+      <div class="ct-label">League 3 seats lock in</div>
       <div class="unit"><div class="u-n" id="cd-d">--</div><div class="u-l">Days</div></div>
       <div class="unit"><div class="u-n" id="cd-h">--</div><div class="u-l">Hrs</div></div>
       <div class="unit"><div class="u-n" id="cd-m">--</div><div class="u-l">Min</div></div>
@@ -1769,8 +1769,13 @@
   // When the first lock passes the clock rolls onto League 3 rather than reading
   // "Seats are locked" while a board is still openly taking entries.
   var LOCK_WEEKEND = new Date("2026-09-04T00:00:00-06:00").getTime();  // end of Thu Sep 3
+  // ↓ the only date worth editing: push this out if a draft slips and the board keeps selling
   var LOCK_L3      = new Date("2026-09-06T00:00:00-06:00").getTime();  // end of Sat Sep 5
-  var target = LOCK_WEEKEND;
+
+  // Both weekend boards are full, so League 3's seats are the only ones anyone can still buy.
+  // Point the clock there from the start rather than counting down to a deadline nobody can
+  // act on. The hand-over below stays in place for the case where a weekend seat frees up.
+  var target = LOCK_L3;
   var d=document.getElementById('cd-d'),h=document.getElementById('cd-h'),
       m=document.getElementById('cd-m'),s=document.getElementById('cd-s');
   function pad(n){return String(n).padStart(2,'0')}
@@ -1841,7 +1846,8 @@
     requestAnimationFrame(frame);
   }
 
-  var cdWasLive=false, cdPopped=false, cdRolled=false;
+  // Already pointed at League 3, so the hand-over below has nothing left to do.
+  var cdWasLive=false, cdPopped=false, cdRolled=true;
   function tick(){
     var now=Date.now();
     var lab=document.getElementById('countdown').querySelector('.ct-label');
@@ -2934,12 +2940,15 @@
     if(!right) return;
 
     function paint(counts){
-      var open=0, html='';
+      var open=0, weekendLeft=0, html='';
       LEAGUES.forEach(function(l,i){
         if(l.closed) return;                       // private board, not for sale
         var taken=seatsHeld(l,(counts&&counts[i]!=null)?counts[i]:(l.seatsTaken||0));
         var left=Math.max(0,SEATS-taken);
         open+=left;
+        // Which deadline to quote is a question about seats, not about the calendar: a board
+        // with none left has no deadline worth mentioning, whatever the date says.
+        if(!/League 3$/.test(l.name)) weekendLeft+=left;
         var label=l.name.replace('The Expansion League','League').trim();
         if(label==='League') label='League 1';
         html += left>0 && l.leaguesafe
@@ -2949,15 +2958,15 @@
       });
       right.innerHTML=html;
       if(nEl) nEl.textContent=open;
-      // two deadlines now: the weekend boards shut Thu Sep 3, League 3 runs to Sat Sep 5.
-      // once Thursday is gone only League 3 is still selling, so stop quoting a dead date.
+      // Quote only a deadline somebody can still act on. Once the weekend boards fill, their
+      // Thursday cutoff is noise — League 3's Saturday midnight is the live one.
       if(tEl){
         var nowMs=Date.now();
-        var msg = nowMs >= new Date("2026-09-06T00:00:00-06:00").getTime()
+        var msg = (open===0 || nowMs >= new Date("2026-09-06T00:00:00-06:00").getTime())
           ? ' · <b>entry is closed for every board</b>'
-          : nowMs >= new Date("2026-09-04T00:00:00-06:00").getTime()
-            ? ' · <b>League 3 entry closes Sat Sep 5, midnight</b>'
-            : ' · <b>entry closes Thu Sep 3 · League 3 open til Sat Sep 5</b>';
+          : (weekendLeft > 0 && nowMs < new Date("2026-09-04T00:00:00-06:00").getTime())
+            ? ' · <b>entry closes Thu Sep 3 · League 3 open til Sat Sep 5</b>'
+            : ' · <b>League 3 entry closes Sat Sep 5, midnight</b>';
         tEl.innerHTML=(open===1?'seat left':'seats left')+msg;
       }
       if(open===0) document.getElementById('seatbar').style.display='none';
