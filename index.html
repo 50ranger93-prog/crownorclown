@@ -1531,6 +1531,22 @@
   var POT     = 600;
   var PAYOUTS = [400, 125, 75];
 
+  // Force a scroll-reveal on a subtree that was hidden when the page loaded.
+  //
+  // The reveal observer at the bottom of this file registers every .rise element once, on
+  // load. An element inside a `hidden` section has no layout box at that moment, so it is
+  // recorded as not intersecting and never gets .in — and un-hiding the section later does
+  // not bring it back, because the observer has already made its mind up. The result is the
+  // worst kind of bug: the content renders perfectly and then sits at opacity 0 forever.
+  // Any section that reveals itself after load has to say so here.
+  window.__cocReveal = function(root){
+    if(!root || !root.querySelectorAll) return;
+    if(root.classList && root.classList.contains('rise')) root.classList.add('in');
+    Array.prototype.forEach.call(root.querySelectorAll('.rise'), function(el){
+      el.classList.add('in');
+    });
+  };
+
   var LEAGUES = [
     // League 1 is a private, locally-run board: no LeagueSafe, no public entry.
     // closed:true hides the pay button and shows `note` instead. Standings stay live.
@@ -1854,7 +1870,7 @@
   // On draft night that's the wrong trade: the point is for anyone who opens the site to
   // walk into a celebration. This runs it for every visitor until the timestamp passes.
   // To extend the party, push the date out. Once it's in the past the block costs nothing.
-  var PARTY_UNTIL = new Date("2026-09-05T20:10:00-06:00").getTime();
+  var PARTY_UNTIL = new Date("2026-09-06T16:50:00-06:00").getTime();
   (function party(){
     if(Date.now()>=PARTY_UNTIL) return;
     popConfetti();
@@ -2581,6 +2597,8 @@
     function run(){
       if(!document.documentElement.classList.contains('season')) return;
       sec.hidden = false;
+      // same trap as the rosters: hidden at load means the reveal observer skipped it
+      if(window.__cocReveal) window.__cocReveal(sec);
       fetch(SB, {cache:'no-store'})
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(j){
@@ -2890,6 +2908,8 @@
         var anyDrafted=res.some(function(l){ return l&&l.any; });
         if(!anyDrafted){ sec.hidden=true; return; }
         sec.hidden=false;
+        // this section is hidden at load, so its .rise children never caught the observer
+        if(window.__cocReveal) window.__cocReveal(sec);
         var prev=load();
         var changes=Object.keys(prev).length?diff(prev):[];
         renderTabs(); renderGrid(); renderChanges(changes);
