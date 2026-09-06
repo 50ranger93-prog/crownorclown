@@ -2463,6 +2463,9 @@
       if(everyBoardDone && !allDone){
         allDone=true;
         document.documentElement.classList.add('season');
+        if(window.__cocReveal){
+          Array.prototype.forEach.call(document.querySelectorAll('.season-only'), window.__cocReveal);
+        }
         if(typeof window.__cocGameday==='function') window.__cocGameday();
         if(typeof window.__cocAudit==='function')   window.__cocAudit();
         if(!firstPass && typeof popConfetti==='function'){ setTimeout(popConfetti,900); }
@@ -3080,6 +3083,11 @@
       // so every pay button, invite and "claim your seat" comes off the page the moment the
       // final seat is owned, instead of hanging around asking for money nobody can give.
       document.documentElement.classList.toggle('full', open===0);
+      // .season-only blocks are display:none at load, so the reveal observer skipped them
+      // exactly like a hidden section. Un-hiding them is not enough - force them visible.
+      if(open===0 && window.__cocReveal){
+        Array.prototype.forEach.call(document.querySelectorAll('.season-only'), window.__cocReveal);
+      }
     }
 
     paint(null);
