@@ -552,10 +552,17 @@
   .audit .fix{font-family:var(--mono);color:var(--gold)}
 
   /* ---- season mode: the site stops selling and starts reporting ---- */
-  html.season .preseason-only{display:none !important}
+  /* Two different moments, both of which end the sales pitch.
+     `full` is the earlier one: every seat owned, so nothing is for sale even though the
+     last board has not drafted yet. `season` is when the football starts. Anything that
+     asks for money or offers a seat has to be gone at `full`, not left up until `season`. */
+  html.season .preseason-only,
+  html.full   .preseason-only{display:none !important}
   .season-only{display:none}
-  html.season .season-only{display:block}
-  html.season .lg-actions .btn-pay{display:none}
+  html.season .season-only,
+  html.full   .season-only{display:block}
+  html.season .lg-actions .btn-pay,
+  html.full   .lg-actions .btn-pay{display:none !important}
   .lg-cd.done{color:var(--bone-dim)}
   .draft-prog{
     font-family:var(--mono);font-size:11px;color:var(--gold);
@@ -941,7 +948,8 @@
 
 <div class="topbar">
   <div class="brand"><b>CROWN</b> <span class="slash">/</span> CLOWN</div>
-  <a href="#leagues" class="nav-cta">Claim your seat</a>
+  <a href="#leagues" class="nav-cta preseason-only">Claim your seat</a>
+  <a href="#rosters" class="nav-cta season-only">The season</a>
 </div>
 
 <!-- SEATS LEFT — pushes both open boards, counts read live from ESPN.
@@ -1438,7 +1446,9 @@
 </section>
 
 <!-- CLAIM -->
-<section class="spec sec-pad" id="claim">
+<!-- CLAIM — preseason-only: every step here is about buying in, which is over once the
+     last seat is owned. The season-only board below replaces it. -->
+<section class="spec sec-pad preseason-only" id="claim">
   <div class="wrap">
     <div class="eyebrow rise">Claim your seat</div>
     <p class="rise" style="margin-top:16px;max-width:560px;color:var(--bone-dim);font-size:15.5px"><b>Two boards are open</b> — League 2 and League 3, same stakes, same rules. Each runs its own escrowed <b>$600 pot</b>, paid to its top three inside that league. The <b>crown</b> and the <b>vest</b>, though, are <b>singular</b> — awarded overall across all three leagues, the private one included. Highest points-for anywhere wears the crown. Lowest anywhere wears the vest. <b>Multi-entry is allowed</b> — take a seat in both open boards if you want — but it's <b>one team per league, no exceptions</b>. Each entry is its own $50, paid on that league's own LeagueSafe page.</p>
@@ -1477,13 +1487,55 @@
   </div>
 </section>
 
-<!-- FINAL CTA -->
-<section class="final sec-pad">
+<!-- HOW IT RUNS — season-only: replaces the claim steps once the boards are full. Three
+     surfaces, one job each, so nobody has to ask where anything lives. -->
+<section class="spec sec-pad season-only" id="howitruns">
+  <div class="wrap">
+    <div class="eyebrow rise">How it runs</div>
+    <p class="rise" style="margin-top:16px;max-width:620px;color:var(--bone-dim);font-size:15.5px">Thirty-six managers, three boards, all drafted. Every seat is gone and entry is closed for the year. From here it is one season across three leagues, and three places to follow it &mdash; each doing one job.</p>
+    <div class="steps rise">
+      <div class="step">
+        <div class="num disp">01</div>
+        <div>
+          <h3>ESPN &mdash; where the games happen</h3>
+          <p>Lineups, waivers, trades and scoring all live on ESPN. Set your lineup there every week. Nothing on this page changes a result &mdash; ESPN is the record.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num disp">02</div>
+        <div>
+          <h3>Discord &mdash; where everybody talks</h3>
+          <p>Waiver alerts, injury news before kickoff, trade offers, the hall of shame and the trash talk. If it needs a reply, it happens in Discord, not in an ESPN message board nobody reads.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num disp">03</div>
+        <div>
+          <h3>This page &mdash; where you see all of it at once</h3>
+          <p>Every roster on every board, live standings, the crown and vest race, the Sunday slate with the lines, the weather and who is out. Three leagues on one screen, refreshed while you sit here &mdash; the one view ESPN cannot give you.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL — the preseason version sells a seat, the season version sells the chase -->
+<section class="final sec-pad preseason-only">
   <div class="wrap">
     <h2 class="disp rise"><span class="crown">Crown</span> <span class="or">or</span> <span class="clown">Clown</span>.</h2>
     <p class="rise">Two open boards. Twelve seats each. $50 in, $600 out, zero rake. Every league pays its own top three &mdash; but only <b>one</b> manager takes the crown, and only <b>one</b> wears the vest, across all three. Which one are you?</p>
     <div class="hero-actions rise">
       <a href="#leagues" class="btn btn-gold">Pay in &amp; claim your seat</a>
+    </div>
+  </div>
+</section>
+
+<section class="final sec-pad season-only">
+  <div class="wrap">
+    <h2 class="disp rise"><span class="crown">Crown</span> <span class="or">or</span> <span class="clown">Clown</span>.</h2>
+    <p class="rise">Thirty-six managers. Three boards. Every seat taken and the drafts are done. Each league pays its own top three &mdash; but only <b>one</b> manager wears the crown and only <b>one</b> wears the vest, across all three. Eighteen weeks to find out which one you are.</p>
+    <div class="hero-actions rise">
+      <a href="#rosters" class="btn btn-gold">See every roster</a>
     </div>
   </div>
 </section>
@@ -1557,7 +1609,7 @@
     // is higher — ESPN's count or this. Set it to 12 and the board shows Full, the
     // LeagueSafe button disappears, and it stops being counted as open anywhere on the page.
     { name:"The Expansion League 2", draft:"Sat Sep 5 · 6 PM MT", draftAt:"2026-09-05T18:00:00-06:00", espnId:1963204215, leaguesafe:"https://www.leaguesafe.com/join/4437920", seatsTaken:12, autoSeats:true, committed:12 },
-    { name:"The Expansion League 3", draft:"Sun Sep 6 · 5 PM MT", draftAt:"2026-09-06T17:00:00-06:00", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:3,  autoSeats:true, committed:3  }
+    { name:"The Expansion League 3", draft:"Sun Sep 6 · 5 PM MT", draftAt:"2026-09-06T17:00:00-06:00", espnId:976183547,  leaguesafe:"https://www.leaguesafe.com/join/4437921", seatsTaken:12, autoSeats:true, committed:12 }
   ];
 
   // seats actually spoken for: ESPN's claimed count, floored by what we know is committed
@@ -3024,6 +3076,10 @@
         tEl.innerHTML=(open===1?'seat left':'seats left')+msg;
       }
       if(open===0) document.getElementById('seatbar').style.display='none';
+      // Sold out is its own state, and it arrives before the last board drafts. Flip it here
+      // so every pay button, invite and "claim your seat" comes off the page the moment the
+      // final seat is owned, instead of hanging around asking for money nobody can give.
+      document.documentElement.classList.toggle('full', open===0);
     }
 
     paint(null);
