@@ -1848,6 +1848,24 @@
     requestAnimationFrame(frame);
   }
 
+  // ---- draft-night party mode ----
+  // The confetti above only fires for whoever happens to be looking at the exact second a
+  // draft ends, and never on a fresh page load, so in practice almost nobody ever sees it.
+  // On draft night that's the wrong trade: the point is for anyone who opens the site to
+  // walk into a celebration. This runs it for every visitor until the timestamp passes.
+  // To extend the party, push the date out. Once it's in the past the block costs nothing.
+  var PARTY_UNTIL = new Date("2026-09-05T18:40:00-06:00").getTime();
+  (function party(){
+    if(Date.now()>=PARTY_UNTIL) return;
+    popConfetti();
+    // one emitter run is 3m05s of confetti plus a 6s fade, so relight it just as the
+    // last run burns out rather than stacking canvases on top of each other
+    var t=setInterval(function(){
+      if(Date.now()>=PARTY_UNTIL){ clearInterval(t); return; }
+      popConfetti();
+    },191000);
+  })();
+
   // Already pointed at League 3, so the hand-over below has nothing left to do.
   var cdWasLive=false, cdPopped=false, cdRolled=true;
   // The draft is the hard floor: seats can sell until the board drafts, never after.
