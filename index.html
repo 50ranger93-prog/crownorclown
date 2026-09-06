@@ -523,6 +523,27 @@
     font-family:var(--mono);font-size:11px;color:var(--bone-dim);
   }
   .gd-wx.rough{color:#F0A79C}
+  /* Score only appears once a game is under way, so it replaces the kickoff time rather
+     than crowding in beside it. Tabular figures keep the column from dancing. */
+  .gd-score{
+    font-family:var(--mono);font-size:15px;color:var(--bone);font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .gd-card.live .gd-score{color:var(--gold)}
+  .gd-card.live .gd-kick{color:#8FD9A8}
+  .gd-score .w{color:var(--gold);font-weight:600}
+  /* Venue line: quiet by default, gold when the game is outside the country, because a
+     9:30am London kickoff is a lineup problem before it is a travel note. */
+  .gd-venue{
+    padding:8px 15px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:10.5px;color:var(--bone-dim);
+    display:flex;gap:7px;align-items:baseline;
+  }
+  .gd-venue .intl{
+    color:var(--gold);border:1px solid rgba(231,178,60,.45);border-radius:2px;
+    padding:1px 5px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;flex:0 0 auto;
+  }
+  .gd-venue .vn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .gd-out{padding:11px 15px}
   .gd-out h5{
     font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
@@ -2541,16 +2562,30 @@
         }
         if(!pick) pick = odds[0]||null;
 
+        // Venue matters for two reasons only: a dome takes weather off the table, and a game
+        // outside the United States usually means a 9:30am kickoff and a short week, which is
+        // a lineup decision before it is trivia.
+        var ven = c.venue || {}, addr = ven.address || {},
+            country = addr.country || '',
+            intl = !!(country && !/^(usa|us|united states)$/i.test(country));
+
         list.push({
           id: ev.id,
           home: hAb, away: aAb,
           kick: ev.date,
           state: (ev.status&&ev.status.type&&ev.status.type.state)||'pre',
           detail: (ev.status&&ev.status.type&&ev.status.type.shortDetail)||'',
+          hScore: home.score!=null ? Number(home.score) : null,
+          aScore: away.score!=null ? Number(away.score) : null,
           spread: pick ? (pick.details||'') : '',
           total : pick && pick.overUnder!=null ? Number(pick.overUnder) : null,
           book  : pick && pick.provider ? pick.provider.name : '',
-          indoor: !!(c.venue && c.venue.indoor),
+          indoor: !!ven.indoor,
+          venue : ven.fullName || '',
+          city  : [addr.city, addr.state || country].filter(Boolean).join(', '),
+          country: country,
+          intl  : intl,
+          neutral: !!c.neutralSite,
           wx    : ev.weather || null
         });
       });
@@ -2562,9 +2597,34 @@
           soon = g.state==='pre' && mins <= 90 && mins > -30,
           live = g.state==='in';
 
+      var done = g.state==='post',
+          hasScore = (live || done) && g.hScore!=null && g.aScore!=null;
+
+      // Once there is a score it is the headline; the clock or "Final" moves to the right.
+      // The leader's number is the one worth finding at a glance, so only it is gold.
+      var right;
+      if(hasScore){
+        var aWin = g.aScore > g.hScore, hWin = g.hScore > g.aScore;
+        right = '<span class="gd-score">'+
+          '<span class="'+(aWin?'w':'')+'">'+g.aScore+'</span> &ndash; '+
+          '<span class="'+(hWin?'w':'')+'">'+g.hScore+'</span></span>'+
+          '<span class="gd-kick">'+esc(g.detail||(done?'Final':''))+'</span>';
+      } else {
+        right = '<span class="gd-kick">'+esc(live ? g.detail : kickLabel(g.kick))+'</span>';
+      }
+
       var head = '<div class="gd-top">'+
         '<span class="gd-mu">'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
-        '<span class="gd-kick">'+esc(live ? g.detail : kickLabel(g.kick))+'</span></div>';
+        '<span style="display:flex;gap:10px;align-items:baseline">'+right+'</span></div>';
+
+      // Neutral-site games break the "@" shorthand, so say so rather than implying a home crowd
+      var venueRow = '';
+      if(g.venue || g.intl){
+        venueRow = '<div class="gd-venue">'+
+          (g.intl ? '<span class="intl">'+esc(g.country)+'</span>' : '')+
+          '<span class="vn">'+esc([g.venue, g.city].filter(Boolean).join(' · '))+
+          (g.neutral && !g.intl ? ' · neutral site' : '')+'</span></div>';
+      }
 
       var line = '<div class="gd-line">'+
         '<div><span class="gd-k">Spread</span><span class="gd-v">'+esc(g.spread||'—')+'</span></div>'+
@@ -2608,7 +2668,8 @@
           '</div>';
       }
 
-      return '<div class="gd-card'+(soon?' soon':'')+'">'+head+line+impRow+wxRow+outRow+'</div>';
+      return '<div class="gd-card'+(soon?' soon':'')+(live?' live':'')+'">'+
+             head+venueRow+line+impRow+wxRow+outRow+'</div>';
     }
 
     function paint(){
