@@ -997,6 +997,8 @@
   .rt-yards .gain{font-family:var(--mono);font-size:12px;color:var(--gold);
     opacity:0;transition:opacity .18s ease}
   .rt-yards .gain.show{opacity:1}
+  /* past the length of the field the number stops being a count and starts being a brag */
+  .rt-yards .n.ton{color:#fff;text-shadow:0 0 26px rgba(231,178,60,.9),0 2px 18px rgba(0,0,0,.7)}
   @media (max-width:640px){ .rt-yards{padding:11px 14px} .rt-yards .n{font-size:30px} }
 
   /* Arcade cabinet: a short board of initials, because a private best score gets played
@@ -1472,11 +1474,12 @@
      one thumb; the whole frame is the button. -->
 <section class="sec-pad route" id="route">
   <div class="wrap">
-    <div class="eyebrow rise">Five calls · one thumb</div>
+    <div class="eyebrow rise">One thumb · no finish line</div>
     <h2 class="disp rise" style="font-size:clamp(38px,7vw,84px);margin:10px 0 0">Go get it</h2>
     <p class="route-note rise">Ball's in the air. Tap when the marker crosses the gold — reach,
-      secure, cut, stiff arm, dive. Dead centre is worth the most yards, the edge barely counts,
-      and past the dive it never stops. Miss one and you're watching it bounce.</p>
+      secure, cut, stiff arm, dive. <b>Dead centre pays full, the rim pays a quarter</b>, so it's
+      aim and not just reflex. The dive isn't the end: after it the calls keep coming, faster and
+      narrower, until you miss. <b>A clean route is 110 yards. Nobody has to stop there.</b></p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -3324,12 +3327,14 @@
 
     // Each call is tighter and quicker than the one before it, so the dive is the hard one.
     // `yds` is what a dead-centre tap is worth; the rim of the zone pays a quarter of it.
+    // A clean five is 110 - past the length of the field on purpose, so breaking 100 is the
+    // thing you are chasing and the number keeps climbing after it instead of capping out.
     var STAGES=[
-      {img:'catch1', call:'Reach',     w:.40, ms:1500, yds:12, fail:'drop'},
-      {img:'catch2', call:'Secure',    w:.33, ms:1320, yds:10, fail:'drop'},
-      {img:'catch3', call:'Cut',       w:.29, ms:1160, yds:14, fail:'tackled'},
-      {img:'catch4', call:'Stiff arm', w:.25, ms:1020, yds:16, fail:'tackled'},
-      {img:'catch5', call:'Dive',      w:.21, ms:900,  yds:20, fail:'tackled'}
+      {img:'catch1', call:'Reach',     w:.40, ms:1500, yds:18, fail:'drop'},
+      {img:'catch2', call:'Secure',    w:.33, ms:1320, yds:16, fail:'drop'},
+      {img:'catch3', call:'Cut',       w:.29, ms:1160, yds:22, fail:'tackled'},
+      {img:'catch4', call:'Stiff arm', w:.25, ms:1020, yds:24, fail:'tackled'},
+      {img:'catch5', call:'Dive',      w:.21, ms:900,  yds:30, fail:'tackled'}
     ];
     // Past the dive it never stops: the calls come back faster and narrower until you miss.
     // That is the difference between finishing a level and setting a high score.
@@ -3416,7 +3421,17 @@
       raf=requestAnimationFrame(frame);
     }
 
-    function setYards(v){ yards=v; yn.textContent=v; }
+    var century=false;
+    function setYards(v){
+      yards=v; yn.textContent=v;
+      // crossing the length of the field is the moment worth marking, and it only lands once
+      if(!century && v>=100){
+        century=true;
+        yn.classList.add('ton');
+        hint.textContent='A HUNDRED YARDS. Keep going.';
+        sfxTD();
+      }
+    }
     function flashGain(n,q){
       gain.textContent='+'+n+(q>0.86?'  perfect':'');
       gain.classList.add('show');
@@ -3432,14 +3447,14 @@
         call:EXTRA[k%EXTRA.length],
         w:Math.max(.11,.21-k*0.012),
         ms:Math.max(520,900-k*42),
-        yds:20+k*3,
+        yds:30+k*5,        // each extra call is worth more than the last, so a long run runs away
         fail:'tackled'
       };
     }
 
     function begin(n){
       i=n;
-      if(n===0){ setYards(0); iniBox.hidden=true; }
+      if(n===0){ century=false; yn.classList.remove('ton'); setYards(0); iniBox.hidden=true; }
       var s=cfg(i);
       width=calm ? Math.min(.62,s.w*1.6) : s.w;
       span =calm ? s.ms*2.1 : s.ms;
