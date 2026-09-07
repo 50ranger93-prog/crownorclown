@@ -695,7 +695,7 @@
     position:absolute;left:50%;top:120px;transform:translateX(-50%);
     font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
     color:var(--bone-dim);white-space:nowrap;text-align:center;
-    animation:catchName 2.6s ease-out forwards;
+    animation:catchName 2.05s ease-out forwards;   /* matches the run-off, never outlives it */
   }
   .catch-name b{
     display:block;margin-top:5px;font-family:var(--disp);font-size:19px;
@@ -720,16 +720,18 @@
     margin-left:-68.6px;   /* 52% of 132 */
     margin-top:-17.2px;    /* 13% of 132 */
     transform-origin:52% 13%;
-    animation:catchFig 2.6s cubic-bezier(.18,.92,.32,1) forwards;
+    --runx:640px;                 /* set per-catch to the direction the ball was travelling */
+    animation:catchFig 2.05s cubic-bezier(.22,.7,.3,1) forwards;
     filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));
   }
   @keyframes catchFig{
-    /* comes up into the ball from below and behind, plants, then drops away */
-    0%  {opacity:0;transform:translate(-14px,54px) scale(.72) rotate(-9deg)}
-    18% {opacity:1;transform:translate(0,0) scale(1.06) rotate(0deg)}
-    26% {transform:translate(0,0) scale(1) rotate(0deg)}
-    74% {opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
-    100%{opacity:0;transform:translate(0,26px) scale(.94) rotate(3deg)}
+    /* up into the ball, plant, then take off with it and run clean off the page */
+    0%  {opacity:0;transform:translate(calc(var(--runx) * -0.06),56px) scale(.70) rotate(-10deg)}
+    14% {opacity:1;transform:translate(0,0) scale(1.07) rotate(0deg)}
+    22% {opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+    34% {opacity:1;transform:translate(calc(var(--runx) * 0.06),-4px) scale(1) rotate(1deg)}
+    88% {opacity:1;transform:translate(calc(var(--runx) * 0.82),-14px) scale(.93) rotate(2deg)}
+    100%{opacity:0;transform:translate(var(--runx),-18px) scale(.9) rotate(2deg)}
   }
   @media (max-width:640px){
     .catch-fig{width:96px;height:96px;margin-left:-49.9px;margin-top:-12.5px}
@@ -2261,7 +2263,11 @@
         if(o.catchAt && p>=o.catchAt){
           if(!caught){
             caught=true;
-            drawBall(ctx,x,y,o.r,rot,o.alpha);
+            // Wipe the canvas instead of leaving the ball painted on it. The receiver already
+            // has a ball in his hands, so a second one hanging in mid-air for the rest of the
+            // visit is both wrong and impossible to get rid of - the loop has ended, so
+            // nothing was ever coming back to clear it.
+            ctx.clearRect(0,0,W,H);
             o.onCatch&&o.onCatch(x,y);
           }
           raf=null; o.done&&o.done(); return;
@@ -2340,7 +2346,9 @@
     (function(){ var w=new Image(); w.src='img/catcher.png'; })();
 
     // the catch: a burst at the ball, the receiver comes up into it, then his name settles
-    function completion(hero,x,y,r){
+    // ltr says which way the ball was travelling; he carries it on out that same way rather
+    // than catching it and evaporating. Far enough to clear the widest hero we render.
+    function completion(hero,x,y,ltr){
       var wrap=document.createElement('div');
       wrap.className='catch-pop';
       wrap.setAttribute('aria-hidden','true');
@@ -2352,7 +2360,11 @@
         String(CATCHER.name).replace(/[&<>"']/g,'')+
         (CATCHER.team?(' · '+CATCHER.team):'')+yd+'</b></span>';
       hero.appendChild(wrap);
-      setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); },2600);
+      var runOut = Math.max(360, (ltr ? (hero.offsetWidth - x) : -x) + 240);
+      var fig = wrap.querySelector('.catch-fig');
+      if(fig) fig.style.setProperty('--runx', runOut+'px');
+      // gone before the run finishes, so the name never outlives the man carrying the ball
+      setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); },2150);
     }
 
     // --- the hero throw: on load, on tap, and quietly again every so often ---
@@ -2374,7 +2386,9 @@
         if(document.hidden||hero.getBoundingClientRect().bottom<60){ schedule(); return; }
         throwIt();
       }
-      function throwIt(){
+      // byTap: an idle throw sails clean across the page the way it always did. Only a throw
+      // you asked for gets completed, so the catch stays an event rather than wallpaper.
+      function throwIt(byTap){
         if(cancel) cancel();
         size();
         var ltr=Math.random()<0.72;
@@ -2403,22 +2417,24 @@
           r: Math.max(W<700?19:15, Math.min(30, W*0.022))*rand(0.85,1.15),
           spin: rand(5,9)*(ltr?1:-1),
           dur: rand(2100,2900), alpha:1,
-          // once every board has drafted the page is reporting a season rather than
-          // selling one, so the pass gets completed instead of sailing off the edge
-          catchAt: inSeason ? rand(0.62,0.74) : 0,
-          onCatch: inSeason ? function(cx,cy){ completion(hero,cx,cy); } : null,
+          // Only a throw you asked for gets caught, and only once the season is on. The
+          // idle ones still sail off the edge, which is what makes the caught one land.
+          catchAt: (inSeason && byTap) ? rand(0.62,0.74) : 0,
+          onCatch: (inSeason && byTap) ? function(cx,cy){ completion(hero,cx,cy,ltr); } : null,
           done:function(){ cancel=null; }
         });
         schedule();
       }
-      setTimeout(throwIt,700);
+      setTimeout(function(){ throwIt(false); },700);
       var k=document.querySelector('.kraken');
       if(k){
-        k.addEventListener('click',throwIt);
+        k.addEventListener('click',function(){ throwIt(true); });
         k.setAttribute('tabindex','0');
         k.setAttribute('role','button');
         k.setAttribute('aria-label','Throw the football');
-        k.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); throwIt(); } });
+        k.addEventListener('keydown',function(e){
+          if(e.key==='Enter'||e.key===' '){ e.preventDefault(); throwIt(true); }
+        });
       }
     })();
 
