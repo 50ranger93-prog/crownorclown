@@ -523,6 +523,23 @@
     font-family:var(--mono);font-size:11px;color:var(--bone-dim);
   }
   .gd-wx.rough{color:#F0A79C}
+  /* A closed line is a record, not an offer, so it stops shouting once the game starts. */
+  .gd-line.locked .gd-v{color:var(--bone)}
+  .gd-line.locked .gd-k{color:var(--bone-dim)}
+  /* who actually produced, in the scoring this league runs */
+  .gd-top3{padding:11px 15px;border-bottom:1px solid var(--line)}
+  .gd-top3 h5{
+    font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 8px;font-weight:600;
+  }
+  .gd-top3 ul{list-style:none;margin:0;padding:0}
+  .gd-top3 li{display:flex;align-items:baseline;gap:9px;padding:3px 0;font-size:12.5px}
+  .gd-top3 .pn{flex:1;color:var(--bone);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gd-top3 .pt{font-family:var(--mono);font-size:10px;color:var(--bone-dim)}
+  .gd-top3 .pp{
+    font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold-bright);
+    font-variant-numeric:tabular-nums;min-width:42px;text-align:right;
+  }
   /* Score only appears once a game is under way, so it replaces the kickoff time rather
      than crowding in beside it. Tabular figures keep the column from dancing. */
   .gd-score{
@@ -2711,7 +2728,16 @@
     var SB  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
         SUM = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
 
-    var games = [], outs = {};   // outs: eventId -> {list:[{nm,st,ab}], q:Number}
+    var games = [], outs = {}, leaders = {};   // outs: eventId -> {list,q}; leaders: eventId -> top DK
+
+    // The number that matters is the one the market closed on. Once a game kicks off ESPN
+    // keeps handing back a live in-play line, which is a different bet and useless for
+    // judging the week. So the last pre-game line is written down and never overwritten,
+    // and it survives a reload - a closing line you lose on refresh is not a record of
+    // anything.
+    var CLOSE_KEY='coc-closing-'+SEASON, closing={};
+    try{ closing=JSON.parse(localStorage.getItem(CLOSE_KEY)||'{}')||{}; }catch(e){ closing={}; }
+    function saveClosing(){ try{ localStorage.setItem(CLOSE_KEY,JSON.stringify(closing)); }catch(e){} }
 
     function esc(s){
       return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -2767,17 +2793,31 @@
             country = addr.country || '',
             intl = !!(country && !/^(usa|us|united states)$/i.test(country));
 
+        var state=(ev.status&&ev.status.type&&ev.status.type.state)||'pre';
+        var liveSpread = pick ? (pick.details||'') : '';
+        var liveTotal  = pick && pick.overUnder!=null ? Number(pick.overUnder) : null;
+        var liveBook   = pick && pick.provider ? pick.provider.name : '';
+
+        if(state==='pre'){
+          // still open: keep writing down the latest number, it is the closing one until it isn't
+          if(liveSpread || liveTotal!=null){
+            closing[ev.id]={ s:liveSpread, t:liveTotal, b:liveBook };
+          }
+        }
+        var locked = state!=='pre' && closing[ev.id] ? closing[ev.id] : null;
+
         list.push({
           id: ev.id,
           home: hAb, away: aAb,
           kick: ev.date,
-          state: (ev.status&&ev.status.type&&ev.status.type.state)||'pre',
+          state: state,
+          locked: !!locked,
           detail: (ev.status&&ev.status.type&&ev.status.type.shortDetail)||'',
           hScore: home.score!=null ? Number(home.score) : null,
           aScore: away.score!=null ? Number(away.score) : null,
-          spread: pick ? (pick.details||'') : '',
-          total : pick && pick.overUnder!=null ? Number(pick.overUnder) : null,
-          book  : pick && pick.provider ? pick.provider.name : '',
+          spread: locked ? locked.s : liveSpread,
+          total : locked ? locked.t : liveTotal,
+          book  : locked ? locked.b : liveBook,
           indoor: !!ven.indoor,
           venue : ven.fullName || '',
           city  : [addr.city, addr.state || country].filter(Boolean).join(', '),
@@ -2787,6 +2827,7 @@
           wx    : ev.weather || null
         });
       });
+      saveClosing();
       return list;
     }
 
@@ -2824,9 +2865,21 @@
           (g.neutral && !g.intl ? ' · neutral site' : '')+'</span></div>';
       }
 
-      var line = '<div class="gd-line">'+
-        '<div><span class="gd-k">Spread</span><span class="gd-v">'+esc(g.spread||'—')+'</span></div>'+
-        '<div><span class="gd-k">Total</span><span class="gd-v">'+(g.total!=null?g.total.toFixed(1):'—')+'</span></div></div>';
+      var lk = g.locked ? ' · closed' : '';
+      var line = '<div class="gd-line'+(g.locked?' locked':'')+'">'+
+        '<div><span class="gd-k">Spread'+lk+'</span><span class="gd-v">'+esc(g.spread||'—')+'</span></div>'+
+        '<div><span class="gd-k">Total'+lk+'</span><span class="gd-v">'+(g.total!=null?g.total.toFixed(1):'—')+'</span></div></div>';
+
+      // Once there is a box score, who actually produced is the thing worth showing.
+      var L = leaders[g.id], topRow='';
+      if(L && L.length){
+        topRow = '<div class="gd-top3"><h5>Top of the box &middot; DK points</h5><ul>'+
+          L.map(function(p){
+            return '<li><span class="pn">'+esc(p.n)+'</span>'+
+                   '<span class="pt">'+esc(p.t)+'</span>'+
+                   '<span class="pp">'+p.p.toFixed(1)+'</span></li>';
+          }).join('')+'</ul></div>';
+      }
 
       var imp = implied(g.total, g.spread, g.home, g.away), impRow = '';
       if(imp){
@@ -2867,7 +2920,7 @@
       }
 
       return '<div class="gd-card'+(soon?' soon':'')+(live?' live':'')+'">'+
-             head+venueRow+line+impRow+wxRow+outRow+'</div>';
+             head+venueRow+line+impRow+topRow+wxRow+outRow+'</div>';
     }
 
     function paint(){
@@ -2902,10 +2955,59 @@
               });
             });
             outs[g.id] = { list:list, q:q };
+            // Once a game is under way the injury report stops being the interesting part of
+            // this payload and the box score starts. Who actually produced, in the scoring
+            // this league runs, is the thing you check on a Sunday.
+            if(g.state!=='pre' && s.boxscore) leaders[g.id] = dkFromBox(s.boxscore).slice(0,3);
             paint();
           })
           .catch(function(){ outs[g.id] = { list:[], q:0 }; });
       });
+    }
+
+    // --- DraftKings from the box score ---
+    // Passing 0.04 a yard and 4 a score, rushing and receiving 0.1 a yard and 6 a score, a
+    // point a catch, minus one for a pick or a lost fumble, and the three-point bonuses at
+    // 300 passing or 100 on the ground or through the air. One player can appear in three
+    // groups in the same game, so everything accumulates per athlete before it is scored.
+    function dkFromBox(box){
+      var acc={};
+      function get(id,nm,tm){
+        if(!acc[id]) acc[id]={n:nm,t:tm,py:0,ptd:0,pint:0,ry:0,rtd:0,rec:0,recy:0,rectd:0,fl:0};
+        return acc[id];
+      }
+      (box.players||[]).forEach(function(tp){
+        var tm=((tp.team||{}).abbreviation)||'';
+        (tp.statistics||[]).forEach(function(grp){
+          var keys=grp.keys||[];
+          (grp.athletes||[]).forEach(function(a){
+            var ath=a.athlete||{}, st=a.stats||[];
+            if(!ath.id) return;
+            var v=function(key){
+              var i=keys.indexOf(key);
+              return i<0 ? 0 : (parseFloat(String(st[i]).replace(/[^0-9.\-]/g,''))||0);
+            };
+            var r=get(ath.id, ath.displayName||'', tm);
+            if(grp.name==='passing'){ r.py+=v('passingYards'); r.ptd+=v('passingTouchdowns'); r.pint+=v('interceptions'); }
+            else if(grp.name==='rushing'){ r.ry+=v('rushingYards'); r.rtd+=v('rushingTouchdowns'); }
+            else if(grp.name==='receiving'){ r.rec+=v('receptions'); r.recy+=v('receivingYards'); r.rectd+=v('receivingTouchdowns'); }
+            else if(grp.name==='fumbles'){ r.fl+=v('fumblesLost'); }
+          });
+        });
+      });
+      var out=[];
+      Object.keys(acc).forEach(function(id){
+        var r=acc[id];
+        var p = r.py*0.04 + r.ptd*4 - r.pint
+              + r.ry*0.1 + r.rtd*6
+              + r.rec*1 + r.recy*0.1 + r.rectd*6
+              - r.fl;
+        if(r.py>=300) p+=3;
+        if(r.ry>=100) p+=3;
+        if(r.recy>=100) p+=3;
+        if(p>0) out.push({ n:r.n, t:r.t, p:Math.round(p*10)/10 });
+      });
+      return out.sort(function(a,b){ return b.p-a.p; });
     }
 
     function run(){
