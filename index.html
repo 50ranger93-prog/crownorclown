@@ -1557,7 +1557,7 @@
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
     <div class="rt-stage" id="rt-stage">
-      <img id="rt-img" src="img/catch1.jpg" alt="" width="900" height="502">
+      <img id="rt-img" src="img/run1.jpg" alt="" width="900" height="502">
       <div class="rt-veil"></div>
       <div class="rt-hud">
         <div class="rt-sit" id="rt-sit">1st &amp; 10 &middot; own 8</div>
@@ -3435,10 +3435,10 @@
     // Wider window, smaller gain, no reception - that is a run. Tighter, bigger, worth a
     // point - that is a pass. The deep shot is the only call on here that can go sixty-five.
     var PLAYS=[
-      {t:'run',  img:'catch1', call:'Inside run',  w:.42, ms:1520, max:8,  fail:'Stuffed'},
+      {t:'run',  img:'run1',   call:'Inside run',  w:.42, ms:1520, max:8,  fail:'Stuffed'},
       {t:'pass', img:'catch2', call:'Quick slant', w:.36, ms:1340, max:10, fail:'Incomplete'},
-      {t:'run',  img:'catch3', call:'Sweep',       w:.31, ms:1200, max:13, fail:'Stuffed'},
-      {t:'pass', img:'catch4', call:'Dig',         w:.27, ms:1060, max:16, fail:'Incomplete'},
+      {t:'run',  img:'run2',   call:'Sweep',       w:.31, ms:1200, max:13, fail:'Stuffed'},
+      {t:'pass', img:'catch3', call:'Dig',         w:.27, ms:1060, max:16, fail:'Incomplete'},
       {t:'pass', img:'catch5', call:'Deep shot',   w:.21, ms:900,  max:65, fail:'Incomplete'}
     ];
     var MAX_FAILS=1;          // one you survive, the second ends the drive
@@ -3446,7 +3446,7 @@
 
     var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-    ['catch2','catch3','catch4','catch5','catch6','drop','tackled'].forEach(function(n){
+    ['run1','run2','kick1','catch2','catch3','catch5','catch6','drop','tackled'].forEach(function(n){
       var p=new Image(); p.src='img/'+n+'.jpg';
     });
 
@@ -3588,6 +3588,7 @@
       zone.style.width=(width*100)+'%';
       call.className='rt-call'; call.textContent=d+'-yard attempt';
       sit.textContent='4th down · '+spot(pos)+' · worth '+fgPoints(d)+' points';
+      swap('kick1');
       hint.textContent='Tap on the gold to send it';
       again.hidden=true; kickBtn.hidden=true;
       t0=0; live=true; raf=requestAnimationFrame(frame);
