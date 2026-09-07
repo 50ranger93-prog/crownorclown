@@ -961,6 +961,41 @@
   /* Without motion the sweep is the game, so slow it right down and widen the
      window rather than removing the thing being played. */
   @media (prefers-reduced-motion:reduce){ .rt-stage img{transition:none} }
+
+  /* Yardage sits top-right of the stage, big, because it is the number you are chasing.
+     "3 of 5" is a progress bar; "63 YDS" is a score somebody wants to beat. */
+  .rt-yards{position:absolute;top:0;right:0;padding:16px 20px;text-align:right;pointer-events:none}
+  .rt-yards .n{font-family:var(--disp);font-size:44px;line-height:.9;color:var(--gold-bright);
+    font-variant-numeric:tabular-nums;text-shadow:0 2px 18px rgba(0,0,0,.7)}
+  .rt-yards .l{font-family:var(--mono);font-size:9px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--bone-dim);margin-top:2px}
+  .rt-yards .gain{font-family:var(--mono);font-size:12px;color:var(--gold);
+    opacity:0;transition:opacity .18s ease}
+  .rt-yards .gain.show{opacity:1}
+  @media (max-width:640px){ .rt-yards{padding:11px 14px} .rt-yards .n{font-size:30px} }
+
+  /* Arcade cabinet: a short board of initials, because a private best score gets played
+     twice and a board with somebody else's name on it gets played fourteen times. */
+  .rt-board{margin-top:20px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+  .rt-board h4{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--gold);margin:0;padding:11px 15px;border-bottom:1px solid var(--line);
+    background:var(--ink-2);font-weight:600}
+  .rt-board ol{margin:0;padding:0;list-style:none}
+  .rt-board li{display:flex;align-items:baseline;gap:12px;padding:7px 15px;
+    border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px}
+  .rt-board li:last-child{border-bottom:0}
+  .rt-board li.fresh{background:rgba(231,178,60,.09)}
+  .rt-board .rk{color:var(--bone-dim);width:16px;font-size:11px}
+  .rt-board .ini{letter-spacing:.22em;color:var(--bone);flex:1}
+  .rt-board .yd{color:var(--gold-bright);font-variant-numeric:tabular-nums;font-weight:600}
+  .rt-board .empty{padding:13px 15px;color:var(--bone-dim);font-family:var(--mono);font-size:11.5px}
+  .rt-ini{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .rt-ini input{font-family:var(--mono);font-size:15px;letter-spacing:.3em;text-transform:uppercase;
+    width:92px;padding:8px 10px;background:var(--ink-2);color:var(--bone);
+    border:1px solid var(--line);border-radius:3px}
+  .rt-ini input:focus{outline:2px solid var(--gold);outline-offset:1px}
+  .rt-ini label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--bone-dim)}
 </style>
 </head>
 <body>
@@ -1415,7 +1450,8 @@
     <div class="eyebrow rise">Five calls · one thumb</div>
     <h2 class="disp rise" style="font-size:clamp(38px,7vw,84px);margin:10px 0 0">Go get it</h2>
     <p class="route-note rise">Ball's in the air. Tap when the marker crosses the gold — reach,
-      secure, cut, stiff arm, dive. Miss one and you're watching it bounce.</p>
+      secure, cut, stiff arm, dive. Dead centre is worth the most yards, the edge barely counts,
+      and past the dive it never stops. Miss one and you're watching it bounce.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -1427,6 +1463,11 @@
         <div class="rt-track"><i id="rt-zone"></i><b id="rt-mark"></b></div>
         <div class="rt-hint" id="rt-hint">Tap · or press space</div>
       </div>
+      <div class="rt-yards" aria-hidden="true">
+        <div class="n" id="rt-yn">0</div>
+        <div class="l">yards</div>
+        <div class="gain" id="rt-gain"></div>
+      </div>
       <button class="rt-hit" id="rt-hit" type="button" aria-describedby="rt-call">
         <span class="sr-only">Make the play</span>
       </button>
@@ -1435,6 +1476,17 @@
     <div class="rt-foot">
       <div class="rt-score" id="rt-score" aria-live="polite">Best: none yet</div>
       <button class="rt-again" id="rt-again" type="button" hidden>Run it again</button>
+    </div>
+
+    <div class="rt-ini" id="rt-ini" hidden>
+      <label for="rt-name">On the board &mdash; your initials</label>
+      <input id="rt-name" maxlength="3" autocomplete="off" spellcheck="false" placeholder="AAA">
+      <button class="rt-again" id="rt-save" type="button">Save</button>
+    </div>
+
+    <div class="rt-board rise">
+      <h4>Longest runs &middot; this machine</h4>
+      <ol id="rt-list"></ol>
     </div>
   </div>
 </section>
@@ -3220,39 +3272,95 @@
     });
   })();
 
-  // ---- the route: five timed calls, snap to pylon ----
+  // ---- the route: an arcade cabinet, not a progress bar ----
+  //
+  // The old version scored "3 of 5" and kept your best in your own browser, which is a toy
+  // you play twice. Three changes make it a game: yardage instead of a count, so dead centre
+  // is worth chasing; no ending, so the dive is a checkpoint rather than a finish; and a
+  // board of initials, so a score is something you show somebody.
+  //
+  // Sound is synthesised rather than loaded - a few oscillators cost nothing, ship with the
+  // page, and never leave a hit landing in silence while a file downloads.
   (function route(){
     var stage=document.getElementById('rt-stage');
     if(!stage) return;
     var img=document.getElementById('rt-img'), call=document.getElementById('rt-call'),
         zone=document.getElementById('rt-zone'), mark=document.getElementById('rt-mark'),
         hint=document.getElementById('rt-hint'), hit=document.getElementById('rt-hit'),
-        score=document.getElementById('rt-score'), again=document.getElementById('rt-again');
+        score=document.getElementById('rt-score'), again=document.getElementById('rt-again'),
+        yn=document.getElementById('rt-yn'), gain=document.getElementById('rt-gain'),
+        iniBox=document.getElementById('rt-ini'), iniIn=document.getElementById('rt-name'),
+        saveBtn=document.getElementById('rt-save'), list=document.getElementById('rt-list');
 
     // Each call is tighter and quicker than the one before it, so the dive is the hard one.
+    // `yds` is what a dead-centre tap is worth; the rim of the zone pays a quarter of it.
     var STAGES=[
-      {img:'catch1', call:'Reach',     w:.40, ms:1500, fail:'drop'},
-      {img:'catch2', call:'Secure',    w:.33, ms:1320, fail:'drop'},
-      {img:'catch3', call:'Cut',       w:.29, ms:1160, fail:'tackled'},
-      {img:'catch4', call:'Stiff arm', w:.25, ms:1020, fail:'tackled'},
-      {img:'catch5', call:'Dive',      w:.21, ms:900,  fail:'tackled'}
+      {img:'catch1', call:'Reach',     w:.40, ms:1500, yds:12, fail:'drop'},
+      {img:'catch2', call:'Secure',    w:.33, ms:1320, yds:10, fail:'drop'},
+      {img:'catch3', call:'Cut',       w:.29, ms:1160, yds:14, fail:'tackled'},
+      {img:'catch4', call:'Stiff arm', w:.25, ms:1020, yds:16, fail:'tackled'},
+      {img:'catch5', call:'Dive',      w:.21, ms:900,  yds:20, fail:'tackled'}
     ];
+    // Past the dive it never stops: the calls come back faster and narrower until you miss.
+    // That is the difference between finishing a level and setting a high score.
+    var EXTRA=['Break it','Second effort','Outrun him','To the pylon','Still going'];
 
-    // Reduced motion doesn't mean no game — it means a sweep slow enough to read.
     var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-    // Warm the cache so a hit never lands on a blank frame.
     ['catch2','catch3','catch4','catch5','catch6','drop','tackled'].forEach(function(n){
       var p=new Image(); p.src='img/'+n+'.jpg';
     });
 
-    var i=0, centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, over=false;
-    var best=0;
-    try{ best=parseInt(localStorage.getItem('coc-route-best')||'0',10)||0; }catch(e){}
+    // --- sound: tiny synthesised cues, created on first tap so autoplay policy stays happy ---
+    var AC=null;
+    function actx(){
+      if(AC===null){
+        var C=window.AudioContext||window.webkitAudioContext;
+        AC = C ? new C() : false;
+      }
+      return AC || null;
+    }
+    function tone(freq,dur,type,vol,slideTo){
+      var a=actx(); if(!a) return;
+      try{
+        if(a.state==='suspended') a.resume();
+        var o=a.createOscillator(), g=a.createGain(), t=a.currentTime;
+        o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+        if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(vol||0.09,t+0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+        o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.02);
+      }catch(e){}
+    }
+    function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+    function sfxGood(q){ tone(360+q*430,0.16,'triangle',0.10,620+q*520); buzz(18); }
+    function sfxMiss(){ tone(200,0.30,'sawtooth',0.09,70); buzz([26,50,26]); }
+    function sfxTD(){
+      [0,120,240,420].forEach(function(d,i){
+        setTimeout(function(){ tone(392*(1+i*0.24),0.22,'triangle',0.10); },d);
+      });
+      buzz([30,40,30,40,90]);
+    }
 
+    // --- the board ---
+    var KEY='coc-route-board', best=0, board=[];
+    try{ board=JSON.parse(localStorage.getItem(KEY)||'[]')||[]; }catch(e){ board=[]; }
+    try{ best=parseInt(localStorage.getItem('coc-route-best')||'0',10)||0; }catch(e){}
+    if(board.length) best=Math.max(best, board[0].y||0);
+
+    function saveBoard(){ try{ localStorage.setItem(KEY,JSON.stringify(board.slice(0,5))); }catch(e){} }
+    function paintBoard(freshIdx){
+      if(!board.length){ list.innerHTML='<li class="empty">No runs yet. Go get it.</li>'; return; }
+      list.innerHTML=board.slice(0,5).map(function(r,i){
+        return '<li'+(i===freshIdx?' class="fresh"':'')+'>'+
+          '<span class="rk">'+(i+1)+'</span>'+
+          '<span class="ini">'+String(r.i||'---').replace(/[^A-Z0-9]/g,'')+'</span>'+
+          '<span class="yd">'+r.y+' yds</span></li>';
+      }).join('');
+    }
     function showBest(){
-      score.textContent = best>=STAGES.length ? 'Best: the whole route — touchdown'
-        : best>0 ? 'Best: '+best+' of '+STAGES.length : 'Best: none yet';
+      score.textContent = best>0 ? ('Best run: '+best+' yards') : 'Best run: none yet';
     }
 
     function swap(name){
@@ -3262,8 +3370,9 @@
       n.onerror=function(){ stage.classList.remove('swap'); };
       n.src='img/'+name+'.jpg';
     }
-
     function stop(){ live=false; if(raf) cancelAnimationFrame(raf); raf=null; }
+
+    var i=0, centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, over=false, yards=0;
 
     function frame(now){
       if(!live) return;
@@ -3277,9 +3386,31 @@
       raf=requestAnimationFrame(frame);
     }
 
+    function setYards(v){ yards=v; yn.textContent=v; }
+    function flashGain(n,q){
+      gain.textContent='+'+n+(q>0.86?'  perfect':'');
+      gain.classList.add('show');
+      setTimeout(function(){ gain.classList.remove('show'); },620);
+    }
+
+    // Beyond the scripted five, keep tightening. The floors stop it becoming a coin flip.
+    function cfg(n){
+      if(n<STAGES.length) return STAGES[n];
+      var k=n-STAGES.length;
+      return {
+        img:null,
+        call:EXTRA[k%EXTRA.length],
+        w:Math.max(.11,.21-k*0.012),
+        ms:Math.max(520,900-k*42),
+        yds:20+k*3,
+        fail:'tackled'
+      };
+    }
+
     function begin(n){
       i=n;
-      var s=STAGES[i];
+      if(n===0){ setYards(0); iniBox.hidden=true; }
+      var s=cfg(i);
       width=calm ? Math.min(.62,s.w*1.6) : s.w;
       span =calm ? s.ms*2.1 : s.ms;
       centre=(width/2+.06)+Math.random()*(1-width-.12);
@@ -3288,7 +3419,7 @@
       call.className='rt-call'; call.textContent=s.call;
       hint.textContent='Tap when the marker crosses the gold';
       again.hidden=true; over=false;
-      swap(s.img);
+      if(s.img) swap(s.img);
       t0=0; live=true; raf=requestAnimationFrame(frame);
     }
 
@@ -3296,29 +3427,59 @@
       stop(); over=true;
       call.className='rt-call '+(good?'good':'bad');
       call.textContent=text;
-      hint.textContent=good?'That’s the whole route.':'Tap Run it again.';
-      swap(pic);
+      hint.textContent = good ? 'Touchdown. Run it again.' : 'Tap Run it again.';
+      if(pic) swap(pic);
       again.hidden=false;
-      var got=good?STAGES.length:i;
-      if(got>best){ best=got; try{ localStorage.setItem('coc-route-best',String(best)); }catch(e){} }
+      if(yards>best){ best=yards; try{ localStorage.setItem('coc-route-best',String(best)); }catch(e){} }
       showBest();
+      // Only ask for initials when the run actually belongs on the board
+      var lowest = board.length>=5 ? (board[4].y||0) : 0;
+      if(yards>0 && (board.length<5 || yards>lowest)){
+        iniBox.hidden=false;
+        iniIn.value='';
+      }
     }
 
     function tap(){
+      if(over) return;
       if(!live){ begin(0); return; }
       var pos=parseFloat(mark.dataset.pos||'0');
-      if(Math.abs(pos-centre)<=width/2){
-        if(i+1<STAGES.length){
-          call.className='rt-call good';
-          stop();
-          setTimeout(function(){ begin(i+1); },170);
-        } else {
-          finish(true,'Touchdown','catch6');
+      var off=Math.abs(pos-centre), half=width/2;
+      if(off<=half){
+        // dead centre pays full, the rim pays a quarter - that is the skill in the tap
+        var q=1-(off/half);                       // 1 at the centre, 0 at the rim
+        var s=cfg(i);
+        var got=Math.max(1, Math.round(s.yds*(0.25+0.75*q)));
+        setYards(yards+got); flashGain(got,q); sfxGood(q);
+        call.className='rt-call good';
+        stop();
+        if(i+1===STAGES.length){
+          // the dive is a checkpoint, not a finish line
+          setTimeout(function(){ swap('catch6'); },60);
+          sfxTD();
         }
+        setTimeout(function(){ begin(i+1); },170);
       } else {
-        finish(false, STAGES[i].fail==='drop'?'Dropped':'Wrapped up', STAGES[i].fail);
+        sfxMiss();
+        var f=cfg(i).fail;
+        finish(false, f==='drop'?'Dropped':'Wrapped up', f);
       }
     }
+
+    saveBtn.addEventListener('click',function(){
+      var ini=(iniIn.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3) || 'AAA';
+      var run={i:ini,y:yards};
+      board.push(run);
+      board.sort(function(a,b){ return b.y-a.y; });
+      board=board.slice(0,5);
+      saveBoard();
+      paintBoard(board.indexOf(run));
+      iniBox.hidden=true;
+      hit.focus();
+    });
+    iniIn && iniIn.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){ e.preventDefault(); saveBtn.click(); }
+    });
 
     hit.addEventListener('click',function(e){ e.preventDefault(); tap(); });
     again.addEventListener('click',function(){ begin(0); hit.focus(); });
@@ -3328,7 +3489,7 @@
       else if(!over && !raf && seen){ begin(i); }   // mid-round when they left: restart that call
     });
 
-    showBest();
+    paintBoard(-1); showBest();
     // Wait for the section to actually be on screen before the marker starts moving.
     var seen=false;
     if('IntersectionObserver' in window){
