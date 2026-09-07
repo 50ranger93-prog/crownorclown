@@ -1494,13 +1494,15 @@
      thumb; the whole frame is the button. -->
 <section class="sec-pad route" id="route">
   <div class="wrap">
-    <div class="eyebrow rise">Five plays · one thumb · DraftKings scoring</div>
+    <div class="eyebrow rise">92 yards · five plays · one thumb</div>
     <h2 class="disp rise" style="font-size:clamp(38px,7vw,84px);margin:10px 0 0">Go get it</h2>
-    <p class="route-note rise">Five situations, first down to the end zone. Tap when the marker
-      crosses the gold. <b>Dead centre pays the whole play, the rim pays a fifth</b> &mdash; so
-      it's aim, not reflex. Scored the way your league scores: <b>0.1 a yard, a point a catch,
-      six for the touchdown, three more if you clear 100 yards.</b> Miss once and the drive
-      is over where it stands.</p>
+    <p class="route-note rise">Backed up on your own 8, ninety-two yards to go, five plays to
+      get there. Tap when the marker crosses the gold &mdash; <b>dead centre pays the whole
+      play, the rim pays a fifth</b>, so it's aim, not reflex. Slant, out, dig, seam: move the
+      chains and you <b>earn the deep shot</b>, and the further you still are the longer it has
+      to be. <b>A drop costs you the down and scores nothing.</b> You survive one. The second
+      ends the drive. Scored the way your league scores &mdash; 0.1 a yard, a point a catch,
+      six for the touchdown.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -1508,7 +1510,7 @@
       <img id="rt-img" src="img/catch1.jpg" alt="" width="900" height="502">
       <div class="rt-veil"></div>
       <div class="rt-hud">
-        <div class="rt-sit" id="rt-sit">1st &amp; 10 &middot; own 25 &middot; play 1 of 5</div>
+        <div class="rt-sit" id="rt-sit">1st &amp; 10 &middot; own 8</div>
         <div class="rt-call" id="rt-call">Quick slant</div>
         <div class="rt-track"><i id="rt-zone"></i><b id="rt-mark"></b></div>
         <div class="rt-hint" id="rt-hint">Tap &middot; or press space</div>
@@ -3349,18 +3351,20 @@
     });
   })();
 
-  // ---- the drive: five plays, DraftKings scoring ----
+  // ---- the drive: real field position, DraftKings scoring ----
   //
-  // Yards are the thing you gain; points are the thing you are scored on, exactly like the
-  // leagues this site runs. DK receiving: 0.1 a yard, a point a catch, six for the score,
-  // three more if the day clears 100 yards. So a 38-yard grab is 4.8 with the catch, and the
-  // touchdown is worth more than the yardage that set it up - which is what makes the last
-  // play matter more than the first four.
+  // The ball actually sits somewhere. You start on your own 25 and every catch moves you,
+  // so the situation line is computed from where you are rather than written down in advance.
+  // That is what keeps the yardage honest: a gain is capped by the grass left in front of it,
+  // and the drive can never total more than the field is long.
   //
-  // Each play is a real situation with its own ceiling. Backed up on your own 8 is where the
-  // 99 lives; first and goal from the 7 can only ever pay 7 and the six points. Timing decides
-  // how much of the ceiling you actually get: dead centre is the whole thing, the rim is a
-  // fifth of it, and missing ends the drive where it stands.
+  // Play sizes are what plays are - a slant is eleven, a dig is twenty-two, and the deep shot
+  // is the one that can go sixty-five. You only get to that shot by moving the ball first, so
+  // the big play is earned rather than handed out on play three.
+  //
+  // One drop is survivable. It costs you the down and the points, exactly like an incompletion,
+  // and the drive goes on. The second one ends it. Only a drive that reaches the end zone makes
+  // the main board; everything else is practice squad.
   (function route(){
     var stage=document.getElementById('rt-stage');
     if(!stage) return;
@@ -3374,16 +3378,16 @@
         saveBtn=document.getElementById('rt-save'), list=document.getElementById('rt-list'),
         list2=document.getElementById('rt-list2'), boardTitle=document.getElementById('rt-btitle');
 
-    // Five situations, front to back. `max` is the longest gain the situation allows, so the
-    // deep shot from your own 8 is the only place a 99 can happen and the fade from the 7
-    // is capped by the goal line, same as it would be on a Sunday.
+    // What each call can pay at its very best. Real numbers: a slant is not a bomb, and the
+    // bomb only shows up once you have earned your way to it.
     var PLAYS=[
-      {img:'catch1', call:'Quick slant',  sit:'1st &amp; 10 &middot; own 25',  w:.40, ms:1500, max:14, fail:'drop'},
-      {img:'catch2', call:'Comeback',     sit:'3rd &amp; 6 &middot; own 41',   w:.33, ms:1320, max:22, fail:'drop'},
-      {img:'catch3', call:'Deep post',    sit:'2nd &amp; 12 &middot; own 8',   w:.27, ms:1160, max:99, fail:'tackled'},
-      {img:'catch4', call:'Dig',          sit:'3rd &amp; 3 &middot; opp 31',   w:.24, ms:1020, max:24, fail:'tackled'},
-      {img:'catch5', call:'Fade',         sit:'1st &amp; goal &middot; opp 7', w:.20, ms:900,  max:7,  fail:'tackled', td:true}
+      {img:'catch1', call:'Quick slant', w:.40, ms:1500, max:8},
+      {img:'catch2', call:'Out route',   w:.34, ms:1330, max:11},
+      {img:'catch3', call:'Dig',         w:.29, ms:1180, max:14},
+      {img:'catch4', call:'Seam',        w:.25, ms:1030, max:17},
+      {img:'catch5', call:'Deep shot',   w:.21, ms:900,  max:65}
     ];
+    var MAX_DROPS=1;      // one you survive, the second ends the drive
 
     var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -3412,7 +3416,8 @@
     }
     function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
     function sfxGood(q){ tone(360+q*430,0.16,'triangle',0.10,620+q*520); buzz(18); }
-    function sfxMiss(){ tone(200,0.30,'sawtooth',0.09,70); buzz([26,50,26]); }
+    function sfxDrop(){ tone(200,0.26,'sawtooth',0.08,90); buzz([22,40,22]); }
+    function sfxEnd(){ tone(150,0.42,'sawtooth',0.10,60); buzz([30,60,30,60]); }
     function sfxTD(){
       [0,120,240,420].forEach(function(d,i){
         setTimeout(function(){ tone(392*(1+i*0.24),0.22,'triangle',0.10); },d);
@@ -3421,18 +3426,18 @@
     }
 
     // --- DraftKings receiving, the same scoring the leagues run ---
+    // A drop is worth nothing at all: no catch, no yards. That is the whole cost of it.
     function dk(yards,catches,td){
       var p = yards*0.1 + catches*1 + (td?6:0);
-      if(yards>=100) p += 3;                 // the hundred-yard bonus
+      if(yards>=100) p += 3;
       return Math.round(p*10)/10;
     }
 
-    // --- boards. TD = you finished the drive; practice = you did not. ---
+    // --- boards ---
     var K_TD='coc-drive-td', K_PR='coc-drive-practice';
-    var bTD=[], bPR=[];
     function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]')||[]; }catch(e){ return []; } }
     function put(k,v){ try{ localStorage.setItem(k,JSON.stringify(v.slice(0,5))); }catch(e){} }
-    bTD=load(K_TD); bPR=load(K_PR);
+    var bTD=load(K_TD), bPR=load(K_PR);
 
     function row(r,i,fresh){
       return '<li'+(i===fresh?' class="fresh"':'')+'>'+
@@ -3444,7 +3449,7 @@
     function paintBoards(freshTD,freshPR){
       list.innerHTML = bTD.length
         ? bTD.slice(0,5).map(function(r,i){ return row(r,i,freshTD); }).join('')
-        : '<li class="empty">Nobody has finished the drive yet.</li>';
+        : '<li class="empty">Nobody has reached the end zone yet.</li>';
       list2.innerHTML = bPR.length
         ? bPR.slice(0,5).map(function(r,i){ return row(r,i,freshPR); }).join('')
         : '<li class="empty">No drives yet.</li>';
@@ -3464,7 +3469,7 @@
     function stop(){ live=false; if(raf) cancelAnimationFrame(raf); raf=null; }
 
     var i=0, centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, over=false;
-    var yards=0, catches=0, scored=false;
+    var pos=8, down=1, marker=18, yards=0, catches=0, drops=0, scored=false, pending=null;
 
     function frame(now){
       if(!live) return;
@@ -3472,26 +3477,41 @@
       // Ping-pong rather than wrap: the marker comes back through the zone, so a late
       // thumb still gets a shot instead of waiting out a full reset.
       var p=((now-t0)/span)%2;
-      var pos=p<1?p:2-p;
-      mark.style.left=(pos*100)+'%';
-      mark.dataset.pos=pos;
+      var v=p<1?p:2-p;
+      mark.style.left=(v*100)+'%';
+      mark.dataset.pos=v;
       raf=requestAnimationFrame(frame);
     }
+
+    // 25 reads "own 25", 60 reads "opp 40", 50 is midfield - the way a broadcast says it
+    function spot(y){
+      if(y===50) return 'midfield';
+      return y<50 ? ('own '+y) : ('opp '+(100-y));
+    }
+    function ord(n){ return n===1?'1st':n===2?'2nd':n===3?'3rd':'4th'; }
 
     function paintScore(){
       yn.textContent=yards;
       pts.textContent=dk(yards,catches,scored).toFixed(1);
-      yn.classList.toggle('ton', yards>=100);
     }
     function flashGain(n,q){
       gain.textContent='+'+n+' yds'+(q>0.86?'  perfect':'');
       gain.classList.add('show');
       setTimeout(function(){ gain.classList.remove('show'); },700);
     }
+    function paintSit(){
+      var toGo=Math.max(1,marker-pos);
+      var togoTxt = (pos+toGo>=100) ? 'goal' : toGo;
+      sit.textContent = ord(Math.min(down,4))+' & '+togoTxt+' · '+spot(pos)+
+        (drops?' · 1 drop':'');
+    }
 
     function begin(n){
       i=n;
-      if(n===0){ yards=0; catches=0; scored=false; paintScore(); iniBox.hidden=true; }
+      if(n===0){
+        pos=8; down=1; marker=18; yards=0; catches=0; drops=0; scored=false;
+        paintScore(); iniBox.hidden=true;
+      }
       var s=PLAYS[i];
       width=calm ? Math.min(.62,s.w*1.6) : s.w;
       span =calm ? s.ms*2.1 : s.ms;
@@ -3499,58 +3519,81 @@
       zone.style.left=((centre-width/2)*100)+'%';
       zone.style.width=(width*100)+'%';
       call.className='rt-call'; call.textContent=s.call;
-      sit.innerHTML=s.sit+' &middot; play '+(i+1)+' of '+PLAYS.length;
+      paintSit();
       hint.textContent='Tap when the marker crosses the gold';
       again.hidden=true; over=false;
       swap(s.img);
       t0=0; live=true; raf=requestAnimationFrame(frame);
     }
 
-    function finish(good){
+    function finish(good,why){
       stop(); over=true;
       var p=dk(yards,catches,scored);
       call.className='rt-call '+(good?'good':'bad');
-      call.textContent = good ? 'Touchdown' : (PLAYS[i].fail==='drop'?'Dropped':'Wrapped up');
-      sit.innerHTML = good
-        ? 'Drive complete &middot; '+yards+' yards &middot; '+p.toFixed(1)+' DK points'
-        : 'Drive over on play '+(i+1)+' &middot; '+yards+' yards &middot; '+p.toFixed(1)+' points';
-      hint.textContent = good ? 'That is the whole drive.' : 'Tap Run it again.';
-      swap(good?'catch6':PLAYS[i].fail);
+      call.textContent = good ? 'Touchdown' : why;
+      sit.textContent = good
+        ? 'Drive complete · '+yards+' yards · '+p.toFixed(1)+' DK points'
+        : 'Drive over on the '+spot(pos)+' · '+yards+' yards · '+p.toFixed(1)+' points';
+      hint.textContent = good ? 'That is a drive.' : 'Tap Run it again.';
+      swap(good?'catch6':'tackled');
       again.hidden=false;
 
-      // A finished drive goes on the main board. Anything short of it goes on the practice
-      // board, which is deliberately the lesser of the two - getting there is the point.
       var b = good ? bTD : bPR;
       var lowest = b.length>=5 ? b[4].p : -1;
       pending = {i:'', y:yards, p:p, td:good};
       if(p>0 && (b.length<5 || p>lowest)){
-        boardTitle.textContent = good ? 'You made the drive board' : 'You made the practice board';
+        boardTitle.textContent = good
+          ? 'End zone board — your initials'
+          : 'Practice squad board — your initials';
         iniBox.hidden=false; iniIn.value='';
       }
       bestLine();
     }
 
-    var pending=null;
+    // an incompletion: the down is gone, the ball has not moved, and it scores nothing
+    function incomplete(){
+      drops++;
+      sfxDrop();
+      call.className='rt-call bad'; call.textContent='Incomplete';
+      stop();
+      if(drops>MAX_DROPS || i+1>=PLAYS.length){
+        setTimeout(function(){ sfxEnd(); finish(false, drops>MAX_DROPS?'Drive stalled':'Turnover on downs'); },420);
+        return;
+      }
+      down++;
+      setTimeout(function(){ begin(i+1); },520);
+    }
 
     function tap(){
       if(over) return;
       if(!live){ begin(0); return; }
-      var pos=parseFloat(mark.dataset.pos||'0');
-      var off=Math.abs(pos-centre), half=width/2;
-      if(off>half){ sfxMiss(); finish(false); return; }
+      var v=parseFloat(mark.dataset.pos||'0');
+      var off=Math.abs(v-centre), half=width/2;
+      if(off>half){ incomplete(); return; }
 
-      // dead centre pays the whole situation, the rim pays a fifth of it
+      // dead centre pays the whole call, the rim pays a fifth - and the grass in front of
+      // you is the real ceiling, so nothing gains more field than there is field left
       var q=1-(off/half);
       var s=PLAYS[i];
-      var got=Math.max(1, Math.round(s.max*(0.2+0.8*q)));
-      yards+=got; catches+=1;
-      if(s.td) scored=true;
+      var room=100-pos;
+      var got=Math.min(room, Math.max(1, Math.round(s.max*(0.2+0.8*q))));
+      pos+=got; yards+=got; catches+=1;
       paintScore(); flashGain(got,q);
       call.className='rt-call good';
       stop();
 
-      if(s.td){ sfxTD(); setTimeout(function(){ finish(true); },220); return; }
+      if(pos>=100){
+        scored=true; paintScore(); sfxTD();
+        setTimeout(function(){ finish(true); },260);
+        return;
+      }
       sfxGood(q);
+      // moved the chains? fresh set. otherwise the down is spent.
+      if(pos>=marker){ down=1; marker=Math.min(100,pos+10); } else { down++; }
+      if(i+1>=PLAYS.length){
+        setTimeout(function(){ sfxEnd(); finish(false,'Drive stalled'); },420);
+        return;
+      }
       setTimeout(function(){ begin(i+1); },200);
     }
 
