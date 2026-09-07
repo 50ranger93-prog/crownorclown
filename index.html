@@ -2178,12 +2178,25 @@
     // https page blocks it as mixed content). Both are cached for a day so a tap on the
     // headline never waits on the network.
     var CATCHER = { name:'Puka Nacua', team:'LAR', yards:null, live:false };
+
+    // Name the man in the hint. "Tap the name to throw it" reads like a UI instruction;
+    // "throw it to Puka" tells you what actually happens. The catcher is whoever leads the
+    // league in receiving yards, so the hint has to follow him rather than hardcode a name.
+    function catcherFirstName(){
+      return String(CATCHER.name || '').trim().split(/\s+/)[0] || 'Puka';
+    }
+    function paintThrowHint(){
+      var hint = document.getElementById('throwHint');
+      if(hint) hint.textContent = 'Tap the name to throw it to ' + catcherFirstName();
+    }
+    paintThrowHint();
     (function seasonStar(){
       if(!window.fetch) return;
       var KEY='coc-catcher-'+SEASON;
       try{
         var hit=JSON.parse(localStorage.getItem(KEY)||'null');
-        if(hit && hit.at && (Date.now()-hit.at) < 864e5){ CATCHER=hit.v; return; }
+        // a day-old cached leader still has to reach the hint, or it keeps saying Puka
+        if(hit && hit.at && (Date.now()-hit.at) < 864e5){ CATCHER=hit.v; paintThrowHint(); return; }
       }catch(e){}
       var base='https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/'+SEASON+'/types/2/leaders';
       fetch(base,{cache:'no-store'})
@@ -2205,6 +2218,7 @@
         .then(function(v){
           if(!v||!v.name) return;
           CATCHER=v;
+          paintThrowHint();   // the leader changed, so the hint has to say the new name
           try{ localStorage.setItem(KEY,JSON.stringify({at:Date.now(),v:v})); }catch(e){}
         })
         .catch(function(){});
