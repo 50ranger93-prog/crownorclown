@@ -691,7 +691,8 @@
     animation:catchRing .62s cubic-bezier(.16,.9,.3,1) forwards;
   }
   .catch-name{
-    position:absolute;left:50%;top:26px;transform:translateX(-50%);
+    /* clears the receiver, who hangs about 115px below the ball he just caught */
+    position:absolute;left:50%;top:120px;transform:translateX(-50%);
     font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
     color:var(--bone-dim);white-space:nowrap;text-align:center;
     animation:catchName 2.6s ease-out forwards;
@@ -711,9 +712,33 @@
     76%{opacity:1;transform:translate(-50%,0)}
     100%{opacity:0;transform:translate(-50%,-5px)}
   }
+  /* The receiver himself. The figure's hands sit at roughly 52% across and 13% down its
+     own frame, so those offsets put his hands exactly where the ball stopped rather than
+     centring the whole toy on the catch point and leaving him grabbing at nothing. */
+  .catch-fig{
+    position:absolute;left:50%;top:50%;width:132px;height:132px;   /* source is square */
+    margin-left:-68.6px;   /* 52% of 132 */
+    margin-top:-17.2px;    /* 13% of 132 */
+    transform-origin:52% 13%;
+    animation:catchFig 2.6s cubic-bezier(.18,.92,.32,1) forwards;
+    filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));
+  }
+  @keyframes catchFig{
+    /* comes up into the ball from below and behind, plants, then drops away */
+    0%  {opacity:0;transform:translate(-14px,54px) scale(.72) rotate(-9deg)}
+    18% {opacity:1;transform:translate(0,0) scale(1.06) rotate(0deg)}
+    26% {transform:translate(0,0) scale(1) rotate(0deg)}
+    74% {opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+    100%{opacity:0;transform:translate(0,26px) scale(.94) rotate(3deg)}
+  }
+  @media (max-width:640px){
+    .catch-fig{width:96px;height:96px;margin-left:-49.9px;margin-top:-12.5px}
+    .catch-name{top:88px}
+  }
   @media (prefers-reduced-motion:reduce){
     .catch-ring{display:none}
     .catch-name{animation:none;opacity:1}
+    .catch-fig{animation:none;opacity:1;transform:none}
   }
   @keyframes sweep{0%,100%{transform:translateX(-26%)}50%{transform:translateX(26%)}}
   .hero .wrap{z-index:2}
@@ -2279,7 +2304,11 @@
         .catch(function(){});
     })();
 
-    // the catch: a burst at the ball, then the receiver's name settles in under it
+    // Warm the receiver now. He is created at the instant of the catch, which is far too
+    // late to start a download - without this he arrives after the ring has already gone.
+    (function(){ var w=new Image(); w.src='img/catcher.png'; })();
+
+    // the catch: a burst at the ball, the receiver comes up into it, then his name settles
     function completion(hero,x,y,r){
       var wrap=document.createElement('div');
       wrap.className='catch-pop';
@@ -2287,6 +2316,7 @@
       wrap.style.left=x+'px'; wrap.style.top=y+'px';
       var yd = CATCHER.live && CATCHER.yards ? (' · '+CATCHER.yards+' yds') : '';
       wrap.innerHTML='<span class="catch-ring"></span>'+
+        '<img class="catch-fig" src="img/catcher.png" alt="" width="520" height="520">'+
         '<span class="catch-name">CAUGHT<b>'+
         String(CATCHER.name).replace(/[&<>"']/g,'')+
         (CATCHER.team?(' · '+CATCHER.team):'')+yd+'</b></span>';
