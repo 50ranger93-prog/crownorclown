@@ -902,8 +902,13 @@
     .foot-contact{text-align:left}
   }
   @media(max-width:520px){
-    .count{flex-wrap:wrap}
-    .count .ct-label{max-width:none;flex-basis:100%;border-right:0;border-bottom:1px solid var(--line);padding:10px 16px}
+    /* Stay on one line on a phone. Wrapping the label onto its own row turned the clock
+       into a tall stack that ate the top of the screen; it is a scoreboard, so it reads
+       across. Units shrink instead of breaking. */
+    .count{flex-wrap:nowrap;width:100%;margin-top:26px}
+    .count .ct-label{max-width:none;flex:0 1 auto;padding:0 10px;font-size:9px;letter-spacing:.1em}
+    .count .unit{flex:1 1 0;min-width:0;padding:10px 4px}
+    .count .u-l{font-size:8px;letter-spacing:.1em}
     .stakes div{min-width:100%;border-right:0;border-bottom:1px solid var(--line)}
     .stakes div:last-child{border-bottom:0}
     .nav-cta{display:none}
@@ -939,7 +944,9 @@
     .pay-box{margin-top:28px;padding:24px}
     .hw-media{aspect-ratio:1/1;padding:18px}
     .vest-shot{margin-top:22px}
-    .count .u-n{font-size:22px}
+    .count .u-n{font-size:19px}
+    .count .ct-label{padding:0 7px;font-size:8.5px}
+    .count .unit{padding:9px 2px}
     .laces{padding:6px 0 0}
     .laces svg{width:78px}
     .rt-call{font-size:34px}
@@ -991,6 +998,44 @@
   /* Without motion the sweep is the game, so slow it right down and widen the
      window rather than removing the thing being played. */
   @media (prefers-reduced-motion:reduce){ .rt-stage img{transition:none} }
+
+  /* ---- folds: reference material that should be reachable, not in the way ----
+     The rules, the payout ladder, the board list and every roster are all things you want
+     once and then never again on the same visit. Closed by default they cost one line each;
+     open they are exactly what they were. Native <details> so the keyboard and screen
+     readers get it for free. */
+  .fold{border-top:1px solid var(--line);background:var(--ink)}
+  .fold + .fold{border-top:0}
+  .fold > summary{
+    list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding:20px max(20px,calc((100vw - 1120px)/2));
+    font-family:var(--mono);
+  }
+  .fold > summary::-webkit-details-marker{display:none}
+  .fold > summary:hover .ft{color:var(--gold-bright)}
+  .fold > summary:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+  .fold .ft{
+    font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);
+    font-weight:600;position:relative;padding-left:22px;
+  }
+  /* the chevron is the only moving part, so it is the only thing that has to be drawn */
+  .fold .ft::before{
+    content:'';position:absolute;left:0;top:.28em;width:7px;height:7px;
+    border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);
+    transform:rotate(-45deg);transition:transform .18s ease;
+  }
+  .fold[open] .ft::before{transform:rotate(45deg)}
+  .fold .fh{font-size:11px;color:var(--bone-dim);letter-spacing:.02em}
+  .fold[open] > summary{border-bottom:1px solid var(--line)}
+  /* the section inside keeps its own padding, so the fold adds none of its own */
+  .fold > section{padding-top:34px}
+  @media (max-width:640px){
+    .fold > summary{padding:16px 20px;gap:4px}
+    .fold .ft{font-size:11px}
+    .fold .fh{flex-basis:100%;padding-left:22px}
+    .fold > section{padding-top:22px}
+  }
+  @media (prefers-reduced-motion:reduce){ .fold .ft::before{transition:none} }
 
   /* Points lead, yards support. The league is scored in points, so that is the number in
      the big type and the yards are the working detail underneath it. */
@@ -1362,7 +1407,7 @@
 </section>
 
 <!-- FORMAT SPEC SHEET -->
-<section class="spec sec-pad">
+<section class="spec sec-pad" id="rules">
   <div class="wrap">
     <div class="eyebrow rise">The format · why skill wins</div>
     <div class="spec-table rise">
@@ -3679,6 +3724,39 @@
         es.forEach(function(e){ if(e.isIntersecting&&!seen){ seen=true; begin(0); ob.disconnect(); } });
       },{threshold:.35}).observe(stage);
     } else { seen=true; begin(0); }
+  })();
+
+  // ---- fold the reference material away ----
+  //
+  // Four sections are things you read once and then scroll past for the rest of the season:
+  // the payout ladder, the board list, every roster in every league, and the rule sheet. On a
+  // phone they were most of the page before you reached anything live. Wrapping them at
+  // runtime rather than in the markup keeps every id and every hook exactly where the rest of
+  // the script expects to find them - the leagues section in particular is still the thing
+  // that counts seats and decides the page is sold out, so it gets folded, never removed.
+  (function folds(){
+    var SPEC=[
+      {sel:'#purse',   t:'The purse',      h:'$600 a board · paid $400 / $125 / $75 · zero rake'},
+      {sel:'#leagues', t:'The three boards', h:'12 seats each · all 36 taken'},
+      {sel:'#rosters', t:'Who owns who',   h:'Every roster on every board, live from ESPN'},
+      {sel:'#rules',   t:'The rules',      h:'Format, scoring, lineup, tiebreaks'}
+    ];
+    SPEC.forEach(function(s){
+      var el=document.querySelector(s.sel);
+      if(!el || !el.parentNode) return;
+      var d=document.createElement('details');
+      d.className='fold';
+      var sum=document.createElement('summary');
+      sum.innerHTML='<span class="ft">'+s.t+'</span><span class="fh">'+s.h+'</span>';
+      el.parentNode.insertBefore(d,el);
+      d.appendChild(sum);
+      d.appendChild(el);
+      // A closed <details> has no layout, so everything inside it missed the reveal observer
+      // the same way a hidden section does. Release it the first time it is opened.
+      d.addEventListener('toggle',function(){
+        if(d.open && window.__cocReveal) window.__cocReveal(d);
+      });
+    });
   })();
 
   // Scroll reveal
