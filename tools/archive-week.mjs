@@ -326,7 +326,7 @@ function buildFactors(g) {
     if (num >= 10) f.push(`Blowout risk · ${m[1].toUpperCase()} by ${num} — the dog throws, the favourite runs`);
   }
 
-  const skillOut = (g.out || []).filter(p => SKILL.has(p.pos));
+  const skillOut = (g.out || []).filter(p => p.sure && SKILL.has(p.pos));
   if (skillOut.length) {
     f.push(`${skillOut.length} skill starter${skillOut.length > 1 ? "s" : ""} out · ${
       skillOut.slice(0, 3).map(p => `${p.name} (${p.team} ${p.pos})`).join(", ")}`);
@@ -336,34 +336,20 @@ function buildFactors(g) {
 
 // Skill positions get a name, because the next man up is a waiver claim. Everywhere else a
 // name means nothing to a fantasy manager, so say what to actually watch instead.
-const WATCH = {
-  QB: "The whole offence changes — downgrade the pass catchers",
-  RB: "Check the backfield split before you start anyone",
-  WR: "Targets move — watch the slot", TE: "Check the second tight end",
-  K: "Kicking game is a coin flip this week",
-  OT: "Watch the quarterback's pressure rate", OG: "Interior pressure — check the run lanes",
-  C: "Snap and protection calls change", G: "Interior pressure — check the run lanes",
-  T: "Watch the quarterback's pressure rate",
-  CB: "Target the receiver on that side", S: "Deep shots open up",
-  DE: "Less pass rush — the opposing QB has time", DT: "Run lanes open inside",
-  LB: "Check-downs and backs in the pass game", EDGE: "Less pass rush — the opposing QB has time",
-};
-
-// The man who takes the snaps is the one BELOW the injured player on the depth chart. Taking
-// the first name on the list instead hands back the team's WR1 as the "replacement" for its
-// WR3, which is worse than saying nothing — so when he can't be placed on the chart, say what
-// to watch instead of naming somebody who was already starting.
-function replacementFor(p, depth, outNames) {
-  if (SKILL.has(p.pos)) {
-    const list = (depth?.[p.team]?.[p.pos]) || [];
-    const i = list.indexOf(p.name);
-    if (i >= 0) {
-      const next = list.slice(i + 1).find(n => !outNames.has(n));
-      if (next) return { type: "player", text: next };
-    }
-  }
-  const w = WATCH[p.pos];
-  return w ? { type: "watch", text: w } : null;
+// Who actually took the snaps, from the box score — not a guess off the depth chart.
+//
+// The depth chart cannot answer this and pretending otherwise produced nonsense. ESPN ranks a
+// whole position room in one list and drops injured players to the bottom of it, so the man
+// "below" A.J. Brown was the seventh receiver. And when the RB2 is out the carries go UP to
+// the RB1, not down to the RB3, so neither direction is right. The box score is not a
+// prediction at all: it is the player at that position, on that team, who actually produced
+// in the game that was played. For a game that has not kicked off yet there is no honest
+// answer, so nothing is shown.
+function tookOver(p, scored, outNames) {
+  if (!p.pos) return null;
+  const best = scored.find(x => x.team === p.team && x.pos === p.pos
+                             && x.name !== p.name && !outNames.has(x.name));
+  return best ? { name: best.name, dk: best.dk } : null;
 }
 
 /* ---------------------------------------------------------------------------------------
@@ -459,8 +445,10 @@ async function buildWeek(week) {
     const imp = implied(g.line.total, g.line.spread, g.home, g.away);
     if (imp) g.implied = { away: Math.round(imp.away * 10) / 10, home: Math.round(imp.home * 10) / 10 };
 
-    // Out list, with the team and the position spelled out — "Smith is out" is useless if
-    // you do not know which Smith, on which side, doing what.
+    // The whole injury report, not a headline and a leftover count. Everyone gets a team and
+    // a position — "Smith is out" is useless if you do not know which Smith, on which side,
+    // doing what — and everyone carries his own status, so a questionable sits in the same
+    // list as an out without the two being confused.
     const out = [];
     (s?.injuries || []).forEach(grp => {
       const tm = grp.team?.abbreviation || "";
@@ -468,25 +456,20 @@ async function buildWeek(week) {
         const st = String(x.status || "");
         const nm = x.athlete?.displayName || "";
         if (!nm) return;
-        if (!/^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st)) return;
+        const sure = /^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st);
+        if (!sure && !/questionable/i.test(st)) return;
         out.push({
           team: tm, name: nm,
           pos: x.athlete?.position?.abbreviation || "",
-          status: st,
+          status: st, sure,
           injury: x.details?.type || "",
           back: x.details?.returnDate || "",
         });
       });
     });
-    const outNames = new Set(out.map(p => p.name));
-    out.forEach(p => { p.next = replacementFor(p, depth, outNames); });
-    // skill first — that is the part that changes a lineup
-    out.sort((a, b) => (SKILL.has(b.pos) ? 1 : 0) - (SKILL.has(a.pos) ? 1 : 0) || a.team.localeCompare(b.team));
-    g.out = out;
+    const outNames = new Set(out.filter(p => p.sure).map(p => p.name));
 
-    g.q = (s?.injuries || []).reduce((n, grp) =>
-      n + (grp.injuries || []).filter(x => /questionable/i.test(String(x.status || ""))).length, 0);
-
+    let scored = [];
     if (g.state !== "pre" && s?.boxscore) {
       const posOf = (id, name) => {
         for (const t of Object.keys(depth)) {
@@ -494,8 +477,16 @@ async function buildWeek(week) {
         }
         return "";
       };
-      g.top = dkFromBox(s.boxscore, posOf).slice(0, 5);
+      scored = dkFromBox(s.boxscore, posOf);
+      g.top = scored.slice(0, 5);
     }
+    if (scored.length) out.forEach(p => { if (p.sure) p.took = tookOver(p, scored, outNames); });
+
+    // Certain before probable, skill before the rest — that is the order you read it in.
+    out.sort((a, b) => (b.sure ? 1 : 0) - (a.sure ? 1 : 0)
+                    || (SKILL.has(b.pos) ? 1 : 0) - (SKILL.has(a.pos) ? 1 : 0)
+                    || a.team.localeCompare(b.team));
+    g.out = out;
 
     g.factors = buildFactors(g);
     g.calls = buildCalls(g);

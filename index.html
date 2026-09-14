@@ -633,9 +633,11 @@
     margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .gd-out .pair .gd-next b{color:#8FD9A8}
-  .gd-out .pair .gd-note b{
-    color:var(--bone-dim);font-weight:400;font-size:11.5px;white-space:normal;overflow:visible;
-  }
+  /* A questionable is not an out, so it does not get the out colour. */
+  .gd-out .pair .gd-maybe b{color:var(--bone)}
+  /* Before kickoff there is nobody to put opposite him, so the row is one column wide
+     instead of a name next to an empty half. */
+  .gd-out .pair.solo{grid-template-columns:1fr}
   .gd-none{font-size:12.5px;color:var(--bone-dim)}
 
   /* ---- scoring audit: prove the board matches DraftKings without anyone checking ---- */
@@ -2865,33 +2867,24 @@
     var SKILL = {QB:1,RB:1,FB:1,WR:1,TE:1,PK:1,K:1};
     // Skill positions get a name, because the next man up is a waiver claim. Everywhere else
     // a name means nothing to a fantasy manager, so say what to actually watch instead.
-    var WATCH = {
-      QB:'The whole offence changes — downgrade the pass catchers',
-      RB:'Check the backfield split before you start anyone',
-      WR:'Targets move — watch the slot', TE:'Check the second tight end',
-      K:'Kicking game is a coin flip this week',
-      OT:"Watch the quarterback's pressure rate", T:"Watch the quarterback's pressure rate",
-      OG:'Interior pressure — check the run lanes', G:'Interior pressure — check the run lanes',
-      C:'Snap and protection calls change',
-      CB:'Target the receiver on that side', S:'Deep shots open up',
-      DE:'Less pass rush — the opposing QB has time', EDGE:'Less pass rush — the opposing QB has time',
-      DT:'Run lanes open inside', LB:'Check-downs and backs in the pass game'
-    };
-    // The man who takes the snaps is the one BELOW the injured player on the depth chart.
-    // Taking the first name on the list instead hands back the team's WR1 as the
-    // "replacement" for its WR3, which is worse than saying nothing — so when he can't be
-    // placed on the chart, say what to watch rather than naming somebody already starting.
-    function nextUp(p, outNames){
-      if(SKILL[p.pos]){
-        var list = (depth && depth[p.team] && depth[p.team][p.pos]) || [],
-            i = list.indexOf(p.name);
-        if(i > -1){
-          for(var k=i+1;k<list.length;k++){
-            if(!outNames[list[k]]) return { type:'player', text:list[k] };
-          }
+    // Who actually took the snaps, from the box score — not a guess off the depth chart.
+    //
+    // The depth chart cannot answer this and pretending otherwise produced nonsense. ESPN
+    // ranks a whole position room in one list and drops injured players to the bottom of it,
+    // so the man "below" A.J. Brown was the seventh receiver. And when the RB2 is out the
+    // carries go UP to the RB1, not down to the RB3, so neither direction is right. The box
+    // score is not a prediction at all: it is the player at that position, on that team, who
+    // actually produced in the game that was played. Before kickoff there is no honest
+    // answer, so nothing is shown.
+    function tookOver(p, scored, outNames){
+      if(!p.pos) return null;
+      for(var i=0;i<scored.length;i++){
+        var x=scored[i];
+        if(x.team===p.team && x.pos===p.pos && x.name!==p.name && !outNames[x.name]){
+          return { name:x.name, dk:x.dk };
         }
       }
-      return WATCH[p.pos] ? { type:'watch', text:WATCH[p.pos] } : null;
+      return null;
     }
 
     // Short, concrete, and only when true. A chip that fires every week teaches nobody
@@ -2920,7 +2913,7 @@
         if(num >= 10) f.push('Blowout risk · '+m[1].toUpperCase()+' by '+num+' — the dog throws, the favourite runs');
       }
 
-      var skill = (g.out||[]).filter(function(p){ return SKILL[p.pos]; });
+      var skill = (g.out||[]).filter(function(p){ return p.sure && SKILL[p.pos]; });
       if(skill.length){
         f.push(skill.length+' skill starter'+(skill.length>1?'s':'')+' out · '+
           skill.slice(0,3).map(function(p){ return p.name+' ('+p.team+' '+p.pos+')'; }).join(', '));
@@ -3060,7 +3053,9 @@
 
             // Inactives land about 90 minutes before kickoff. Before that this is the injury
             // report and it can still change; after it, it's final and it's what to trust.
-            var out = [], q = 0, names = {};
+            // The whole report goes in — a questionable sits in the same list as an out,
+            // carrying its own status, rather than being reduced to a leftover count.
+            var out = [], names = {};
             (s.injuries||[]).forEach(function(grp){
               var tm = (grp.team && grp.team.abbreviation) || '';
               (grp.injuries||[]).forEach(function(x){
@@ -3068,23 +3063,18 @@
                     ath = x.athlete || {},
                     nm = ath.displayName || '';
                 if(!nm) return;
-                if(/^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st)){
-                  out.push({
-                    team: tm, name: nm,
-                    pos: (ath.position && ath.position.abbreviation) || '',
-                    status: st,
-                    injury: (x.details && x.details.type) || '',
-                    back: (x.details && x.details.returnDate) || ''
-                  });
-                  names[nm] = 1;
-                } else if(/questionable/i.test(st)){ q++; }
+                var sure = /^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st);
+                if(!sure && !/questionable/i.test(st)) return;
+                out.push({
+                  team: tm, name: nm,
+                  pos: (ath.position && ath.position.abbreviation) || '',
+                  status: st, sure: sure,
+                  injury: (x.details && x.details.type) || '',
+                  back: (x.details && x.details.returnDate) || ''
+                });
+                if(sure) names[nm] = 1;
               });
             });
-            out.forEach(function(p){ p.next = nextUp(p, names); });
-            out.sort(function(a,b){
-              return (SKILL[b.pos]?1:0)-(SKILL[a.pos]?1:0) || a.team.localeCompare(b.team);
-            });
-            g.out = out; g.q = q;
 
             if(s.predictor){
               var h = Number(s.predictor.homeTeam && s.predictor.homeTeam.gameProjection),
@@ -3095,12 +3085,25 @@
             // Once a game is under way the injury report stops being the interesting part of
             // this payload and the box score starts. Who actually produced, in the scoring
             // this league runs, is the thing you check on a Sunday.
-            if(g.state!=='pre' && s.boxscore) g.top = dkFromBox(s.boxscore).slice(0,5);
+            var scored = [];
+            if(g.state!=='pre' && s.boxscore){
+              scored = dkFromBox(s.boxscore);
+              g.top = scored.slice(0,5);
+            }
+            if(scored.length) out.forEach(function(p){ if(p.sure) p.took = tookOver(p, scored, names); });
+
+            // Certain before probable, skill before the rest — the order you read it in.
+            out.sort(function(a,b){
+              return (b.sure?1:0)-(a.sure?1:0)
+                  || (SKILL[b.pos]?1:0)-(SKILL[a.pos]?1:0)
+                  || a.team.localeCompare(b.team);
+            });
+            g.out = out;
 
             decorate(g);
             paint();
           })
-          .catch(function(){ if(!g.out) { g.out = []; g.q = 0; } });
+          .catch(function(){ if(!g.out) g.out = []; });
       });
     }
 
@@ -3296,30 +3299,38 @@
         wxRow = '<div class="gd-wx">'+(done?'No forecast on file':'Forecast not posted yet')+'</div>';
       }
 
-      // Out on the left, whoever takes the snaps on the right.
+      // The whole injury report, every man on it. Where the game has been played, whoever
+      // actually took those snaps sits on the right; before kickoff that column is empty,
+      // because there is no honest answer yet.
       var outRow;
       if(!g.out){
-        outRow = '<div class="gd-out"><div class="gd-none">Loading the out list…</div></div>';
+        outRow = '<div class="gd-out"><div class="gd-none">Loading the injury report…</div></div>';
       } else if(!g.out.length){
-        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
-                 (soon?'Inactives · final':'Ruled out')+'</h5>'+
-                 '<div class="gd-none">Nobody ruled out'+(g.q?(' · '+g.q+' questionable'):'')+'</div></div>';
+        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'>'+
+                 (soon?'Inactives · final':'Injury report')+'</h5>'+
+                 '<div class="gd-none">Nobody on the report</div></div>';
       } else {
-        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
-          (soon?'Inactives · final':'Ruled out')+' · '+g.out.length+'</h5><ul>'+
+        var sure = g.out.filter(function(p){ return p.sure; }).length,
+            maybe = g.out.length - sure,
+            head5 = (soon?'Inactives · final':'Injury report')+' · '+sure+' out'+
+                    (maybe?(', '+maybe+' questionable'):'');
+        outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'>'+esc(head5)+'</h5><ul>'+
           g.out.map(function(p){
-            var tag = [p.team, p.pos].filter(Boolean).join(' · '),
-                det = [p.injury, p.status && !/^out$/i.test(p.status) ? p.status : ''].filter(Boolean).join(' · ');
-            var rightCell = p.next
-              ? ('<span class="'+(p.next.type==='player'?'gd-next':'gd-note')+'"><b>'+esc(p.next.text)+'</b>'+
-                 (p.next.type==='player'?'<i>next up</i>':'<i>what to watch</i>')+'</span>')
-              : '<span class="gd-note"><b>&mdash;</b><i>no listed backup</i></span>';
-            return '<li><div class="pair">'+
-              '<span class="gd-gone"><b>'+esc(p.name)+'</b><i>'+esc([tag,det].filter(Boolean).join(' · '))+'</i></span>'+
-              '<span class="gd-arr">&rarr;</span>'+ rightCell +'</div></li>';
-          }).join('')+'</ul>'+
-          (g.q?('<div class="gd-none" style="margin-top:8px">'+g.q+' more questionable</div>'):'')+
-          '</div>';
+            var st  = p.sure ? (/injured reserve/i.test(p.status) ? 'IR'
+                             : /doubtful/i.test(p.status) ? 'DOUBT'
+                             : /suspension/i.test(p.status) ? 'SUSP'
+                             : /physically unable/i.test(p.status) ? 'PUP' : 'OUT')
+                            : 'Q',
+                meta = [p.team, p.pos, st, p.injury].filter(Boolean).join(' · ');
+            var right = p.took
+              ? ('<span class="gd-arr">&rarr;</span>'+
+                 '<span class="gd-next"><b>'+esc(p.took.name)+'</b><i>took the snaps · '+
+                 Number(p.took.dk).toFixed(1)+'</i></span>')
+              : '';
+            return '<li><div class="pair'+(right?'':' solo')+'">'+
+              '<span class="'+(p.sure?'gd-gone':'gd-maybe')+'"><b>'+esc(p.name)+'</b>'+
+              '<i>'+esc(meta)+'</i></span>'+ right +'</div></li>';
+          }).join('')+'</ul></div>';
       }
 
       return '<div class="gd-card'+(soon?' soon':'')+(live?' live':'')+'">'+
