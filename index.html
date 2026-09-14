@@ -3486,6 +3486,33 @@
         .catch(function(){});
     }
 
+    // The live board's weather comes out of the archive, not out of ESPN.
+    //
+    // ESPN's has no wind — the number that actually decides whether a passing game shows up —
+    // and it is deleted the moment a game goes final, so half a Sunday board would sit there
+    // saying nothing. The archive job writes real conditions for this week every morning:
+    // a forecast for what is still ahead, what it actually was for anything already played.
+    // Same file the week picker reads, so the live card and its own archive entry agree.
+    function enrichFromArchive(wk){
+      if(!wk) return;
+      fetch(ARCH+'wk'+(wk<10?'0':'')+wk+'.json', {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(!j || !j.games || view!=='live') return;
+          var by={}; j.games.forEach(function(a){ by[a.id]=a; });
+          var any=false;
+          games.forEach(function(g){
+            var a=by[g.id]; if(!a) return;
+            var hit=false;
+            if(a.weather && (!g.weather || g.weather.wind==null)){ g.weather=a.weather; hit=true; }
+            if(a.predictor && !g.predictor){ g.predictor=a.predictor; hit=true; }
+            if(hit){ decorate(g); any=true; }
+          });
+          if(any) paint();
+        })
+        .catch(function(){});
+    }
+
     function run(){
       if(!document.documentElement.classList.contains('season')) return;
       sec.hidden = false;
@@ -3499,6 +3526,7 @@
           games = readScoreboard(j).map(decorate);
           paint();
           loadSummaries();
+          enrichFromArchive(j.week && j.week.number);
         })
         .catch(function(){});
     }
