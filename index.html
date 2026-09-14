@@ -2954,9 +2954,12 @@
 
       if(g.indoor) f.push('Indoors — weather off the table');
       else if(g.weather){
-        var t = g.weather.temp, d = g.weather.text || '',
-            rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
-        if(rough) f.push('Weather · '+[d, t!=null?(t+'°'):''].filter(Boolean).join(' ')+' — passing risk');
+        var w=g.weather, t=w.temp, d=w.text || '';
+        // Wind is the one that actually moves a passing game, and the one ESPN never had.
+        if(w.wind>=15) f.push('Wind · '+w.wind+' mph — downgrade the deep ball and the kicker');
+        var wet = /rain|snow|storm|drizzle|sleet|hail/i.test(d) || (w.precip||0)>0.02;
+        if(wet) f.push('Weather · '+[d, t!=null?(t+'°'):''].filter(Boolean).join(' ')+' — ball security');
+        else if(t!=null && t<=25) f.push('Cold · '+t+'° — the run game gets the work');
       }
 
       if(g.line && g.line.total!=null){
@@ -3350,16 +3353,18 @@
       if(g.indoor){
         wxRow = '<div class="gd-wx">Indoors · weather is not a factor</div>';
       } else if(g.weather){
-        var t = g.weather.temp, d = g.weather.text||'',
-            rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
-        // On a game already played this is the forecast it was played under, not a reading —
-        // ESPN deletes the weather the moment a game goes final, so what is on file is
-        // whatever the archive job captured before kickoff. Say which it is.
-        wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+(done?'Forecast · ':'')+
-                esc(d)+(t!=null?(' · '+t+'°'):'')+'</div>';
+        var W=g.weather, t=W.temp, d=W.text||'',
+            rough = (t!=null && t<=25) || W.wind>=15 ||
+                    /rain|snow|storm|drizzle|sleet|hail/i.test(d) || (W.precip||0)>0.02;
+        // Say which it is. Before kickoff this is a forecast; afterwards it is what the
+        // conditions actually were at the hour the ball went up.
+        var tag = W.src==='actual' ? 'At kickoff · ' : (W.src==='forecast' ? 'Forecast · ' : '');
+        wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+esc(tag)+esc(d)+
+                (t!=null?(' · '+t+'°'):'')+
+                (W.wind!=null?(' · '+W.wind+' mph wind'):'')+'</div>';
       } else {
         wxRow = '<div class="gd-wx">'+
-                (done?'No forecast was captured before kickoff':'Forecast not posted yet')+'</div>';
+                (g.state==='post'?'No conditions on file':'Forecast not posted yet')+'</div>';
       }
 
       // The whole injury report, every man on it. Where the game has been played, whoever

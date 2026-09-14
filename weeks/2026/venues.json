@@ -1,0 +1,57 @@
+{
+ "3622": {
+  "lat": 39.09973,
+  "lon": -94.57857,
+  "name": "Kansas City"
+ },
+ "3628": {
+  "lat": 35.22709,
+  "lon": -80.84313,
+  "name": "Charlotte"
+ },
+ "3673": {
+  "lat": 47.60621,
+  "lon": -122.33207,
+  "name": "Seattle"
+ },
+ "3712": {
+  "lat": 30.33218,
+  "lon": -81.65565,
+  "name": "Jacksonville"
+ },
+ "3752": {
+  "lat": 40.44062,
+  "lon": -79.99589,
+  "name": "Pittsburgh"
+ },
+ "3806": {
+  "lat": 39.95238,
+  "lon": -75.16362,
+  "name": "Philadelphia"
+ },
+ "3810": {
+  "lat": 36.16589,
+  "lon": -86.78444,
+  "name": "Nashville"
+ },
+ "3839": {
+  "lat": 40.83399,
+  "lon": -74.09709,
+  "name": "East Rutherford"
+ },
+ "3874": {
+  "lat": 39.12711,
+  "lon": -84.51439,
+  "name": "Cincinnati"
+ },
+ "7065": {
+  "lat": 33.96168,
+  "lon": -118.35313,
+  "name": "Inglewood"
+ },
+ "9119": {
+  "lat": -37.814,
+  "lon": 144.96332,
+  "name": "Melbourne"
+ }
+}

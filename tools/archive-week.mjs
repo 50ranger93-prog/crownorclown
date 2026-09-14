@@ -51,6 +51,106 @@ function env(n) { return process.env[n]; }
 const SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl";
 const CORE = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl";
 
+/* ---- weather ---------------------------------------------------------------------------
+   ESPN's weather is thin and temporary: no wind at all, which is the number that actually
+   decides whether a passing game shows up, and it is deleted outright the moment a game goes
+   final. So the weather comes from Open-Meteo instead, which has two halves —
+   a forecast for a game still to come, and an archive of what the conditions ACTUALLY were
+   for one already played. That second half is why week 1 can be filled back in.
+
+   No key and no account; the only thing it needs is a latitude and longitude, and ESPN gives
+   a city rather than coordinates, so venues are geocoded once and remembered in venues.json.
+--------------------------------------------------------------------------------------- */
+const GEO  = "https://geocoding-api.open-meteo.com/v1/search";
+const WX_F = "https://api.open-meteo.com/v1/forecast";
+const WX_A = "https://archive-api.open-meteo.com/v1/archive";
+
+// WMO codes, said the way a broadcast would say them.
+const WMO = {
+  0:"Clear", 1:"Mainly clear", 2:"Partly cloudy", 3:"Overcast",
+  45:"Fog", 48:"Freezing fog",
+  51:"Light drizzle", 53:"Drizzle", 55:"Heavy drizzle",
+  56:"Freezing drizzle", 57:"Freezing drizzle",
+  61:"Light rain", 63:"Rain", 65:"Heavy rain",
+  66:"Freezing rain", 67:"Freezing rain",
+  71:"Light snow", 73:"Snow", 75:"Heavy snow", 77:"Snow grains",
+  80:"Rain showers", 81:"Rain showers", 82:"Heavy rain showers",
+  85:"Snow showers", 86:"Heavy snow showers",
+  95:"Thunderstorms", 96:"Thunderstorms and hail", 99:"Thunderstorms and hail",
+};
+
+let VENUES = {};
+async function loadVenues() {
+  const f = path.join(OUT_DIR, "venues.json");
+  if (!existsSync(f)) return {};
+  try { return JSON.parse(await readFile(f, "utf8")) || {}; } catch (e) { return {}; }
+}
+
+async function venuePoint(ven) {
+  const id = String(ven?.id || "");
+  if (id && VENUES[id]) return VENUES[id];
+  const city = ven?.address?.city;
+  if (!city) return null;
+  const q = [city, ven.address.state, ven.address.country].filter(Boolean).join(", ");
+  const j = await getJSON(`${GEO}?name=${encodeURIComponent(city)}&count=5&language=en&format=json`);
+  let hit = (j?.results || [])[0];
+  if (ven.address.state) {
+    const better = (j?.results || []).find(r => r.admin1 === ven.address.state
+      || String(r.admin1_id || "") === ven.address.state);
+    if (better) hit = better;
+  }
+  if (!hit) { process.stderr.write(`  no coordinates for ${q}\n`); return null; }
+  const pt = { lat: hit.latitude, lon: hit.longitude, name: hit.name };
+  if (id) VENUES[id] = pt;
+  return pt;
+}
+
+// The hour the ball is kicked, not the daily average — a game at 8pm in a city that was warm
+// at noon is still a cold game.
+function nearestHour(hourly, iso) {
+  const want = new Date(iso).getTime();
+  let best = -1, gap = Infinity;
+  (hourly?.time || []).forEach((t, i) => {
+    const d = Math.abs(new Date(t + "Z").getTime() - want);
+    if (d < gap) { gap = d; best = i; }
+  });
+  return gap <= 2 * 3600 * 1000 ? best : -1;
+}
+
+async function weatherFor(g, ven) {
+  if (g.indoor) return null;
+  const pt = await venuePoint(ven);
+  if (!pt) return null;
+  const kick = new Date(g.kick);
+  if (isNaN(kick.getTime())) return null;
+
+  const played = kick.getTime() < Date.now();
+  const day = kick.toISOString().slice(0, 10);
+  const base = `latitude=${pt.lat}&longitude=${pt.lon}` +
+    `&hourly=temperature_2m,precipitation,wind_speed_10m,weather_code` +
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=UTC`;
+
+  // The archive lags real time by a couple of days, so a game played this weekend still has
+  // to come out of the forecast endpoint's recent past.
+  const url = played && (Date.now() - kick.getTime() > 3 * 864e5)
+    ? `${WX_A}?${base}&start_date=${day}&end_date=${day}`
+    : `${WX_F}?${base}&past_days=7&forecast_days=16`;
+
+  const j = await getJSON(url);
+  const i = nearestHour(j?.hourly, g.kick);
+  if (i < 0) return null;
+
+  const code = j.hourly.weather_code[i];
+  const temp = Math.round(j.hourly.temperature_2m[i]);
+  const wind = Math.round(j.hourly.wind_speed_10m[i]);
+  return {
+    text: WMO[code] || "",
+    temp, wind,
+    precip: Number(j.hourly.precipitation[i]) || 0,
+    src: played ? "actual" : "forecast",
+  };
+}
+
 async function getJSON(url, tries = 3) {
   for (let i = 0; i < tries; i++) {
     try {
@@ -309,9 +409,14 @@ function buildFactors(g) {
 
   if (g.indoor) f.push("Indoors — weather off the table");
   else if (g.weather) {
-    const t = g.weather.temp, d = g.weather.text || "";
-    const rough = (t != null && t <= 25) || /rain|snow|storm|wind|sleet/i.test(d);
-    if (rough) f.push(`Weather · ${[d, t != null ? `${t}°` : ""].filter(Boolean).join(" ")} — passing risk`);
+    const w = g.weather, t = w.temp, d = w.text || "";
+    // Wind is the one that actually moves a passing game, and it is the one ESPN never had.
+    // Fifteen is where the kicking game starts getting interesting; twenty is where you stop
+    // trusting a deep threat at all.
+    if (w.wind >= 15) f.push(`Wind · ${w.wind} mph — downgrade the deep ball and the kicker`);
+    const wet = /rain|snow|storm|drizzle|sleet|hail/i.test(d) || (w.precip || 0) > 0.02;
+    if (wet) f.push(`Weather · ${[d, t != null ? `${t}°` : ""].filter(Boolean).join(" ")} — ball security`);
+    else if (t != null && t <= 25) f.push(`Cold · ${t}° — the run game gets the work`);
   }
 
   if (g.line?.total != null) {
@@ -381,6 +486,7 @@ async function priorGames(week) {
 
 async function buildWeek(week) {
   const carried = await priorGames(week);
+  VENUES = await loadVenues();
   const sb = await getJSON(`${SITE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}`);
   const events = sb?.events || [];
   if (!events.length) { process.stderr.write(`no events for week ${week}\n`); return null; }
@@ -410,6 +516,7 @@ async function buildWeek(week) {
       detail: ev.status?.type?.shortDetail || "",
       aScore: away.score != null ? Number(away.score) : null,
       hScore: home.score != null ? Number(home.score) : null,
+      _ven: ven,
       venue: ven.fullName || "",
       city: [addr.city, addr.state || country].filter(Boolean).join(", "),
       country, intl: !!(country && !/^(usa|us|united states)$/i.test(country)),
@@ -448,6 +555,13 @@ async function buildWeek(week) {
         book: pc.provider?.name || g.line.book,
       };
     }
+    // Real weather, with wind, for the hour the ball is kicked. Once a game has been played
+    // this is what the conditions actually were rather than what somebody guessed they would
+    // be, which is the half ESPN never had at all.
+    const wx = await weatherFor(g, g._ven);
+    if (wx) g.weather = wx;
+    delete g._ven;
+
     // Fill from the last snapshot anything this fetch no longer has.
     const was = carried[g.id];
     if (was) {
@@ -575,6 +689,9 @@ async function main() {
   }
   await writeFile(file, body);
   process.stderr.write(`wrote ${path.relative(ROOT, file)} — ${Math.round(body.length / 1024)}KB\n`);
+  // Geocoding a stadium is a one-off; remembering the answer keeps every later run to the
+  // weather calls alone.
+  await writeFile(path.join(OUT_DIR, "venues.json"), JSON.stringify(VENUES, null, 1) + "\n");
   await writeIndex();
 }
 
