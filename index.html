@@ -3352,9 +3352,14 @@
       } else if(g.weather){
         var t = g.weather.temp, d = g.weather.text||'',
             rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
-        wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+esc(d)+(t!=null?(' · '+t+'°'):'')+'</div>';
+        // On a game already played this is the forecast it was played under, not a reading —
+        // ESPN deletes the weather the moment a game goes final, so what is on file is
+        // whatever the archive job captured before kickoff. Say which it is.
+        wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+(done?'Forecast · ':'')+
+                esc(d)+(t!=null?(' · '+t+'°'):'')+'</div>';
       } else {
-        wxRow = '<div class="gd-wx">'+(done?'No forecast on file':'Forecast not posted yet')+'</div>';
+        wxRow = '<div class="gd-wx">'+
+                (done?'No forecast was captured before kickoff':'Forecast not posted yet')+'</div>';
       }
 
       // The whole injury report, every man on it. Where the game has been played, whoever

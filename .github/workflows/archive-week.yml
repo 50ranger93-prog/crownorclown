@@ -4,20 +4,24 @@ name: Archive the week
 # each week down into weeks/<season>/ and commits it, which is what the site's week picker
 # reads back.
 #
-# Two beats, and the order matters:
+# It runs every morning, and that is the point rather than an accident.
 #
-#   Sunday morning  — before the 1pm ET kicks. Captures the closing line while the market is
-#                     still showing it, and refreshes the depth charts the live page uses to
-#                     name replacements. Nothing has been played yet, so there are no results.
-#   Tuesday morning — after Monday night settles. Re-runs the same week, now with scores, the
-#                     final out list and the box scores, and carries Sunday's line forward if
-#                     ESPN has since dropped it.
+# ESPN only carries a forecast while a game is still to be played. The moment it goes final
+# the weather is gone from the scoreboard and from the summary, and nothing will give it back.
+# The matchup predictor goes the same way, and so do the questionables — by Tuesday every one
+# of them has been resolved, so the injury report the week was actually played under no longer
+# exists anywhere. A once-a-week job would have caught Sunday's games and thrown away
+# Thursday night's forecast before anyone ever saw it.
+#
+# So: a daily pass captures whatever is still capturable and merges it into the week's file,
+# and a Tuesday pass settles the week just played with its scores and box scores.
 #
 # Times are UTC. Mountain is UTC-6 in season (MDT).
 
 on:
   schedule:
-    - cron: '30 15 * * 0'   # Sun 09:30 MT — lock the line, refresh depth charts
+    - cron: '0 15 * * *'    # every day 09:00 MT — forecasts, lines and the injury report,
+                            # while the games they belong to are still ahead of us
     - cron: '0 16 * * 2'    # Tue 10:00 MT — the settled week, with results
   workflow_dispatch:
     inputs:
@@ -43,18 +47,19 @@ jobs:
         with:
           node-version: '20'
 
-      # Sunday runs the week that is about to be played; Tuesday runs the one just settled.
-      # "auto" in the script resolves to the settled week, so Sunday asks for current + 1.
+      # The daily pass wants the week currently being played ("upcoming"); the Tuesday settle
+      # wants the one that just finished ("auto"). Both can land on a Tuesday and that is
+      # fine — they write different files.
       - name: Work out which week
         id: which
         run: |
           MANUAL="${{ github.event.inputs.week }}"
           if [ -n "$MANUAL" ] && [ "$MANUAL" != "auto" ]; then
             echo "week=$MANUAL" >> "$GITHUB_OUTPUT"
-          elif [ "$(date -u +%u)" = "7" ]; then
-            echo "week=upcoming" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "${{ github.event.schedule }}" = "0 16 * * 2" ]; then
             echo "week=auto" >> "$GITHUB_OUTPUT"
+          else
+            echo "week=upcoming" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Refresh depth charts

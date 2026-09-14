@@ -356,23 +356,31 @@ function tookOver(p, scored, outNames) {
    Build one week
 --------------------------------------------------------------------------------------- */
 
-// A line already captured by an earlier run beats whatever the feed says now. pickcenter
-// usually keeps the closing number for months, but it does go missing on the odd game, and a
-// week archived without its line cannot answer the only question the archive exists for.
-async function priorLines(week) {
+// What an earlier run captured beats whatever the feed says now, because the feed forgets.
+//
+// ESPN carries a forecast only while a game is still to be played: the moment it goes final
+// the weather disappears from the scoreboard AND from the summary, and there is no endpoint
+// that will give it back. Same story with the matchup predictor, and with the questionables —
+// by Tuesday everyone has been resolved, so the injury report the week was actually played
+// under is gone. The line is the one thing that usually survives, and even that goes missing
+// on the odd game.
+//
+// So a rebuild never discards: it fills in from the previous snapshot wherever the fresh
+// fetch has nothing. That is the whole reason the job runs every morning rather than once.
+async function priorGames(week) {
   const f = path.join(OUT_DIR, `wk${String(week).padStart(2, "0")}.json`);
   if (!existsSync(f)) return {};
   try {
     const j = JSON.parse(await readFile(f, "utf8"));
     const map = {};
-    (j.games || []).forEach(g => { if (g.line?.total != null || g.line?.spread) map[g.id] = g.line; });
-    if (Object.keys(map).length) process.stderr.write(`carrying ${Object.keys(map).length} line(s) forward\n`);
+    (j.games || []).forEach(g => { map[g.id] = g; });
+    if (Object.keys(map).length) process.stderr.write(`merging over ${Object.keys(map).length} archived game(s)\n`);
     return map;
   } catch (e) { return {}; }
 }
 
 async function buildWeek(week) {
-  const carried = await priorLines(week);
+  const carried = await priorGames(week);
   const sb = await getJSON(`${SITE}/scoreboard?dates=${SEASON}&seasontype=2&week=${week}`);
   const events = sb?.events || [];
   if (!events.length) { process.stderr.write(`no events for week ${week}\n`); return null; }
@@ -440,7 +448,13 @@ async function buildWeek(week) {
         book: pc.provider?.name || g.line.book,
       };
     }
-    if (g.line.total == null && !g.line.spread && carried[g.id]) g.line = carried[g.id];
+    // Fill from the last snapshot anything this fetch no longer has.
+    const was = carried[g.id];
+    if (was) {
+      if (g.line.total == null && !g.line.spread && was.line) g.line = was.line;
+      if (!g.weather && was.weather) g.weather = was.weather;
+      if (!g.predictor && was.predictor) g.predictor = was.predictor;
+    }
 
     const imp = implied(g.line.total, g.line.spread, g.home, g.away);
     if (imp) g.implied = { away: Math.round(imp.away * 10) / 10, home: Math.round(imp.home * 10) / 10 };
@@ -467,6 +481,16 @@ async function buildWeek(week) {
         });
       });
     });
+    // Sunday's report is the one the week was played under, questionables and all. By Tuesday
+    // ESPN has resolved every one of them and they simply vanish, so anyone the earlier
+    // snapshot had who is no longer listed is carried through rather than dropped.
+    if (was && (was.out || []).length) {
+      const have = new Set(out.map(p => p.name));
+      (was.out || []).forEach(p => {
+        if (!have.has(p.name)) out.push(Object.assign({}, p, { took: null, kept: true }));
+      });
+    }
+
     const outNames = new Set(out.filter(p => p.sure).map(p => p.name));
 
     let scored = [];
