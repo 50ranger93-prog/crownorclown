@@ -1174,6 +1174,49 @@
   .rt-ini input:focus{outline:2px solid var(--gold);outline-offset:1px}
   .rt-ini label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--bone-dim)}
+
+  /* ---- the pick, the scoreboard and the play calls ---- */
+  /* You choose a team, the schedule chooses the opponent out of its own division, and from
+     there it is a game rather than one drive: four possessions each, and every snap is a
+     call you make before you make the play. */
+  .rt-pick{position:absolute;inset:0;z-index:3;background:rgba(6,8,6,.94);
+    display:flex;flex-direction:column;justify-content:center;padding:16px 20px;overflow:auto}
+  .rt-pick h3{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 4px;font-weight:600;text-align:center}
+  .rt-pick p{font-family:var(--mono);font-size:10px;color:var(--bone-dim);margin:0 0 12px;text-align:center}
+  .rt-teams{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+  @media (max-width:820px){ .rt-teams{grid-template-columns:repeat(6,1fr)} }
+  @media (max-width:520px){ .rt-teams{grid-template-columns:repeat(4,1fr)} }
+  .rt-teams button{font-family:var(--mono);font-size:10px;letter-spacing:.05em;font-weight:600;
+    color:var(--bone);background:var(--ink-2);border:1px solid var(--line);border-left-width:3px;
+    border-radius:2px;padding:7px 2px;cursor:pointer}
+  .rt-teams button:hover{border-top-color:var(--gold);border-right-color:var(--gold);
+    border-bottom-color:var(--gold);color:var(--gold-bright)}
+  .rt-teams button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+  /* you, them, and how much football is left */
+  .rt-sb{display:flex;gap:9px;align-items:baseline;font-family:var(--mono);font-size:11.5px;
+    color:var(--bone-dim);margin-bottom:6px;flex-wrap:wrap}
+  .rt-sb b{color:var(--bone);font-size:15px;font-variant-numeric:tabular-nums}
+  .rt-sb .me b{color:var(--gold-bright)}
+  .rt-sb .dot{opacity:.4}
+
+  /* The calls sit under the frame so the frame itself stays one big button for the thumb. */
+  .rt-calls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-height:44px}
+  .rt-calls button{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;padding:11px 15px;border-radius:2px;cursor:pointer;
+    color:var(--bone);background:var(--ink-2);border:1px solid var(--line)}
+  .rt-calls button:hover{border-color:var(--gold);color:var(--gold-bright)}
+  .rt-calls button.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  .rt-calls button.kick{color:var(--gold);border-color:rgba(231,178,60,.5)}
+  .rt-calls button.punt{color:var(--bone-dim)}
+  .rt-calls button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  .rt-board .tm{font-family:var(--mono);font-size:10px;color:var(--bone-dim);
+    width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rt-board .rs{font-family:var(--mono);font-size:10px;width:34px;text-align:right}
+  .rt-board .rs.w{color:#8FD9A8}
+  .rt-board .rs.l{color:var(--clown)}
 </style>
 </head>
 <body>
@@ -1627,28 +1670,39 @@
      thumb; the whole frame is the button. -->
 <section class="sec-pad route" id="route">
   <div class="wrap">
-    <div class="eyebrow rise">92 yards · run it, throw it, kick it</div>
+    <div class="eyebrow rise">Pick a team · play a division rival · four possessions each</div>
     <h2 class="disp rise" style="font-size:clamp(38px,7vw,84px);margin:10px 0 0">Go get it</h2>
-    <p class="route-note rise">Backed up on your own 8, ninety-two yards to go, five plays to
-      get there. Tap when the marker crosses the gold &mdash; <b>dead centre pays the whole
-      play, the rim pays a fifth</b>, so it's aim, not reflex. <b>Runs</b> give you a wider
-      window and a smaller gain and nobody catches them; <b>passes</b> are tighter, worth more,
-      and worth a reception. Move the chains on the first four and you <b>earn the deep shot</b>
-      &mdash; stall, and it's a prayer. A failure costs the down and scores nothing; you survive
-      one, the second ends it. <b>End up inside 55 and you get the choice everyone gets on
-      fourth down.</b> Scored the way your league scores &mdash; 0.1 a yard, a point a catch,
-      six for the score, and kickers paid by distance.</p>
+    <p class="route-note rise">Pick your team and the schedule hands you <b>somebody from your
+      own division</b>. Four possessions each, real downs, real field position &mdash; the
+      return decides where you start, so some drives begin backed up and some start you near
+      midfield. <b>You call every snap</b>: run it, throw it short, take the shot, and on
+      fourth down go for it, send the kicker, or punt it away. Then you have to make the play
+      &mdash; tap when the marker crosses the gold, and <b>dead centre pays the whole call
+      while the rim pays a fifth</b>, so it's aim, not reflex. Scored exactly the way your
+      league is scored: <b>0.1 a yard, a point a catch, six for the score, kickers paid by
+      distance</b> and the hundred-yard bonuses. <b>92 is the ceiling</b> &mdash; nobody has
+      ever needed more.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
     <div class="rt-stage" id="rt-stage">
       <img id="rt-img" src="img/run1.jpg" alt="" width="900" height="502">
       <div class="rt-veil"></div>
+
+      <!-- The pick sits over the frame rather than above it, so the game does not start
+           playing itself behind a menu nobody has answered yet. -->
+      <div class="rt-pick" id="rt-pick">
+        <h3>Pick your team</h3>
+        <p>You'll get a division rival</p>
+        <div class="rt-teams" id="rt-teams"></div>
+      </div>
+
       <div class="rt-hud">
-        <div class="rt-sit" id="rt-sit">1st &amp; 10 &middot; own 8</div>
-        <div class="rt-call" id="rt-call">Inside run</div>
+        <div class="rt-sb" id="rt-sb"></div>
+        <div class="rt-sit" id="rt-sit">&nbsp;</div>
+        <div class="rt-call" id="rt-call">Go get it</div>
         <div class="rt-track"><i id="rt-zone"></i><b id="rt-mark"></b></div>
-        <div class="rt-hint" id="rt-hint">Tap &middot; or press space</div>
+        <div class="rt-hint" id="rt-hint">Pick a team to start</div>
       </div>
       <div class="rt-yards" aria-hidden="true">
         <div class="n" id="rt-pts">0.0</div>
@@ -1661,10 +1715,11 @@
       </button>
     </div>
 
+    <div class="rt-calls" id="rt-calls"></div>
+
     <div class="rt-foot">
       <div class="rt-score" id="rt-score" aria-live="polite">Best: none yet</div>
-      <button class="rt-again gold" id="rt-kick" type="button" hidden>Kick it</button>
-      <button class="rt-again" id="rt-again" type="button" hidden>Run it again</button>
+      <button class="rt-again" id="rt-again" type="button" hidden>Next drive</button>
     </div>
 
     <div class="rt-ini" id="rt-ini" hidden>
@@ -1673,18 +1728,11 @@
       <button class="rt-again" id="rt-save" type="button">Save</button>
     </div>
 
-    <div class="rt-boards rise">
-      <div class="rt-board">
-        <h4>Finished the drive</h4>
-        <ol id="rt-list"></ol>
-      </div>
-      <div class="rt-board minor">
-        <h4>Came up short</h4>
-        <ol id="rt-list2"></ol>
-      </div>
+    <div class="rt-board rise">
+      <h4 id="rt-bhead">The board &mdash; best DK games</h4>
+      <ol id="rt-list"></ol>
     </div>
-    <p class="rt-soon rise">Right now these boards live on this device only &mdash; your phone
-      and your laptop keep separate scores. One league board across all 36 managers is next.</p>
+    <p class="rt-soon rise" id="rt-note"></p>
   </div>
 </section>
 <!-- SEASON -->
@@ -3924,22 +3972,25 @@
     });
   })();
 
-  // ---- the drive: run it and throw it, then decide whether to kick ----
+  // ---- Go get it: a game, not a drive ----
   //
-  // The ball actually sits somewhere. You start backed up on your own 8 and every gain moves
-  // you, so the situation line is computed from where you are rather than written in advance.
-  // A gain is capped by the grass in front of it, which is what stops a drive out-running the
-  // length of the field.
+  // You pick a team and the schedule hands you somebody out of your own division, because a
+  // scoreboard with a real rival on the other side of it is a reason to come back and a
+  // nameless opponent is not. Four possessions each.
   //
-  // Runs and passes do different jobs. A run is a wider window and a smaller gain - it is the
-  // safe way to move the chains, and it earns you nothing in PPR because nobody caught it. A
-  // pass is a tighter window, a bigger number, and a point for the reception. Only the deep
-  // shot can go sixty-five, and how far it actually has to travel depends on how well you ran
-  // the first four plays. Move the ball and the bomb is makeable; stall and it is a prayer.
+  // Every snap is two decisions. First the call — run it, throw it short, take the shot, and
+  // on fourth down go for it, send the kicker or punt — and then the play itself, which is
+  // the timing window. Dead centre pays the whole call and the rim pays a fifth, so it is aim
+  // rather than reflex, and a run is a wider window for a smaller gain while the deep shot is
+  // the narrowest window on the field for the biggest number.
   //
-  // One failure is survivable, run or pass. The second ends the drive. If it ends inside kicking
-  // range you get the choice everyone gets on fourth down: take the three, or take nothing.
-  // Only a touchdown makes the main board. A field goal is still a practice-squad drive.
+  // Field position is not a constant. The return decides it, so some drives start backed up
+  // on the 12 and some hand you the ball near midfield, which changes what the same four
+  // downs are worth.
+  //
+  // Scoring is DraftKings, the way the leagues are scored: a tenth a yard, a point a catch,
+  // six for the touchdown, one for the extra point, kickers paid by distance, and the
+  // hundred-yard bonuses. 92 is the ceiling.
   (function route(){
     var stage=document.getElementById('rt-stage');
     if(!stage) return;
@@ -3949,25 +4000,36 @@
         score=document.getElementById('rt-score'), again=document.getElementById('rt-again'),
         yn=document.getElementById('rt-yn'), gain=document.getElementById('rt-gain'),
         pts=document.getElementById('rt-pts'), sit=document.getElementById('rt-sit'),
+        sb=document.getElementById('rt-sb'), calls=document.getElementById('rt-calls'),
+        pick=document.getElementById('rt-pick'), teamsBox=document.getElementById('rt-teams'),
         iniBox=document.getElementById('rt-ini'), iniIn=document.getElementById('rt-name'),
         saveBtn=document.getElementById('rt-save'), list=document.getElementById('rt-list'),
-        list2=document.getElementById('rt-list2'), boardTitle=document.getElementById('rt-btitle'),
-        kickBtn=document.getElementById('rt-kick');
+        note=document.getElementById('rt-note'), bhead=document.getElementById('rt-bhead');
 
-    // Wider window, smaller gain, no reception - that is a run. Tighter, bigger, worth a
-    // point - that is a pass. The deep shot is the only call on here that can go sixty-five.
-    var PLAYS=[
-      {t:'run',  img:'run1',   call:'Inside run',  w:.42, ms:1520, max:8,  fail:'Stuffed'},
-      {t:'pass', img:'catch2', call:'Quick slant', w:.36, ms:1340, max:10, fail:'Incomplete'},
-      {t:'run',  img:'run2',   call:'Sweep',       w:.31, ms:1200, max:13, fail:'Stuffed'},
-      {t:'pass', img:'catch3', call:'Dig',         w:.27, ms:1060, max:16, fail:'Incomplete'},
-      {t:'pass', img:'catch5', call:'Deep shot',   w:.21, ms:900,  max:65, fail:'Incomplete'}
+    var DIVS=['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
+    var TEAMS=[
+      ['BUF','Bills','#00338d',0],['MIA','Dolphins','#008e97',0],['NE','Patriots','#002a5c',0],['NYJ','Jets','#115740',0],
+      ['BAL','Ravens','#29126f',1],['CIN','Bengals','#fb4f14',1],['CLE','Browns','#472a08',1],['PIT','Steelers','#3b3b3b',1],
+      ['HOU','Texans','#021018',2],['IND','Colts','#003b75',2],['JAX','Jaguars','#007487',2],['TEN','Titans','#4495d2',2],
+      ['DEN','Broncos','#0a2343',3],['KC','Chiefs','#e31837',3],['LAC','Chargers','#0080c6',3],['LV','Raiders','#4a4a4a',3],
+      ['DAL','Cowboys','#002a5c',4],['NYG','Giants','#003c7f',4],['PHI','Eagles','#06424d',4],['WSH','Commanders','#5a1414',4],
+      ['CHI','Bears','#0b1c3a',5],['DET','Lions','#0076b6',5],['GB','Packers','#204e32',5],['MIN','Vikings','#4f2683',5],
+      ['ATL','Falcons','#a71930',6],['CAR','Panthers','#0085ca',6],['NO','Saints','#d3bc8d',6],['TB','Buccaneers','#bd1c36',6],
+      ['ARI','Cardinals','#a40227',7],['LAR','Rams','#003594',7],['SEA','Seahawks','#002a5c',7],['SF','49ers','#aa0000',7]
     ];
-    var MAX_FAILS=1;          // one you survive, the second ends the drive
-    var MAX_FG=55;            // past this nobody is trotting the kicker out
+
+    // Wider window, smaller gain, nobody catches it — that is a run. Tighter, bigger, worth a
+    // reception — that is a pass. The shot is the narrowest call on the field.
+    var CALLS={
+      run  :{label:'Run it',     w:.42, ms:1460, max:9,  kind:'rush', img:['run1','run2'], fail:'Stuffed'},
+      short:{label:'Short pass', w:.33, ms:1240, max:14, kind:'rec',  img:['catch2','catch3'], fail:'Incomplete'},
+      deep :{label:'Take a shot',w:.18, ms:880,  max:46, kind:'rec',  img:['catch5'], fail:'Overthrown'}
+    };
+    var MAX_FG=56;            // past this nobody is trotting the kicker out
+    var POSS=4;               // possessions each
+    var CAP=92;               // the ceiling, and the number the section is named after
 
     var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-
     ['run1','run2','kick1','catch2','catch3','catch5','catch6','drop','tackled'].forEach(function(n){
       var p=new Image(); p.src='img/'+n+'.jpg';
     });
@@ -4003,39 +4065,73 @@
     }
     function sfxKick(){ tone(300,0.14,'square',0.09,180); buzz(24); }
 
-    // --- DraftKings: 0.1 a yard, a point a reception, six for the score. Kickers are paid by
-    // distance, which is why a 52-yarder is worth more than the chip shot. ---
+    /* ---- DraftKings, for real ----
+       A tenth a yard on the ground and through the air, a point a catch, six for the score,
+       one for the extra point, kickers by distance, and the three-point bonus at a hundred
+       rushing or a hundred receiving. Capped, because a number with no ceiling stops meaning
+       anything and this board is a fantasy score, not a pinball machine. */
     function fgPoints(d){ return d>=50 ? 5 : d>=40 ? 4 : 3; }
-    function dk(){
-      var p = yards*0.1 + catches*1 + (scored?6:0) + fgMade;
-      return Math.round(p*10)/10;
+    var rushY=0, recY=0, recs=0, tds=0, kickPts=0;
+    function dkRaw(){
+      var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts;
+      if(rushY>=100) p+=3;
+      if(recY>=100) p+=3;
+      return p;
     }
+    function dk(){ return Math.min(CAP, Math.round(dkRaw()*10)/10); }
+    function totalYds(){ return rushY+recY; }
 
-    // --- boards ---
-    var K_TD='coc-drive-td', K_PR='coc-drive-practice';
-    function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]')||[]; }catch(e){ return []; } }
-    function put(k,v){ try{ localStorage.setItem(k,JSON.stringify(v.slice(0,5))); }catch(e){} }
-    var bTD=load(K_TD), bPR=load(K_PR);
+    /* ---- the board ---- */
+    var K_LOCAL='coc-goget-v2';
+    var board=[], shared=false, pending=null;
+    function loadLocal(){ try{ return JSON.parse(localStorage.getItem(K_LOCAL)||'[]')||[]; }catch(e){ return []; } }
+    function saveLocal(v){ try{ localStorage.setItem(K_LOCAL,JSON.stringify(v.slice(0,10))); }catch(e){} }
 
-    function row(r,i,fresh){
-      return '<li'+(i===fresh?' class="fresh"':'')+'>'+
-        '<span class="rk">'+(i+1)+'</span>'+
-        '<span class="ini">'+String(r.i||'---').replace(/[^A-Z0-9]/g,'')+'</span>'+
-        '<span class="ydq">'+r.y+' yds</span>'+
-        '<span class="yd">'+r.p.toFixed(1)+'</span></li>';
+    function esc(s){
+      return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
     }
-    function paintBoards(fTD,fPR){
-      list.innerHTML = bTD.length
-        ? bTD.slice(0,5).map(function(r,i){ return row(r,i,fTD); }).join('')
-        : '<li class="empty">Nobody has reached the end zone yet.</li>';
-      list2.innerHTML = bPR.length
-        ? bPR.slice(0,5).map(function(r,i){ return row(r,i,fPR); }).join('')
-        : '<li class="empty">No drives yet.</li>';
+    function paintBoard(fresh){
+      list.innerHTML = board.length
+        ? board.slice(0,10).map(function(r,i){
+            var res=(r.res==='W'?'w':r.res==='L'?'l':'');
+            return '<li'+(i===fresh?' class="fresh"':'')+'>'+
+              '<span class="rk">'+(i+1)+'</span>'+
+              '<span class="ini">'+esc(String(r.i||'---').replace(/[^A-Z0-9]/g,''))+'</span>'+
+              '<span class="tm">'+esc(r.team||'')+(r.opp?(' v '+esc(r.opp)):'')+'</span>'+
+              '<span class="rs '+res+'">'+esc(r.res||'')+'</span>'+
+              '<span class="yd">'+Number(r.p||0).toFixed(1)+'</span></li>';
+          }).join('')
+        : '<li class="empty">Nobody has posted a score yet.</li>';
+      bhead.textContent = shared ? 'The board — best DK games, everybody' : 'The board — this device only';
+      note.textContent = shared
+        ? 'One board for everyone, on every device. Best DraftKings game wins — 92 is the ceiling.'
+        : 'This board is on this device only. It goes league-wide the moment a KV store is connected to the project on Vercel.';
     }
     function bestLine(){
-      var b = bTD.length ? bTD[0] : (bPR.length ? bPR[0] : null);
-      score.textContent = b ? ('Best: '+b.p.toFixed(1)+' pts · '+b.y+' yards') : 'Best: none yet';
+      var b=board.length?board[0]:null;
+      score.textContent = b ? ('Best: '+Number(b.p).toFixed(1)+' pts · '+esc(b.i||'---')) : 'Best: none yet';
     }
+    // Try the shared board first; fall back to this device rather than showing nothing.
+    function fetchBoard(){
+      if(!window.fetch){ board=loadLocal(); paintBoard(-1); bestLine(); return; }
+      fetch('/api/board',{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){
+          if(j && j.configured){ shared=true; board=j.scores||[]; }
+          else { shared=false; board=loadLocal(); }
+          paintBoard(-1); bestLine();
+        })
+        .catch(function(){ shared=false; board=loadLocal(); paintBoard(-1); bestLine(); });
+    }
+
+    /* ---- state ---- */
+    var me=null, opp=null;
+    var myPts=0, oppPts=0, poss=0, oppPoss=0;
+    var pos=25, down=1, toGo=10;
+    var i4=null;                                  // the call in flight
+    var centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, phase='pick';
 
     function swap(name){
       stage.classList.add('swap');
@@ -4045,208 +4141,296 @@
       n.src='img/'+name+'.jpg';
     }
     function stop(){ live=false; if(raf) cancelAnimationFrame(raf); raf=null; }
-
-    var i=0, centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, over=false;
-    var pos=8, down=1, marker=18, yards=0, catches=0, fails=0, scored=false,
-        fgMade=0, kicking=false, pending=null;
-
     function frame(now){
       if(!live) return;
       if(!t0) t0=now;
-      // Ping-pong rather than wrap: the marker comes back through the zone, so a late
-      // thumb still gets a shot instead of waiting out a full reset.
-      var p=((now-t0)/span)%2;
-      var v=p<1?p:2-p;
+      // Ping-pong rather than wrap: the marker comes back through the zone, so a late thumb
+      // still gets a shot instead of waiting out a full reset.
+      var p=((now-t0)/span)%2, v=p<1?p:2-p;
       mark.style.left=(v*100)+'%';
       mark.dataset.pos=v;
       raf=requestAnimationFrame(frame);
     }
 
-    // 8 reads "own 8", 60 reads "opp 40", 50 is midfield - the way a broadcast says it
+    // 8 reads "own 8", 60 reads "opp 40", 50 is midfield — the way a broadcast says it
     function spot(y){ return y===50 ? 'midfield' : (y<50 ? ('own '+y) : ('opp '+(100-y))); }
     function ord(n){ return n===1?'1st':n===2?'2nd':n===3?'3rd':'4th'; }
-    function kickDist(){ return (100-pos)+17; }          // end zone plus the snap and the hold
+    function kickDist(){ return (100-pos)+17; }   // end zone, plus the snap and the hold
 
-    function paintScore(){ yn.textContent=yards; pts.textContent=dk().toFixed(1); }
+    function paintScore(){ yn.textContent=totalYds(); pts.textContent=dk().toFixed(1); }
+    function paintSB(){
+      if(!me){ sb.innerHTML=''; return; }
+      sb.innerHTML='<span class="me">'+esc(me[0])+' <b>'+myPts+'</b></span>'+
+        '<span class="dot">·</span>'+
+        '<span>'+esc(opp[0])+' <b>'+oppPts+'</b></span>'+
+        '<span class="dot">·</span>'+
+        '<span>Possession '+Math.min(poss+1,POSS)+' of '+POSS+'</span>';
+    }
+    function paintSit(){
+      var goal = pos+toGo>=100;
+      sit.innerHTML = ord(Math.min(down,4))+' &amp; '+(goal?'goal':toGo)+' · '+spot(pos);
+    }
     function flashGain(n,q){
-      gain.textContent='+'+n+' yds'+(q>0.86?'  perfect':'');
+      gain.textContent=(n<0?'':'+')+n+' yds'+(q>0.86?'  perfect':'');
       gain.classList.add('show');
       setTimeout(function(){ gain.classList.remove('show'); },700);
     }
-    function paintSit(){
-      var toGo=Math.max(1,marker-pos);
-      sit.textContent = ord(Math.min(down,4))+' & '+((pos+toGo>=100)?'goal':toGo)+' · '+spot(pos)+
-        (fails?' · 1 wasted down':'');
+
+    /* ---- the pick ---- */
+    function buildPick(){
+      teamsBox.innerHTML = TEAMS.map(function(t,idx){
+        return '<button type="button" data-t="'+idx+'" style="border-left-color:'+t[2]+'">'+
+               esc(t[0])+'</button>';
+      }).join('');
+    }
+    teamsBox.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-t]'):null;
+      if(!b) return;
+      var idx=Number(b.getAttribute('data-t'));
+      me=TEAMS[idx];
+      // the rival comes out of your own division — that is the whole point of the pick
+      var rivals=TEAMS.filter(function(t){ return t[3]===me[3] && t[0]!==me[0]; });
+      opp=rivals[Math.floor(Math.random()*rivals.length)];
+      pick.hidden=true;
+      startGame();
+    });
+
+    /* ---- a game ---- */
+    function startGame(){
+      myPts=0; oppPts=0; poss=0; oppPoss=0;
+      rushY=0; recY=0; recs=0; tds=0; kickPts=0;
+      paintScore(); iniBox.hidden=true; pending=null;
+      newDrive();
     }
 
-    function begin(n){
-      i=n; kicking=false;
-      if(n===0){
-        pos=8; down=1; marker=18; yards=0; catches=0; fails=0; scored=false; fgMade=0;
-        paintScore(); iniBox.hidden=true;
+    // The return decides where you start, which is the difference between four downs that
+    // matter and four downs that do not.
+    function kickReturn(){
+      var r=Math.random();
+      if(r<.50) return {p:25, t:'Touchback · out to the 25'};
+      if(r<.80) return {p:20+Math.round(Math.random()*15), t:'Return brings it out'};
+      if(r<.95) return {p:42+Math.round(Math.random()*12), t:'Big return'};
+      return {p:64+Math.round(Math.random()*16), t:'He nearly took it'};
+    }
+
+    function newDrive(){
+      var k=kickReturn();
+      pos=k.p; down=1; toGo=Math.min(10,100-pos);
+      phase='call';
+      call.className='rt-call'; call.textContent=k.t;
+      hint.textContent='Call the play';
+      again.hidden=true;
+      paintSB(); paintSit(); paintScore();
+      swap('run1');
+      renderCalls();
+    }
+
+    function renderCalls(){
+      if(phase!=='call'){ calls.innerHTML=''; return; }
+      var html='';
+      ['run','short','deep'].forEach(function(k){
+        html+='<button type="button" data-c="'+k+'">'+CALLS[k].label+'</button>';
+      });
+      if(down===4){
+        var d=kickDist();
+        if(d<=MAX_FG) html+='<button type="button" class="kick" data-c="fg">Field goal · '+d+' yd</button>';
+        html+='<button type="button" class="punt" data-c="punt">Punt</button>';
       }
-      var s=PLAYS[i];
-      width=calm ? Math.min(.62,s.w*1.6) : s.w;
-      span =calm ? s.ms*2.1 : s.ms;
+      calls.innerHTML=html;
+    }
+    calls.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-c]'):null;
+      if(!b || phase!=='call') return;
+      var c=b.getAttribute('data-c');
+      if(c==='punt'){ endDrive('Punt away'); return; }
+      if(c==='fg'){ beginKick(); return; }
+      beginPlay(c);
+    });
+
+    function armWindow(w,ms){
+      width=calm ? Math.min(.62,w*1.7) : w;
+      span =calm ? ms*2.1 : ms;
       centre=(width/2+.06)+Math.random()*(1-width-.12);
       zone.style.left=((centre-width/2)*100)+'%';
       zone.style.width=(width*100)+'%';
-      call.className='rt-call'; call.textContent=s.call;
-      paintSit();
-      hint.textContent = (s.t==='run' ? 'Run it — tap on the gold' : 'Tap when the marker crosses the gold');
-      again.hidden=true; kickBtn.hidden=true; over=false;
-      swap(s.img);
       t0=0; live=true; raf=requestAnimationFrame(frame);
+    }
+
+    function beginPlay(c){
+      i4=c; phase='play';
+      var s=CALLS[c];
+      call.className='rt-call'; call.textContent=s.label;
+      hint.textContent='Tap when the marker crosses the gold';
+      calls.innerHTML='';
+      swap(s.img[Math.floor(Math.random()*s.img.length)]);
+      armWindow(s.w,s.ms);
     }
 
     // The kick is its own call: the longer it is, the narrower the window gets.
     function beginKick(){
       var d=kickDist();
-      kicking=true; over=false;
-      width = calm ? Math.min(.60, (0.34-(d-20)*0.0055)*1.6) : Math.max(.11, 0.34-(d-20)*0.0055);
-      span  = calm ? 1500 : 820;
-      centre=(width/2+.06)+Math.random()*(1-width-.12);
-      zone.style.left=((centre-width/2)*100)+'%';
-      zone.style.width=(width*100)+'%';
+      phase='kick'; sfxKick();
       call.className='rt-call'; call.textContent=d+'-yard attempt';
-      sit.textContent='4th down · '+spot(pos)+' · worth '+fgPoints(d)+' points';
-      swap('kick1');
       hint.textContent='Tap on the gold to send it';
-      again.hidden=true; kickBtn.hidden=true;
-      t0=0; live=true; raf=requestAnimationFrame(frame);
+      calls.innerHTML='';
+      swap('kick1');
+      armWindow(Math.max(.11,0.34-(d-20)*0.0055),820);
     }
 
-    function offerBoard(good){
-      var b = good ? bTD : bPR, p = dk();
-      var lowest = b.length>=5 ? b[4].p : -1;
-      pending = {i:'', y:yards, p:p, td:good};
-      if(p>0 && (b.length<5 || p>lowest)){
-        boardTitle.textContent = good ? 'End zone board — your initials'
-                                      : 'Practice squad board — your initials';
-        iniBox.hidden=false; iniIn.value='';
-      }
+    function scoreTD(){
+      tds++; myPts+=7; kickPts+=1;          // the extra point is a point to the kicker in DK
+      paintScore(); sfxTD();
+      call.className='rt-call good'; call.textContent='Touchdown';
+      swap('catch6');
+      endDrive(null,'Touchdown · '+me[0]+' '+myPts);
+    }
+
+    function endDrive(why,headline){
+      stop(); phase='between'; calls.innerHTML='';
+      if(why){ call.className='rt-call bad'; call.textContent=why; swap('tackled'); }
+      poss++;
+
+      // The rival answers. Nothing here is under your control, which is the point of playing
+      // somebody rather than playing the clock.
+      var r=Math.random(), got=0, said;
+      if(r<.32){ got=7; said=opp[0]+' march it in'; }
+      else if(r<.56){ got=3; said=opp[0]+' settle for three'; }
+      else if(r<.72){ said=opp[0]+' turn it over'; }
+      else { said=opp[0]+' go three and out'; }
+      oppPts+=got; oppPoss++;
+      paintSB();
+
+      var line=(headline||why||'Drive over')+' · '+said;
+      sit.textContent=line;
+
+      if(poss>=POSS){ setTimeout(finalWhistle,700); return; }
+      hint.textContent='Tap Next drive';
+      again.textContent='Next drive';
+      again.hidden=false;
+    }
+
+    function finalWhistle(){
+      stop(); phase='final'; calls.innerHTML='';
+      var res = myPts>oppPts?'W':(myPts<oppPts?'L':'T');
+      call.className='rt-call '+(res==='W'?'good':res==='L'?'bad':'');
+      call.textContent = res==='W'?'You win':(res==='L'?'You lose':'Tied');
+      sit.innerHTML = esc(me[0])+' '+myPts+' · '+esc(opp[0])+' '+oppPts+
+        ' — '+totalYds()+' yards, '+dk().toFixed(1)+' DK points';
+      hint.textContent='Tap Play again';
+      swap(res==='W'?'catch6':'tackled');
+      again.textContent='Play again'; again.hidden=false;
+      offerBoard(res);
+    }
+
+    function offerBoard(res){
+      var p=dk();
+      pending={ i:'', p:p, y:totalYds(), team:me[0], opp:opp[0], res:res, pf:myPts, pa:oppPts };
+      var lowest = board.length>=10 ? Number(board[9].p) : -1;
+      if(p>0 && (board.length<10 || p>lowest)){ iniBox.hidden=false; iniIn.value=''; }
       bestLine();
     }
 
-    function finish(good,why){
-      stop(); over=true; kicking=false;
-      call.className='rt-call '+(good?'good':'bad');
-      call.textContent = good ? 'Touchdown' : why;
-      sit.textContent = (good?'Drive complete':'Drive over on the '+spot(pos))+
-        ' · '+yards+' yards · '+dk().toFixed(1)+' DK points';
-      hint.textContent = good ? 'That is a drive.' : 'Tap Run it again.';
-      swap(good?'catch6':'tackled');
-      again.hidden=false; kickBtn.hidden=true;
-      offerBoard(good);
-    }
-
-    // Out of downs. If a kicker could plausibly make it, the choice is yours.
-    function driveStalled(why){
-      stop(); over=true;
-      var d=kickDist();
-      if(d<=MAX_FG){
-        call.className='rt-call bad'; call.textContent=why;
-        sit.textContent='4th down on the '+spot(pos)+' · a '+d+'-yard attempt is on';
-        hint.textContent='Take the three, or take nothing.';
-        swap('tackled');
-        kickBtn.textContent='Kick the '+d+'-yarder';
-        kickBtn.hidden=false; again.hidden=false;
-        return;
-      }
-      sfxEnd(); finish(false, why);
-    }
-
+    /* ---- making the play ---- */
     function failed(){
-      fails++;
-      sfxFail();
-      var s=PLAYS[i];
+      var s=CALLS[i4];
+      sfxFail(); stop();
       call.className='rt-call bad'; call.textContent=s.fail;
-      stop();
-      if(fails>MAX_FAILS){ setTimeout(function(){ driveStalled('Drive stalled'); },420); return; }
-      if(i+1>=PLAYS.length){ setTimeout(function(){ driveStalled('Turnover on downs'); },420); return; }
+      swap('drop');
       down++;
-      setTimeout(function(){ begin(i+1); },520);
+      if(down>4){ setTimeout(function(){ endDrive('Turnover on downs'); },500); return; }
+      setTimeout(function(){ phase='call'; paintSit(); hint.textContent='Call the play'; renderCalls(); },500);
     }
 
     function tap(){
-      if(over && !kicking) return;
-      if(!live){ begin(0); return; }
-      var v=parseFloat(mark.dataset.pos||'0');
-      var off=Math.abs(v-centre), half=width/2;
+      if(phase==='pick' || phase==='call' || phase==='between' || phase==='final') return;
+      if(!live) return;
+      var v=parseFloat(mark.dataset.pos||'0'),
+          off=Math.abs(v-centre), half=width/2;
 
-      if(kicking){
+      if(phase==='kick'){
         stop();
         var d=kickDist();
         if(off<=half){
-          fgMade=fgPoints(d); paintScore(); sfxTD();
+          kickPts+=fgPoints(d); myPts+=3; paintScore(); sfxTD();
           call.className='rt-call good'; call.textContent='It is good';
-          setTimeout(function(){ finish(false,'Field goal · '+d+' yards'); },260);
+          setTimeout(function(){ endDrive(null,'Field goal · '+d+' yards'); },320);
         } else {
           sfxEnd();
           call.className='rt-call bad'; call.textContent='Wide right';
-          setTimeout(function(){ finish(false,'No good · '+d+' yards'); },260);
+          setTimeout(function(){ endDrive('No good · '+d+' yards'); },320);
         }
         return;
       }
 
       if(off>half){ failed(); return; }
 
-      // dead centre pays the whole call, the rim pays a fifth - and the grass in front of
-      // you is the real ceiling, so nothing gains more field than there is field left
-      var q=1-(off/half);
-      var s=PLAYS[i];
+      // Dead centre pays the whole call, the rim pays a fifth — and the grass in front of you
+      // is the real ceiling, so nothing gains more field than there is field left.
+      var q=1-(off/half), s=CALLS[i4];
       var got=Math.min(100-pos, Math.max(1, Math.round(s.max*(0.2+0.8*q))));
-      pos+=got; yards+=got;
-      if(s.t==='pass') catches+=1;          // no reception point on a handoff
+      pos+=got;
+      if(s.kind==='rush') rushY+=got; else { recY+=got; recs+=1; }
       paintScore(); flashGain(got,q);
       call.className='rt-call good';
       stop();
 
-      if(pos>=100){
-        scored=true; paintScore(); sfxTD();
-        setTimeout(function(){ finish(true); },260);
-        return;
-      }
+      if(pos>=100){ scoreTD(); return; }
       sfxGood(q);
-      if(pos>=marker){ down=1; marker=Math.min(100,pos+10); } else { down++; }
-      if(i+1>=PLAYS.length){ setTimeout(function(){ driveStalled('Out of downs'); },420); return; }
-      setTimeout(function(){ begin(i+1); },200);
+      toGo-=got;
+      if(toGo<=0){ down=1; toGo=Math.min(10,100-pos); } else { down++; }
+      if(down>4){ setTimeout(function(){ endDrive('Turnover on downs'); },500); return; }
+      setTimeout(function(){ phase='call'; paintSit(); hint.textContent='Call the play'; renderCalls(); },320);
     }
 
-    kickBtn.addEventListener('click',function(){ sfxKick(); beginKick(); });
+    /* ---- wiring ---- */
+    hit.addEventListener('click',function(e){ e.preventDefault(); tap(); });
+    again.addEventListener('click',function(){
+      if(phase==='final'){ pick.hidden=false; phase='pick'; again.hidden=true; calls.innerHTML=''; }
+      else newDrive();
+    });
 
     saveBtn.addEventListener('click',function(){
       if(!pending) return;
       var ini=(iniIn.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3) || 'AAA';
       pending.i=ini;
-      var b = pending.td ? bTD : bPR;
-      b.push(pending);
-      b.sort(function(a,c){ return c.p-a.p; });
-      if(pending.td){ bTD=b.slice(0,5); put(K_TD,bTD); paintBoards(bTD.indexOf(pending),-1); }
-      else          { bPR=b.slice(0,5); put(K_PR,bPR); paintBoards(-1,bPR.indexOf(pending)); }
-      iniBox.hidden=true; pending=null;
-      bestLine(); hit.focus();
+      saveBtn.disabled=true;
+      function localSave(){
+        board.push(pending);
+        board.sort(function(a,c){ return c.p-a.p; });
+        board=board.slice(0,10);
+        saveLocal(board);
+        paintBoard(board.indexOf(pending));
+      }
+      if(shared && window.fetch){
+        fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
+                            body:JSON.stringify(pending)})
+          .then(function(r){ return r.ok?r.json():null; })
+          .then(function(j){
+            if(j && j.scores){ board=j.scores; paintBoard(-1); }
+            else localSave();
+          })
+          .catch(localSave)
+          .then(function(){ saveBtn.disabled=false; iniBox.hidden=true; pending=null; bestLine(); });
+      } else {
+        localSave(); saveBtn.disabled=false; iniBox.hidden=true; pending=null; bestLine();
+      }
     });
     iniIn && iniIn.addEventListener('keydown',function(e){
       if(e.key==='Enter'){ e.preventDefault(); saveBtn.click(); }
     });
 
-    hit.addEventListener('click',function(e){ e.preventDefault(); tap(); });
-    again.addEventListener('click',function(){ begin(0); hit.focus(); });
-    // A game that keeps running in a hidden tab is just burning battery.
+    // A game that keeps running in a hidden tab is just burning battery. Coming back has to
+    // restart the loop, though: requestAnimationFrame does not fire while the tab is hidden,
+    // so without this the marker is frozen where it stopped and the next tap is judged
+    // against a position that has not moved since you switched away.
     document.addEventListener('visibilitychange',function(){
-      if(document.hidden){ stop(); }
-      else if(!over && !raf && seen){ begin(i); }
+      if(document.hidden){ stop(); return; }
+      if(phase==='play' || phase==='kick'){ t0=0; live=true; raf=requestAnimationFrame(frame); }
     });
 
-    paintBoards(-1,-1); bestLine();
-    // Wait for the section to actually be on screen before the marker starts moving.
-    var seen=false;
-    if('IntersectionObserver' in window){
-      new IntersectionObserver(function(es,ob){
-        es.forEach(function(e){ if(e.isIntersecting&&!seen){ seen=true; begin(0); ob.disconnect(); } });
-      },{threshold:.35}).observe(stage);
-    } else { seen=true; begin(0); }
+    buildPick();
+    fetchBoard();
+    paintSB();
   })();
 
   // ---- fold the reference material away ----
