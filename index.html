@@ -28,6 +28,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Serif+Display:ital@0;1&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <style>
+  /* The browser hides [hidden] with display:none from its OWN stylesheet, and any author
+     rule that sets display beats it. Several things here are toggled with el.hidden while
+     their class also sets display:flex — so they never actually went away. .rt-pick was the
+     bad one: the team picker sat invisible over the whole game frame swallowing every tap,
+     so you could choose a team and call a play and then nothing happened, because the
+     overlay was still there eating the click. One rule, so it cannot come back elsewhere. */
+  [hidden]{display:none !important}
+
   :root{
     --ink:#0A0D0A;
     --ink-2:#10150F;
