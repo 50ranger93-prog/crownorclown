@@ -1677,11 +1677,13 @@
       return decides where you start, so some drives begin backed up and some start you near
       midfield. <b>You call every snap</b>: run it, throw it short, take the shot, and on
       fourth down go for it, send the kicker, or punt it away. Then you have to make the play
-      &mdash; tap when the marker crosses the gold, and <b>dead centre pays the whole call
-      while the rim pays a fifth</b>, so it's aim, not reflex. Scored exactly the way your
-      league is scored: <b>0.1 a yard, a point a catch, six for the score, kickers paid by
-      distance</b> and the hundred-yard bonuses. <b>92 is the ceiling</b> &mdash; nobody has
-      ever needed more.</p>
+      &mdash; tap when the marker crosses the gold. <b>Timing doesn't hand you yards</b>, it
+      tilts the odds: most runs are a couple, the odd one breaks, and a shot downfield is a
+      chunk or it's nothing. Miss and it costs you &mdash; a run gets <b>stuffed for a loss</b>,
+      a pass can be a <b>sack</b>, and a shot thrown badly enough gets <b>picked off</b>.
+      Scored exactly the way your league is scored: <b>0.1 a yard, a point a catch, six for the
+      score, minus one for the interception, kickers paid by distance</b> and the hundred-yard
+      bonuses.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -4021,10 +4023,44 @@
     // Wider window, smaller gain, nobody catches it — that is a run. Tighter, bigger, worth a
     // reception — that is a pass. The shot is the narrowest call on the field.
     var CALLS={
-      run  :{label:'Run it',     w:.42, ms:1460, max:9,  kind:'rush', img:['run1','run2'], fail:'Stuffed'},
-      short:{label:'Short pass', w:.33, ms:1240, max:14, kind:'rec',  img:['catch2','catch3'], fail:'Incomplete'},
-      deep :{label:'Take a shot',w:.18, ms:880,  max:46, kind:'rec',  img:['catch5'], fail:'Overthrown'}
+      run  :{label:'Run it',     w:.42, ms:1460, kind:'rush', img:['run1','run2'], fail:'Stuffed'},
+      short:{label:'Short pass', w:.33, ms:1240, kind:'rec',  img:['catch2','catch3'], fail:'Incomplete'},
+      deep :{label:'Take a shot',w:.18, ms:880,  kind:'rec',  img:['catch5'], fail:'Overthrown'}
     };
+    /* ---- how far a play actually goes ----
+       Timing used to set the gain outright: a dead-centre tap paid the whole call, so a good
+       thumb printed nine yards a carry forever and the score climbed for no football reason.
+       Real football does not work like that. Most runs are a couple of yards, the odd one
+       breaks, and the shot downfield is a chunk or it is nothing.
+       So these are the shapes each call actually has, and timing no longer sets the number —
+       it tilts which band you draw from. The same tap twice is not the same play twice, and
+       nobody gains yards just for being accurate. */
+    // Baseline weights are set so the average play comes out where the real ones do: about
+    // 4.3 a carry, about 8 and a half on a completed short pass, low twenties on a shot.
+    var BANDS={
+      run  :[[0,3],[4,8],[9,17],[18,42]],
+      short:[[0,5],[6,11],[12,20],[21,48]],
+      deep :[[8,18],[19,30],[31,45],[46,70]]
+    };
+    var ODDS={
+      run  :[.62,.26,.10,.02],
+      short:[.42,.36,.18,.04],
+      deep :[.45,.34,.17,.04]
+    };
+    // Timing moves mass mostly one band up, barely any of it to the house call — so good
+    // hands are a better afternoon, not a different sport.
+    function sampleGain(kind,q){
+      var w=ODDS[kind].slice(), tilt=(q-0.5)*0.5;
+      w[0]=Math.max(.05,w[0]-tilt);
+      w[1]=Math.max(.05,w[1]+tilt*0.65);
+      w[2]=Math.max(.03,w[2]+tilt*0.28);
+      w[3]=Math.max(.01,w[3]+tilt*0.07);
+      var sum=w[0]+w[1]+w[2]+w[3], r=Math.random()*sum, acc=0, idx=0;
+      for(var k=0;k<4;k++){ acc+=w[k]; if(r<=acc){ idx=k; break; } }
+      var b=BANDS[kind][idx];
+      return Math.round(b[0]+Math.random()*(b[1]-b[0]));
+    }
+
     var MAX_FG=56;            // past this nobody is trotting the kicker out
     var POSS=4;               // possessions each
     var CAP=92;               // the ceiling, and the number the section is named after
@@ -4071,9 +4107,9 @@
        rushing or a hundred receiving. Capped, because a number with no ceiling stops meaning
        anything and this board is a fantasy score, not a pinball machine. */
     function fgPoints(d){ return d>=50 ? 5 : d>=40 ? 4 : 3; }
-    var rushY=0, recY=0, recs=0, tds=0, kickPts=0;
+    var rushY=0, recY=0, recs=0, tds=0, kickPts=0, ints=0;
     function dkRaw(){
-      var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts;
+      var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts - ints;
       if(rushY>=100) p+=3;
       if(recY>=100) p+=3;
       return p;
@@ -4171,7 +4207,7 @@
       sit.innerHTML = ord(Math.min(down,4))+' &amp; '+(goal?'goal':toGo)+' · '+spot(pos);
     }
     function flashGain(n,q){
-      gain.textContent=(n<0?'':'+')+n+' yds'+(q>0.86?'  perfect':'');
+      gain.textContent = n===0 ? 'no gain' : ((n<0?'':'+')+n+' yds');
       gain.classList.add('show');
       setTimeout(function(){ gain.classList.remove('show'); },700);
     }
@@ -4198,7 +4234,7 @@
     /* ---- a game ---- */
     function startGame(){
       myPts=0; oppPts=0; poss=0; oppPoss=0;
-      rushY=0; recY=0; recs=0; tds=0; kickPts=0;
+      rushY=0; recY=0; recs=0; tds=0; kickPts=0; ints=0;
       paintScore(); iniBox.hidden=true; pending=null;
       newDrive();
     }
@@ -4331,14 +4367,42 @@
     }
 
     /* ---- making the play ---- */
-    function failed(){
+    // A miss is not a free incompletion. A run that does not hit is a run for a loss, a pass
+    // that does not hit is sometimes a sack, and a shot thrown badly enough is the one that
+    // gets picked — which is what stops "take a shot" being the only call worth making.
+    // Sack yardage is the quarterback's, so it costs field position and no DK points; a
+    // stuffed run is a loss on the back's own stat line and comes off the total.
+    function failed(off,half){
       var s=CALLS[i4];
       sfxFail(); stop();
-      call.className='rt-call bad'; call.textContent=s.fail;
+      var why=s.fail, lost=0, picked=false;
+
+      if(i4==='deep' && off>half*2.2 && Math.random()<0.34){ picked=true; why='Intercepted'; }
+      else if(i4==='run'){ lost=1+Math.floor(Math.random()*3); why='Stuffed for '+lost; }
+      else if(Math.random()<0.16){ lost=5+Math.floor(Math.random()*5); why='Sacked for '+lost; }
+
+      call.className='rt-call bad'; call.textContent=why;
       swap('drop');
+
+      if(picked){
+        ints++; paintScore();
+        setTimeout(function(){ endDrive('Intercepted'); },520);
+        return;
+      }
+      if(lost){
+        pos-=lost; toGo+=lost;
+        if(i4==='run') rushY-=lost;
+        paintScore(); flashGain(-lost,0);
+        // Backed into your own end zone is two points the other way, same as it is on Sunday.
+        if(pos<=0){
+          pos=1; oppPts+=2; paintSB();
+          setTimeout(function(){ endDrive('Safety'); },520);
+          return;
+        }
+      }
       down++;
-      if(down>4){ setTimeout(function(){ endDrive('Turnover on downs'); },500); return; }
-      setTimeout(function(){ phase='call'; paintSit(); hint.textContent='Call the play'; renderCalls(); },500);
+      if(down>4){ setTimeout(function(){ endDrive('Turnover on downs'); },520); return; }
+      setTimeout(function(){ phase='call'; paintSit(); hint.textContent='Call the play'; renderCalls(); },520);
     }
 
     function tap(){
@@ -4362,12 +4426,12 @@
         return;
       }
 
-      if(off>half){ failed(); return; }
+      if(off>half){ failed(off,half); return; }
 
-      // Dead centre pays the whole call, the rim pays a fifth — and the grass in front of you
-      // is the real ceiling, so nothing gains more field than there is field left.
+      // Timing tilts the draw, it does not pay the gain — and the grass in front of you is
+      // the real ceiling, so nothing gains more field than there is field left.
       var q=1-(off/half), s=CALLS[i4];
-      var got=Math.min(100-pos, Math.max(1, Math.round(s.max*(0.2+0.8*q))));
+      var got=Math.min(100-pos, sampleGain(i4,q));
       pos+=got;
       if(s.kind==='rush') rushY+=got; else { recY+=got; recs+=1; }
       paintScore(); flashGain(got,q);
