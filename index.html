@@ -527,19 +527,66 @@
   .gd-line.locked .gd-v{color:var(--bone)}
   .gd-line.locked .gd-k{color:var(--bone-dim)}
   /* who actually produced, in the scoring this league runs */
-  .gd-top3{padding:11px 15px;border-bottom:1px solid var(--line)}
-  .gd-top3 h5{
+  .gd-best{padding:11px 15px;border-bottom:1px solid var(--line)}
+  .gd-best h5{
     font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
     color:var(--gold);margin:0 0 8px;font-weight:600;
   }
-  .gd-top3 ul{list-style:none;margin:0;padding:0}
-  .gd-top3 li{display:flex;align-items:baseline;gap:9px;padding:3px 0;font-size:12.5px}
-  .gd-top3 .pn{flex:1;color:var(--bone);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .gd-top3 .pt{font-family:var(--mono);font-size:10px;color:var(--bone-dim)}
-  .gd-top3 .pp{
+  .gd-best ul{list-style:none;margin:0;padding:0}
+  .gd-best li{padding:4px 0}
+  .gd-best li + li{border-top:1px solid rgba(255,255,255,.04)}
+  .gd-best .r{display:flex;align-items:baseline;gap:9px}
+  .gd-best .pn{flex:1;color:var(--bone);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gd-best .pt{font-family:var(--mono);font-size:10px;color:var(--bone-dim);flex:none}
+  .gd-best .pp{
     font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold-bright);
     font-variant-numeric:tabular-nums;min-width:42px;text-align:right;
   }
+  /* The number says a player scored; the line says how, which is the part that tells you
+     whether to expect it again. */
+  .gd-best .pl{
+    display:block;font-family:var(--mono);font-size:10px;color:var(--bone-dim);
+    margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* what the market said would happen, next to what did */
+  .gd-calls{padding:11px 15px;border-bottom:1px solid var(--line)}
+  .gd-calls h5{
+    font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--bone-dim);margin:0 0 8px;font-weight:600;
+  }
+  .gd-calls .row{
+    display:grid;grid-template-columns:52px 1fr 14px 1fr;gap:7px;align-items:baseline;
+    padding:3px 0;font-family:var(--mono);font-size:11px;
+  }
+  .gd-calls .lbl{color:var(--bone-dim);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+  .gd-calls .a{color:var(--bone-dim)}
+  .gd-calls .arr{color:var(--bone-dim);text-align:center}
+  .gd-calls .b{color:var(--bone)}
+  .gd-calls .v{grid-column:2 / -1;font-size:10px;margin-top:-1px}
+  .gd-calls .v.hit{color:#8FD9A8}
+  .gd-calls .v.miss{color:#F0A79C}
+
+  /* Key factors. Only the ones that are true this week — a chip that fires every week
+     teaches nobody anything. */
+  .gd-facts{padding:10px 15px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px}
+  .gd-facts span{
+    font-family:var(--mono);font-size:9.5px;line-height:1.5;color:var(--bone-dim);
+    border:1px solid var(--line);border-radius:2px;padding:3px 7px;
+  }
+  .gd-facts span.hot{color:var(--gold);border-color:rgba(231,178,60,.4)}
+  .gd-facts span.cold{color:#F0A79C;border-color:rgba(240,167,156,.35)}
+
+  /* The week picker. The live board is the default; everything else is an archived file. */
+  .gd-weeks{display:flex;flex-wrap:wrap;gap:7px;margin-top:22px}
+  .gd-weeks button{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--bone-dim);background:transparent;border:1px solid var(--line);border-radius:2px;
+    padding:6px 11px;cursor:pointer;transition:color .15s,border-color .15s;
+  }
+  .gd-weeks button:hover{color:var(--bone);border-color:var(--bone-dim)}
+  .gd-weeks button[aria-current="true"]{color:var(--ink);background:var(--gold);border-color:var(--gold)}
+  .gd-weeks button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   /* Score only appears once a game is under way, so it replaces the kickoff time rather
      than crowding in beside it. Tabular figures keep the column from dancing. */
   .gd-score{
@@ -568,10 +615,27 @@
   }
   .gd-out h5.final{color:var(--gold)}
   .gd-out ul{list-style:none;margin:0;padding:0}
-  .gd-out li{display:flex;gap:8px;padding:2px 0;font-size:12.5px;color:var(--bone-dim)}
+  .gd-out li{padding:5px 0;font-size:12.5px;color:var(--bone-dim)}
+  .gd-out li + li{border-top:1px solid rgba(255,255,255,.04)}
   .gd-out li .st{font-family:var(--mono);font-size:9.5px;flex:none;width:24px;color:var(--clown)}
   .gd-out li .st.q{color:var(--bone-dim)}
   .gd-out li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Out on the left, the man who takes the snaps on the right. A name with no team and no
+     position is useless — there are four Smiths and you cannot claim any of them. */
+  /* Prefixed on purpose: a bare .watch/.up here would collide with the crown-and-vest
+     watch cards further down, which set display:grid and would lay these out sideways. */
+  .gd-out .pair{display:grid;grid-template-columns:1fr 12px 1fr;gap:7px;align-items:baseline}
+  .gd-out .pair .gd-arr{color:var(--bone-dim);font-family:var(--mono);font-size:11px;text-align:center}
+  .gd-out .pair b{display:block;color:var(--bone);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gd-out .pair .gd-gone b{color:var(--clown)}
+  .gd-out .pair i{
+    display:block;font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--bone-dim);
+    margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .gd-out .pair .gd-next b{color:#8FD9A8}
+  .gd-out .pair .gd-note b{
+    color:var(--bone-dim);font-weight:400;font-size:11.5px;white-space:normal;overflow:visible;
+  }
   .gd-none{font-size:12.5px;color:var(--bone-dim)}
 
   /* ---- scoring audit: prove the board matches DraftKings without anyone checking ---- */
@@ -1296,8 +1360,11 @@
   <div class="wrap">
     <div class="eyebrow rise">The slate · lines, weather, inactives</div>
     <h2 class="disp rise" style="font-size:clamp(34px,6vw,64px);margin:14px 0 0">Gameday</h2>
-    <p class="res-note rise">The <b>spread</b> and the <b>total</b> for every game this week, straight off ESPN's DraftKings feed &mdash; and the <b>implied team totals</b> worked out from them, which is the closest thing there is to a projected score. Outdoor games carry the forecast. <b>No props, no player lines</b> &mdash; that's a different game and it isn't this one. The only player-level thing here is <b>who's out</b>.</p>
+    <p class="res-note rise">The <b>spread</b> and the <b>total</b> for every game this week, straight off ESPN's DraftKings feed &mdash; and the <b>implied team totals</b> worked out from them, which is the closest thing there is to a projected score. Every game carries its <b>key factors</b>, the <b>full out list</b> with team, position and who takes the snaps instead, and once it's played, the <b>top five</b> by DraftKings scoring. Then the part that's actually worth knowing: <b>what the market called against what happened</b> &mdash; a 55.5 total that lands on 74 tells you more than any projection. <b>No props, no player lines</b> &mdash; that's a different game and it isn't this one.</p>
 
+    <!-- Week picker. The live board is the default; every past week is a file under
+         weeks/<season>/ that the Tuesday archive job writes. -->
+    <div class="gd-weeks rise" id="gd-weeks"></div>
     <div class="gd-grid rise" id="gd-grid"></div>
     <div class="audit rise" id="audit" hidden></div>
     <div class="pay-note rise" id="gd-stamp" style="margin-top:20px"></div>
@@ -2714,27 +2781,40 @@
     run(); setInterval(run,45000);
   })();
 
-  // ---- gameday: the line, the weather, and who is out ----
+  // ---- gameday: the line, the weather, who is out, and what the call was worth ----
   // Everything here is game level on purpose. A spread and a total tell you how a whole
-  // offence is expected to be used, which is a lineup decision. A player prop tells you
-  // about one man and turns this into a sportsbook, which this isn't. The only player-level
-  // data on the page is the out list, because a guy who isn't playing is a lineup problem.
+  // offence is expected to be used, which is a lineup decision. A player prop tells you about
+  // one man and turns this into a sportsbook, which this isn't. The only player-level data is
+  // who isn't playing, and once it's over, who produced — both of which are lineup problems.
+  //
+  // Two sources feed one renderer. The current week is read live from ESPN; a past week is
+  // read back out of weeks/<season>/wkNN.json, which the archive job writes every Tuesday.
+  // Both are normalised into the same game shape before anything draws, so a Sunday card and
+  // its own archive entry cannot drift apart.
+  //
+  // The derivations here — implied totals, the script call, key factors, called-versus-actual
+  // — are mirrored in tools/archive-week.mjs. Change one, change the other.
   (function gameday(){
-    var sec  = document.getElementById('gameday'),
-        grid = document.getElementById('gd-grid'),
-        stamp= document.getElementById('gd-stamp');
+    var sec   = document.getElementById('gameday'),
+        grid  = document.getElementById('gd-grid'),
+        picks = document.getElementById('gd-weeks'),
+        stamp = document.getElementById('gd-stamp');
     if(!sec || !grid || !window.fetch) return;
 
-    var SB  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
-        SUM = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
+    var SB   = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
+        SUM  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=',
+        ARCH = 'weeks/'+SEASON+'/';
 
-    var games = [], outs = {}, leaders = {};   // outs: eventId -> {list,q}; leaders: eventId -> top DK
+    var games   = [],     // whatever is on screen, live or archived, in one shape
+        depth   = null,   // team -> position -> depth order, for naming the next man up
+        archive = [],     // which weeks have been written down
+        view    = 'live',
+        archiveAt = null; // when the week on screen was archived
 
     // The number that matters is the one the market closed on. Once a game kicks off ESPN
     // keeps handing back a live in-play line, which is a different bet and useless for
-    // judging the week. So the last pre-game line is written down and never overwritten,
-    // and it survives a reload - a closing line you lose on refresh is not a record of
-    // anything.
+    // judging the week. So the last pre-game line is written down and never overwritten, and
+    // it survives a reload — a closing line you lose on refresh is not a record of anything.
     var CLOSE_KEY='coc-closing-'+SEASON, closing={};
     try{ closing=JSON.parse(localStorage.getItem(CLOSE_KEY)||'{}')||{}; }catch(e){ closing={}; }
     function saveClosing(){ try{ localStorage.setItem(CLOSE_KEY,JSON.stringify(closing)); }catch(e){} }
@@ -2749,11 +2829,18 @@
       if(isNaN(d.getTime())) return '';
       return d.toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'});
     }
+    function dayLabel(iso){
+      var d = new Date(iso);
+      if(isNaN(d.getTime())) return '';
+      return d.toLocaleString('en-US',{month:'short',day:'numeric'});
+    }
+
+    /* ---- derivations, shared with the archiver ---- */
 
     // The spread and the total are two ways of saying the same thing. Together they pin each
     // side's expected points, which is the number that actually moves a start/sit.
     function implied(ou, details, homeAb, awayAb){
-      if(!ou || !isFinite(ou)) return null;
+      if(ou==null || !isFinite(ou)) return null;
       var m = /([A-Za-z]{2,4})\s*(-?\d+(?:\.\d+)?)/.exec(details||'');
       if(!m) return { home: ou/2, away: ou/2 };          // pick'em
       var team = m[1].toUpperCase(), sp = parseFloat(m[2]);
@@ -2767,6 +2854,131 @@
       var favHome = (named === 'home') ? (sp < 0) : (sp > 0);
       return favHome ? { home: hi, away: lo } : { home: lo, away: hi };
     }
+
+    function scriptOf(pts){
+      if(pts==null || !isFinite(pts)) return null;
+      if(pts >= 49) return 'Shootout';
+      if(pts <= 41) return 'Grind';
+      return 'Middle';
+    }
+
+    var SKILL = {QB:1,RB:1,FB:1,WR:1,TE:1,PK:1,K:1};
+    // Skill positions get a name, because the next man up is a waiver claim. Everywhere else
+    // a name means nothing to a fantasy manager, so say what to actually watch instead.
+    var WATCH = {
+      QB:'The whole offence changes — downgrade the pass catchers',
+      RB:'Check the backfield split before you start anyone',
+      WR:'Targets move — watch the slot', TE:'Check the second tight end',
+      K:'Kicking game is a coin flip this week',
+      OT:"Watch the quarterback's pressure rate", T:"Watch the quarterback's pressure rate",
+      OG:'Interior pressure — check the run lanes', G:'Interior pressure — check the run lanes',
+      C:'Snap and protection calls change',
+      CB:'Target the receiver on that side', S:'Deep shots open up',
+      DE:'Less pass rush — the opposing QB has time', EDGE:'Less pass rush — the opposing QB has time',
+      DT:'Run lanes open inside', LB:'Check-downs and backs in the pass game'
+    };
+    // The man who takes the snaps is the one BELOW the injured player on the depth chart.
+    // Taking the first name on the list instead hands back the team's WR1 as the
+    // "replacement" for its WR3, which is worse than saying nothing — so when he can't be
+    // placed on the chart, say what to watch rather than naming somebody already starting.
+    function nextUp(p, outNames){
+      if(SKILL[p.pos]){
+        var list = (depth && depth[p.team] && depth[p.team][p.pos]) || [],
+            i = list.indexOf(p.name);
+        if(i > -1){
+          for(var k=i+1;k<list.length;k++){
+            if(!outNames[list[k]]) return { type:'player', text:list[k] };
+          }
+        }
+      }
+      return WATCH[p.pos] ? { type:'watch', text:WATCH[p.pos] } : null;
+    }
+
+    // Short, concrete, and only when true. A chip that fires every week teaches nobody
+    // anything, so nothing here is a default.
+    function factorsFor(g){
+      var f = [];
+      if(g.intl) f.push('International · '+g.country+' — travel and an early kick');
+      else if(g.neutral) f.push('Neutral site — no home crowd');
+
+      if(g.indoor) f.push('Indoors — weather off the table');
+      else if(g.weather){
+        var t = g.weather.temp, d = g.weather.text || '',
+            rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
+        if(rough) f.push('Weather · '+[d, t!=null?(t+'°'):''].filter(Boolean).join(' ')+' — passing risk');
+      }
+
+      if(g.line && g.line.total!=null){
+        var s = scriptOf(g.line.total);
+        if(s==='Shootout') f.push('Shootout call · total '+g.line.total+' — start the pass game');
+        else if(s==='Grind') f.push('Grind call · total '+g.line.total+' — backs over receivers');
+      }
+
+      var m = /([A-Za-z]{2,4})\s*(-?\d+(?:\.\d+)?)/.exec((g.line&&g.line.spread)||'');
+      if(m){
+        var num = Math.abs(parseFloat(m[2]));
+        if(num >= 10) f.push('Blowout risk · '+m[1].toUpperCase()+' by '+num+' — the dog throws, the favourite runs');
+      }
+
+      var skill = (g.out||[]).filter(function(p){ return SKILL[p.pos]; });
+      if(skill.length){
+        f.push(skill.length+' skill starter'+(skill.length>1?'s':'')+' out · '+
+          skill.slice(0,3).map(function(p){ return p.name+' ('+p.team+' '+p.pos+')'; }).join(', '));
+      }
+      return f;
+    }
+    function factorTone(t){
+      if(/^Shootout call/.test(t)) return 'hot';
+      if(/^Weather|^Blowout risk|skill starter/.test(t)) return 'cold';
+      return '';
+    }
+
+    // What the market said would happen, next to what did. A total of 51 that lands on 31 is
+    // the single most useful thing to have when you are working out why a week went wrong.
+    function callsFor(g){
+      if(g.state!=='post' || g.aScore==null || g.hScore==null) return null;
+      var actual = g.aScore + g.hScore, c = {};
+
+      if(g.line && g.line.total!=null){
+        var delta = Math.round((actual - g.line.total)*10)/10;
+        c.total = { called:g.line.total, actual:actual, delta:Math.abs(delta),
+                    verdict: delta>0?'OVER':(delta<0?'UNDER':'PUSH') };
+        var called = scriptOf(g.line.total), was = scriptOf(actual);
+        c.script = { called:called, actual:was, hit:called===was };
+      }
+
+      var m = /([A-Za-z]{2,4})\s*(-?\d+(?:\.\d+)?)/.exec((g.line&&g.line.spread)||'');
+      if(m){
+        var fav = m[1].toUpperCase(), num = Math.abs(parseFloat(m[2])),
+            favHome = fav === String(g.home).toUpperCase(),
+            margin = (favHome ? g.hScore : g.aScore) - (favHome ? g.aScore : g.hScore);
+        c.spread = { called:g.line.spread, favorite:fav, number:num, margin:margin,
+                     verdict: margin>num ? (fav+' covered')
+                            : margin===num ? 'Push'
+                            : ((favHome?g.away:g.home)+' covered'),
+                     favoriteWon: margin>0 };
+      }
+
+      if(g.predictor){
+        var pickHome = g.predictor.home >= g.predictor.away,
+            homeWon = g.hScore > g.aScore;
+        c.predictor = { pick: pickHome?g.home:g.away,
+                        prob: Math.round((pickHome?g.predictor.home:g.predictor.away)*10)/10,
+                        hit: g.hScore===g.aScore ? null : (pickHome===homeWon) };
+      }
+      return c;
+    }
+
+    // Everything a live game needs that the archive file already carries.
+    function decorate(g){
+      var imp = implied(g.line && g.line.total, g.line && g.line.spread, g.home, g.away);
+      g.implied = imp ? { away:Math.round(imp.away*10)/10, home:Math.round(imp.home*10)/10 } : null;
+      g.factors = factorsFor(g);
+      g.calls   = callsFor(g);
+      return g;
+    }
+
+    /* ---- live board ---- */
 
     function readScoreboard(j){
       var list = [];
@@ -2815,32 +3027,173 @@
           detail: (ev.status&&ev.status.type&&ev.status.type.shortDetail)||'',
           hScore: home.score!=null ? Number(home.score) : null,
           aScore: away.score!=null ? Number(away.score) : null,
-          spread: locked ? locked.s : liveSpread,
-          total : locked ? locked.t : liveTotal,
-          book  : locked ? locked.b : liveBook,
+          line: {
+            spread: locked ? locked.s : liveSpread,
+            total : locked ? locked.t : liveTotal,
+            book  : locked ? locked.b : liveBook
+          },
           indoor: !!ven.indoor,
           venue : ven.fullName || '',
           city  : [addr.city, addr.state || country].filter(Boolean).join(', '),
           country: country,
           intl  : intl,
           neutral: !!c.neutralSite,
-          wx    : ev.weather || null
+          weather: ev.weather ? {
+            text: ev.weather.displayValue || '',
+            temp: ev.weather.temperature!=null ? Number(ev.weather.temperature) : null
+          } : null
         });
       });
       saveClosing();
       return list;
     }
 
+    // Fill the out lists behind the render so the lines show up straight away instead of
+    // waiting on sixteen more requests.
+    function loadSummaries(){
+      games.forEach(function(g){
+        fetch(SUM + encodeURIComponent(g.id), {cache:'no-store'})
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(s){
+            if(!s) return;
+            if(view!=='live') return;                 // the reader moved to an archived week
+
+            // Inactives land about 90 minutes before kickoff. Before that this is the injury
+            // report and it can still change; after it, it's final and it's what to trust.
+            var out = [], q = 0, names = {};
+            (s.injuries||[]).forEach(function(grp){
+              var tm = (grp.team && grp.team.abbreviation) || '';
+              (grp.injuries||[]).forEach(function(x){
+                var st = String(x.status||''),
+                    ath = x.athlete || {},
+                    nm = ath.displayName || '';
+                if(!nm) return;
+                if(/^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st)){
+                  out.push({
+                    team: tm, name: nm,
+                    pos: (ath.position && ath.position.abbreviation) || '',
+                    status: st,
+                    injury: (x.details && x.details.type) || '',
+                    back: (x.details && x.details.returnDate) || ''
+                  });
+                  names[nm] = 1;
+                } else if(/questionable/i.test(st)){ q++; }
+              });
+            });
+            out.forEach(function(p){ p.next = nextUp(p, names); });
+            out.sort(function(a,b){
+              return (SKILL[b.pos]?1:0)-(SKILL[a.pos]?1:0) || a.team.localeCompare(b.team);
+            });
+            g.out = out; g.q = q;
+
+            if(s.predictor){
+              var h = Number(s.predictor.homeTeam && s.predictor.homeTeam.gameProjection),
+                  a = Number(s.predictor.awayTeam && s.predictor.awayTeam.gameProjection);
+              if(isFinite(h) && isFinite(a)) g.predictor = { home:h, away:a };
+            }
+
+            // Once a game is under way the injury report stops being the interesting part of
+            // this payload and the box score starts. Who actually produced, in the scoring
+            // this league runs, is the thing you check on a Sunday.
+            if(g.state!=='pre' && s.boxscore) g.top = dkFromBox(s.boxscore).slice(0,5);
+
+            decorate(g);
+            paint();
+          })
+          .catch(function(){ if(!g.out) { g.out = []; g.q = 0; } });
+      });
+    }
+
+    // --- DraftKings from the box score ---
+    // Passing 0.04 a yard and 4 a score, rushing and receiving 0.1 a yard and 6 a score, a
+    // point a catch, minus one for a pick or a lost fumble, and the three-point bonuses at
+    // 300 passing or 100 on the ground or through the air. One player can appear in three
+    // groups in the same game, so everything accumulates per athlete before it is scored.
+    function dkFromBox(box){
+      var acc={};
+      function get(id,nm,tm){
+        if(!acc[id]) acc[id]={n:nm,t:tm,py:0,ptd:0,pint:0,cmp:0,att:0,
+                              car:0,ry:0,rtd:0,rec:0,recy:0,rectd:0,tgt:0,fl:0};
+        return acc[id];
+      }
+      (box.players||[]).forEach(function(tp){
+        var tm=((tp.team||{}).abbreviation)||'';
+        (tp.statistics||[]).forEach(function(grp){
+          var keys=grp.keys||[];
+          (grp.athletes||[]).forEach(function(a){
+            var ath=a.athlete||{}, st=a.stats||[];
+            if(!ath.id) return;
+            var v=function(key){
+              var i=keys.indexOf(key);
+              return i<0 ? 0 : (parseFloat(String(st[i]).replace(/[^0-9.\-]/g,''))||0);
+            };
+            var r=get(ath.id, ath.displayName||'', tm);
+            if(grp.name==='passing'){
+              r.py+=v('passingYards'); r.ptd+=v('passingTouchdowns'); r.pint+=v('interceptions');
+              var ca=/(\d+)\s*\/\s*(\d+)/.exec(String(st[keys.indexOf('completions/passingAttempts')]||''));
+              if(ca){ r.cmp+=Number(ca[1]); r.att+=Number(ca[2]); }
+            }
+            else if(grp.name==='rushing'){ r.car+=v('rushingAttempts'); r.ry+=v('rushingYards'); r.rtd+=v('rushingTouchdowns'); }
+            else if(grp.name==='receiving'){ r.rec+=v('receptions'); r.recy+=v('receivingYards'); r.rectd+=v('receivingTouchdowns'); r.tgt+=v('receivingTargets'); }
+            else if(grp.name==='fumbles'){ r.fl+=v('fumblesLost'); }
+          });
+        });
+      });
+      var out=[];
+      Object.keys(acc).forEach(function(id){
+        var r=acc[id];
+        var p = r.py*0.04 + r.ptd*4 - r.pint
+              + r.ry*0.1 + r.rtd*6
+              + r.rec*1 + r.recy*0.1 + r.rectd*6
+              - r.fl;
+        if(r.py>=300) p+=3;
+        if(r.ry>=100) p+=3;
+        if(r.recy>=100) p+=3;
+        if(p<=0) return;
+        out.push({ name:r.n, team:r.t, pos:posOf(r.n, r.t), dk:Math.round(p*10)/10, line:statLine(r) });
+      });
+      return out.sort(function(a,b){ return b.dk-a.dk; });
+    }
+    function posOf(name, team){
+      var t = depth && depth[team];
+      if(!t) return '';
+      for(var p in t){ if(t[p].indexOf(name)>-1) return p; }
+      return '';
+    }
+    // The number says a player scored; the line says how, which is the part that tells you
+    // whether to expect it again.
+    function statLine(r){
+      var bits=[];
+      if(r.py||r.ptd||r.pint){
+        var s=(r.cmp?(r.cmp+'/'+r.att+' '):'')+Math.round(r.py)+' pass';
+        if(r.ptd) s+=', '+r.ptd+' TD';
+        if(r.pint) s+=', '+r.pint+' INT';
+        bits.push(s);
+      }
+      if(r.car||r.ry||r.rtd){
+        var u=Math.round(r.car)+' car, '+Math.round(r.ry)+' rush';
+        if(r.rtd) u+=', '+r.rtd+' TD';
+        bits.push(u);
+      }
+      if(r.rec||r.recy||r.rectd){
+        var w=Math.round(r.rec)+'/'+Math.round(r.tgt)+' for '+Math.round(r.recy);
+        if(r.rectd) w+=', '+r.rectd+' TD';
+        bits.push(w);
+      }
+      if(r.fl) bits.push(r.fl+' fum lost');
+      return bits.join(' · ');
+    }
+
+    /* ---- the card ---- */
+
     function card(g){
       var mins = (new Date(g.kick).getTime() - Date.now())/60000,
-          soon = g.state==='pre' && mins <= 90 && mins > -30,
-          live = g.state==='in';
-
-      var done = g.state==='post',
-          hasScore = (live || done) && g.hScore!=null && g.aScore!=null;
+          soon = g.state==='pre' && mins <= 90 && mins > -30 && view==='live',
+          live = g.state==='in' && view==='live',
+          done = g.state==='post',
+          hasScore = (g.state!=='pre') && g.hScore!=null && g.aScore!=null;
 
       // Once there is a score it is the headline; the clock or "Final" moves to the right.
-      // The leader's number is the one worth finding at a glance, so only it is gold.
       var right;
       if(hasScore){
         var aWin = g.aScore > g.hScore, hWin = g.hScore > g.aScore;
@@ -2865,149 +3218,193 @@
           (g.neutral && !g.intl ? ' · neutral site' : '')+'</span></div>';
       }
 
-      var lk = g.locked ? ' · closed' : '';
-      var line = '<div class="gd-line'+(g.locked?' locked':'')+'">'+
-        '<div><span class="gd-k">Spread'+lk+'</span><span class="gd-v">'+esc(g.spread||'—')+'</span></div>'+
-        '<div><span class="gd-k">Total'+lk+'</span><span class="gd-v">'+(g.total!=null?g.total.toFixed(1):'—')+'</span></div></div>';
+      var L = g.line || {},
+          shut = g.locked || (view!=='live' && done),
+          lk = shut ? ' · closed' : '';
+      var line = '<div class="gd-line'+(shut?' locked':'')+'">'+
+        '<div><span class="gd-k">Spread'+lk+'</span><span class="gd-v">'+esc(L.spread||'—')+'</span></div>'+
+        '<div><span class="gd-k">Total'+lk+'</span><span class="gd-v">'+(L.total!=null?Number(L.total).toFixed(1):'—')+'</span></div></div>';
 
-      // Once there is a box score, who actually produced is the thing worth showing.
-      var L = leaders[g.id], topRow='';
-      if(L && L.length){
-        topRow = '<div class="gd-top3"><h5>Top of the box &middot; DK points</h5><ul>'+
-          L.map(function(p){
-            return '<li><span class="pn">'+esc(p.n)+'</span>'+
-                   '<span class="pt">'+esc(p.t)+'</span>'+
-                   '<span class="pp">'+p.p.toFixed(1)+'</span></li>';
-          }).join('')+'</ul></div>';
+      var impRow = '';
+      if(g.implied){
+        impRow = '<div class="gd-imp">'+
+          '<span>'+esc(g.away)+' <b>'+Number(g.implied.away).toFixed(1)+'</b></span>'+
+          '<span>implied</span>'+
+          '<span><b>'+Number(g.implied.home).toFixed(1)+'</b> '+esc(g.home)+'</span></div>';
       }
 
-      var imp = implied(g.total, g.spread, g.home, g.away), impRow = '';
-      if(imp){
-        impRow = '<div class="gd-imp">'+
-          '<span>'+esc(g.away)+' <b>'+imp.away.toFixed(1)+'</b></span>'+
-          '<span>implied</span>'+
-          '<span><b>'+imp.home.toFixed(1)+'</b> '+esc(g.home)+'</span></div>';
+      // Called against actual. Two columns on purpose — the point is the gap between them.
+      var callRow = '';
+      if(g.calls && (g.calls.total || g.calls.spread)){
+        var rows = [];
+        function row(lbl, a, b, verdict, hit){
+          return '<div class="row">'+
+            '<span class="lbl">'+esc(lbl)+'</span>'+
+            '<span class="a">'+esc(a)+'</span><span class="arr">&rarr;</span><span class="b">'+esc(b)+'</span>'+
+            '</div>'+(verdict?('<div class="row"><span class="lbl"></span>'+
+              '<span class="v '+(hit===true?'hit':hit===false?'miss':'')+'">'+esc(verdict)+'</span></div>'):'');
+        }
+        var c = g.calls;
+        if(c.total){
+          rows.push(row('Total', Number(c.total.called).toFixed(1), String(c.total.actual),
+            c.total.verdict==='PUSH' ? 'Pushed' : (c.total.verdict+' by '+c.total.delta), null));
+        }
+        if(c.script){
+          rows.push(row('Script', c.script.called, c.script.actual,
+            c.script.hit ? 'Called it' : ('Called '+String(c.script.called).toLowerCase()+', played '+String(c.script.actual).toLowerCase()),
+            c.script.hit));
+        }
+        if(c.spread){
+          rows.push(row('Spread', c.spread.called,
+            c.spread.margin===0 ? 'Tied' : (c.spread.favorite+(c.spread.margin>0?' by ':' lost by ')+Math.abs(c.spread.margin)),
+            c.spread.verdict, null));
+        }
+        if(c.predictor && c.predictor.hit!=null){
+          rows.push(row('ESPN', c.predictor.pick+' '+c.predictor.prob+'%',
+            c.predictor.hit ? 'Won' : 'Lost', null, c.predictor.hit));
+        }
+        callRow = '<div class="gd-calls"><h5>Called &middot; actual</h5>'+rows.join('')+'</div>';
+      }
+
+      var factRow = '';
+      if(g.factors && g.factors.length){
+        factRow = '<div class="gd-facts">'+g.factors.map(function(t){
+          return '<span class="'+factorTone(t)+'">'+esc(t)+'</span>';
+        }).join('')+'</div>';
+      }
+
+      var topRow = '';
+      if(g.top && g.top.length){
+        topRow = '<div class="gd-best"><h5>Top five &middot; DK points</h5><ul>'+
+          g.top.map(function(p){
+            return '<li><div class="r">'+
+                   '<span class="pn">'+esc(p.name)+'</span>'+
+                   '<span class="pt">'+esc([p.team,p.pos].filter(Boolean).join(' '))+'</span>'+
+                   '<span class="pp">'+Number(p.dk).toFixed(1)+'</span></div>'+
+                   (p.line?('<span class="pl">'+esc(p.line)+'</span>'):'')+'</li>';
+          }).join('')+'</ul></div>';
       }
 
       var wxRow;
       if(g.indoor){
         wxRow = '<div class="gd-wx">Indoors · weather is not a factor</div>';
-      } else if(g.wx){
-        var t = g.wx.temperature, d = g.wx.displayValue||'',
+      } else if(g.weather){
+        var t = g.weather.temp, d = g.weather.text||'',
             rough = (t!=null && t<=25) || /rain|snow|storm|wind|sleet/i.test(d);
         wxRow = '<div class="gd-wx'+(rough?' rough':'')+'">'+esc(d)+(t!=null?(' · '+t+'°'):'')+'</div>';
       } else {
-        wxRow = '<div class="gd-wx">Forecast not posted yet</div>';
+        wxRow = '<div class="gd-wx">'+(done?'No forecast on file':'Forecast not posted yet')+'</div>';
       }
 
-      // Inactives land about 90 minutes before kickoff. Before that this is the injury
-      // report and it can still change; after it, it's final and it's the thing to trust.
-      var o = outs[g.id], outRow;
-      if(!o){
+      // Out on the left, whoever takes the snaps on the right.
+      var outRow;
+      if(!g.out){
         outRow = '<div class="gd-out"><div class="gd-none">Loading the out list…</div></div>';
-      } else if(!o.list.length){
+      } else if(!g.out.length){
         outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
-                 (soon?'Inactives · final':'Injury report')+'</h5>'+
-                 '<div class="gd-none">Nobody ruled out'+(o.q?(' · '+o.q+' questionable'):'')+'</div></div>';
+                 (soon?'Inactives · final':'Ruled out')+'</h5>'+
+                 '<div class="gd-none">Nobody ruled out'+(g.q?(' · '+g.q+' questionable'):'')+'</div></div>';
       } else {
         outRow = '<div class="gd-out"><h5'+(soon?' class="final"':'')+'">'+
-          (soon?'Inactives · final':'Ruled out')+'</h5><ul>'+
-          o.list.map(function(p){
-            return '<li><span class="st">'+esc(p.ab)+'</span><span class="nm">'+esc(p.nm)+'</span></li>';
+          (soon?'Inactives · final':'Ruled out')+' · '+g.out.length+'</h5><ul>'+
+          g.out.map(function(p){
+            var tag = [p.team, p.pos].filter(Boolean).join(' · '),
+                det = [p.injury, p.status && !/^out$/i.test(p.status) ? p.status : ''].filter(Boolean).join(' · ');
+            var rightCell = p.next
+              ? ('<span class="'+(p.next.type==='player'?'gd-next':'gd-note')+'"><b>'+esc(p.next.text)+'</b>'+
+                 (p.next.type==='player'?'<i>next up</i>':'<i>what to watch</i>')+'</span>')
+              : '<span class="gd-note"><b>&mdash;</b><i>no listed backup</i></span>';
+            return '<li><div class="pair">'+
+              '<span class="gd-gone"><b>'+esc(p.name)+'</b><i>'+esc([tag,det].filter(Boolean).join(' · '))+'</i></span>'+
+              '<span class="gd-arr">&rarr;</span>'+ rightCell +'</div></li>';
           }).join('')+'</ul>'+
-          (o.q?('<div class="gd-none" style="margin-top:7px">'+o.q+' more questionable</div>'):'')+
+          (g.q?('<div class="gd-none" style="margin-top:8px">'+g.q+' more questionable</div>'):'')+
           '</div>';
       }
 
       return '<div class="gd-card'+(soon?' soon':'')+(live?' live':'')+'">'+
-             head+venueRow+line+impRow+topRow+wxRow+outRow+'</div>';
+             head+venueRow+line+impRow+callRow+factRow+topRow+wxRow+outRow+'</div>';
     }
 
     function paint(){
       if(!games.length){
         grid.innerHTML = '<div class="ros-empty">No games on the board right now.</div>';
+        stamp.textContent = '';
         return;
       }
       grid.innerHTML = games.map(card).join('');
-      var book = games.filter(function(g){ return g.book; })[0];
-      stamp.textContent = 'Lines' + (book ? (' via '+book) : '') +
-        ' · weather and inactives via ESPN · refreshed automatically · game lines only, no props';
-    }
 
-    // Fill the out lists behind the render so the lines show up straight away instead of
-    // waiting on sixteen more requests.
-    function loadOuts(){
-      games.forEach(function(g){
-        fetch(SUM + encodeURIComponent(g.id), {cache:'no-store'})
-          .then(function(r){ return r.ok ? r.json() : null; })
-          .then(function(s){
-            if(!s) return;
-            var list = [], q = 0;
-            (s.injuries||[]).forEach(function(grp){
-              (grp.injuries||[]).forEach(function(x){
-                var st = String(x.status||''),
-                    ab = (x.type && x.type.abbreviation) || st.slice(0,1).toUpperCase(),
-                    nm = (x.athlete && x.athlete.displayName) || '';
-                if(!nm) return;
-                if(/^(out|doubtful|injured reserve|suspension|physically unable)/i.test(st)){
-                  list.push({ nm:nm, st:st, ab:ab });
-                } else if(/questionable/i.test(st)){ q++; }
-              });
-            });
-            outs[g.id] = { list:list, q:q };
-            // Once a game is under way the injury report stops being the interesting part of
-            // this payload and the box score starts. Who actually produced, in the scoring
-            // this league runs, is the thing you check on a Sunday.
-            if(g.state!=='pre' && s.boxscore) leaders[g.id] = dkFromBox(s.boxscore).slice(0,3);
-            paint();
-          })
-          .catch(function(){ outs[g.id] = { list:[], q:0 }; });
-      });
-    }
-
-    // --- DraftKings from the box score ---
-    // Passing 0.04 a yard and 4 a score, rushing and receiving 0.1 a yard and 6 a score, a
-    // point a catch, minus one for a pick or a lost fumble, and the three-point bonuses at
-    // 300 passing or 100 on the ground or through the air. One player can appear in three
-    // groups in the same game, so everything accumulates per athlete before it is scored.
-    function dkFromBox(box){
-      var acc={};
-      function get(id,nm,tm){
-        if(!acc[id]) acc[id]={n:nm,t:tm,py:0,ptd:0,pint:0,ry:0,rtd:0,rec:0,recy:0,rectd:0,fl:0};
-        return acc[id];
+      if(view==='live'){
+        var book = games.filter(function(g){ return g.line && g.line.book; })[0];
+        stamp.textContent = 'Lines' + (book ? (' via '+book.line.book) : '') +
+          ' · weather, inactives and box scores via ESPN · refreshed automatically · game lines only, no props';
+      } else {
+        stamp.textContent = 'Week '+view+' as it was archived' +
+          (archiveAt ? (' on '+dayLabel(archiveAt)) : '') +
+          ' · closing lines, final out lists and box scores · nothing here updates again';
       }
-      (box.players||[]).forEach(function(tp){
-        var tm=((tp.team||{}).abbreviation)||'';
-        (tp.statistics||[]).forEach(function(grp){
-          var keys=grp.keys||[];
-          (grp.athletes||[]).forEach(function(a){
-            var ath=a.athlete||{}, st=a.stats||[];
-            if(!ath.id) return;
-            var v=function(key){
-              var i=keys.indexOf(key);
-              return i<0 ? 0 : (parseFloat(String(st[i]).replace(/[^0-9.\-]/g,''))||0);
-            };
-            var r=get(ath.id, ath.displayName||'', tm);
-            if(grp.name==='passing'){ r.py+=v('passingYards'); r.ptd+=v('passingTouchdowns'); r.pint+=v('interceptions'); }
-            else if(grp.name==='rushing'){ r.ry+=v('rushingYards'); r.rtd+=v('rushingTouchdowns'); }
-            else if(grp.name==='receiving'){ r.rec+=v('receptions'); r.recy+=v('receivingYards'); r.rectd+=v('receivingTouchdowns'); }
-            else if(grp.name==='fumbles'){ r.fl+=v('fumblesLost'); }
-          });
+    }
+
+    /* ---- the week picker ---- */
+
+    function renderPicker(){
+      if(!picks) return;
+      if(!archive.length){ picks.innerHTML = ''; return; }
+      var html = '<button type="button" data-wk="live" aria-current="'+(view==='live')+'">This week</button>';
+      archive.slice().sort(function(a,b){ return b.week-a.week; }).forEach(function(w){
+        html += '<button type="button" data-wk="'+w.week+'" aria-current="'+(view===w.week)+'">Week '+w.week+'</button>';
+      });
+      picks.innerHTML = html;
+    }
+
+    if(picks){
+      picks.addEventListener('click', function(e){
+        var b = e.target.closest ? e.target.closest('button[data-wk]') : null;
+        if(!b) return;
+        var wk = b.getAttribute('data-wk');
+        if(wk==='live'){ view='live'; archiveAt=null; renderPicker(); run(); }
+        else showWeek(Number(wk));
+      });
+    }
+
+    function showWeek(n){
+      view = n;
+      renderPicker();
+      grid.innerHTML = '<div class="ros-empty">Opening week '+n+'…</div>';
+      fetch(ARCH+'wk'+(n<10?'0':'')+n+'.json', {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(view!==n) return;                 // the reader moved on while this was in flight
+          if(!j || !j.games){
+            grid.innerHTML = '<div class="ros-empty">Week '+n+' hasn\'t been archived yet.</div>';
+            games = [];
+            return;
+          }
+          archiveAt = j.builtAt || null;
+          games = j.games;
+          paint();
+        })
+        .catch(function(){
+          if(view!==n) return;
+          grid.innerHTML = '<div class="ros-empty">Couldn\'t open week '+n+'.</div>';
         });
-      });
-      var out=[];
-      Object.keys(acc).forEach(function(id){
-        var r=acc[id];
-        var p = r.py*0.04 + r.ptd*4 - r.pint
-              + r.ry*0.1 + r.rtd*6
-              + r.rec*1 + r.recy*0.1 + r.rectd*6
-              - r.fl;
-        if(r.py>=300) p+=3;
-        if(r.ry>=100) p+=3;
-        if(r.recy>=100) p+=3;
-        if(p>0) out.push({ n:r.n, t:r.t, p:Math.round(p*10)/10 });
-      });
-      return out.sort(function(a,b){ return b.p-a.p; });
+    }
+
+    /* ---- boot ---- */
+
+    // The depth charts are one small file the archive job rewrites every Sunday. Without it
+    // the out list still works, it just can't name who takes the snaps instead.
+    function loadDepth(){
+      return fetch(ARCH+'depth.json', {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){ if(j && j.depth) depth = j.depth; })
+        .catch(function(){});
+    }
+    function loadArchive(){
+      return fetch(ARCH+'index.json', {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){ if(j && j.weeks) { archive = j.weeks; renderPicker(); } })
+        .catch(function(){});
     }
 
     function run(){
@@ -3015,13 +3412,14 @@
       sec.hidden = false;
       // same trap as the rosters: hidden at load means the reveal observer skipped it
       if(window.__cocReveal) window.__cocReveal(sec);
+      if(view!=='live') return;                // an archived week is a file, not a feed
       fetch(SB, {cache:'no-store'})
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(j){
-          if(!j) return;
-          games = readScoreboard(j);
+          if(!j || view!=='live') return;
+          games = readScoreboard(j).map(decorate);
           paint();
-          loadOuts();
+          loadSummaries();
         })
         .catch(function(){});
     }
@@ -3029,7 +3427,7 @@
     // The draft watcher flips season mode on. Let it say so, instead of the slate sitting
     // blank for up to five minutes on the one night everybody is actually looking.
     window.__cocGameday = run;
-    run();
+    loadDepth().then(loadArchive).then(run);
     setInterval(run, 300000);   // five minutes; inactives move, lines move, nothing moves faster
   })();
 

@@ -1,0 +1,77 @@
+name: Archive the week
+
+# The Gameday section reads live from ESPN, so once a week rolls over it is gone. This writes
+# each week down into weeks/<season>/ and commits it, which is what the site's week picker
+# reads back.
+#
+# Two beats, and the order matters:
+#
+#   Sunday morning  — before the 1pm ET kicks. Captures the closing line while the market is
+#                     still showing it, and refreshes the depth charts the live page uses to
+#                     name replacements. Nothing has been played yet, so there are no results.
+#   Tuesday morning — after Monday night settles. Re-runs the same week, now with scores, the
+#                     final out list and the box scores, and carries Sunday's line forward if
+#                     ESPN has since dropped it.
+#
+# Times are UTC. Mountain is UTC-6 in season (MDT).
+
+on:
+  schedule:
+    - cron: '30 15 * * 0'   # Sun 09:30 MT — lock the line, refresh depth charts
+    - cron: '0 16 * * 2'    # Tue 10:00 MT — the settled week, with results
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'NFL week to archive (leave "auto" for the settled week)'
+        required: false
+        default: 'auto'
+      depthOnly:
+        description: 'Only rebuild depth.json'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Sunday runs the week that is about to be played; Tuesday runs the one just settled.
+      # "auto" in the script resolves to the settled week, so Sunday asks for current + 1.
+      - name: Work out which week
+        id: which
+        run: |
+          MANUAL="${{ github.event.inputs.week }}"
+          if [ -n "$MANUAL" ] && [ "$MANUAL" != "auto" ]; then
+            echo "week=$MANUAL" >> "$GITHUB_OUTPUT"
+          elif [ "$(date -u +%u)" = "7" ]; then
+            echo "week=upcoming" >> "$GITHUB_OUTPUT"
+          else
+            echo "week=auto" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refresh depth charts
+        run: node tools/archive-week.mjs --week "${{ steps.which.outputs.week }}" --depth-only
+
+      - name: Archive the week
+        if: ${{ github.event.inputs.depthOnly != 'true' }}
+        run: node tools/archive-week.mjs --week "${{ steps.which.outputs.week }}"
+
+      - name: Commit anything that changed
+        run: |
+          git config user.name  "crownorclown-bot"
+          git config user.email "bot@crownorclown.com"
+          git add weeks
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "Archive the week: $(date -u +%Y-%m-%d)"
+            git push
+          fi
