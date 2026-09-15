@@ -1230,7 +1230,9 @@
 
   .rt-board .tm{font-family:var(--mono);font-size:10px;color:var(--bone-dim);
     width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rt-board .rs{font-family:var(--mono);font-size:10px;width:34px;text-align:right}
+  /* the result carries the score with it, the way the gameday cards do */
+  .rt-board .rs{font-family:var(--mono);font-size:10px;width:62px;text-align:right;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
   .rt-board .rs.w{color:#8FD9A8}
   .rt-board .rs.l{color:var(--clown)}
 
@@ -4284,7 +4286,7 @@
               '<span class="rk">'+(i+1)+'</span>'+
               '<span class="ini">'+esc(String(r.i||'---').replace(/[^A-Z0-9]/g,''))+'</span>'+
               '<span class="tm">'+esc(r.team||'')+(r.opp?(' v '+esc(r.opp)):'')+'</span>'+
-              '<span class="rs '+res+'">'+esc(r.res||'')+'</span>'+
+              '<span class="rs '+res+'">'+esc(r.res||'')+' '+(r.pf==null?'':(r.pf+'-'+r.pa))+'</span>'+
               '<span class="yd">'+Number(r.p||0).toFixed(1)+'</span></li>';
           }).join('')
         : '<li class="empty">Nobody has posted a score yet.</li>';
