@@ -4201,11 +4201,60 @@
       fetch('/api/board',{cache:'no-store'})
         .then(function(r){ return r.ok?r.json():null; })
         .then(function(j){
-          if(j && j.configured){ shared=true; board=j.scores||[]; }
-          else { shared=false; board=loadLocal(); }
+          if(j && j.configured){ shared=true; board=j.scores||[]; paintBoard(-1); bestLine(); carryUp(); return; }
+          shared=false; board=loadLocal();
           paintBoard(-1); bestLine();
         })
         .catch(function(){ shared=false; board=loadLocal(); paintBoard(-1); bestLine(); });
+    }
+
+    // Anything played on this device before the shared board existed is still in localStorage,
+    // and goes invisible the moment the page starts reading the shared one instead. Those are
+    // games somebody actually sat and played, so they get carried up once rather than lost to
+    // a switch being flipped. One at a time — two writes at once collide on purpose.
+    var K_MOVED='coc-goget-carried';
+    function carryUp(){
+      var mine=loadLocal();
+      if(!mine.length) return;
+      try{ if(localStorage.getItem(K_MOVED)==='1') return; }catch(e){}
+      var known={};
+      board.forEach(function(r){ known[r.i+'|'+r.p+'|'+r.y]=1; });
+      var todo=mine.filter(function(r){ return !known[r.i+'|'+r.p+'|'+r.y]; });
+      function done(){ try{ localStorage.setItem(K_MOVED,'1'); }catch(e){} paintBoard(-1); bestLine(); }
+      if(!todo.length){ done(); return; }
+
+      // These need a ticket like any other score, and a ticket is deliberately not accepted
+      // until it has aged — so one is taken now and spent in a minute. Nothing is shown and
+      // nothing is waited on; if the reader leaves first, the next visit picks it up again.
+      fetch('/api/board?ticket=1',{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){
+          if(!j || !j.ticket) return;
+          setTimeout(function(){
+            var i=0;
+            (function next(){
+              if(i>=todo.length){ done(); return; }
+              var r=todo[i++], send={};
+              for(var k in r) send[k]=r[k];
+              send.ticket=j.ticket;
+              fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
+                                  body:JSON.stringify(send)})
+                .then(function(x){ return x.ok?x.json():null; })
+                .then(function(res){
+                  if(res&&res.scores) board=res.scores;
+                  // one ticket is good for one score, so the rest need their own
+                  if(i<todo.length){
+                    fetch('/api/board?ticket=1',{cache:'no-store'})
+                      .then(function(t){ return t.ok?t.json():null; })
+                      .then(function(t){ if(t&&t.ticket){ j.ticket=t.ticket; setTimeout(next,45000); } else done(); })
+                      .catch(done);
+                  } else next();
+                })
+                .catch(function(){ done(); });
+            })();
+          }, 45000);
+        })
+        .catch(function(){});
     }
 
     /* ---- state ---- */
@@ -4278,10 +4327,25 @@
     });
 
     /* ---- a game ---- */
+    // Picking a team asks the server for a ticket. It is a signed clock reading and nothing
+    // else — no name, no score — and the board will not take a result without one that was
+    // issued before the game was played. It is what stops a score being posted by somebody
+    // who never played, and it costs an honest player nothing.
+    var ticket=null;
+    function getTicket(){
+      ticket=null;
+      if(!shared || !window.fetch) return;
+      fetch('/api/board?ticket=1',{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){ if(j && j.ticket) ticket=j.ticket; })
+        .catch(function(){});
+    }
+
     function startGame(){
       myPts=0; oppPts=0; poss=0; oppPoss=0;
       rushY=0; recY=0; recs=0; tds=0; kickPts=0; ints=0;
       paintScore(); iniBox.hidden=true; pending=null;
+      getTicket();
       newDrive();
     }
 
@@ -4512,8 +4576,10 @@
         paintBoard(board.indexOf(pending));
       }
       if(shared && window.fetch){
+        var send={}; for(var k in pending) send[k]=pending[k];
+        send.ticket=ticket;
         fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
-                            body:JSON.stringify(pending)})
+                            body:JSON.stringify(send)})
           .then(function(r){ return r.ok?r.json():null; })
           .then(function(j){
             if(j && j.scores){ board=j.scores; paintBoard(-1); }
