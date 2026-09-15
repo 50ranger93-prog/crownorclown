@@ -1234,6 +1234,33 @@
   .rt-board .rs.w{color:#8FD9A8}
   .rt-board .rs.l{color:var(--clown)}
 
+  /* ---- the room: who is in, in their own words ---- */
+  .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:26px}
+  .room-card{border:1px solid var(--line);border-radius:4px;background:var(--ink-2);padding:15px 17px}
+  .room-card.fresh{border-color:rgba(231,178,60,.55)}
+  .room-who{display:flex;align-items:baseline;gap:9px;margin-bottom:7px}
+  .room-name{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--bone);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .room-team{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);border:1px solid rgba(231,178,60,.4);border-radius:2px;padding:1px 5px;flex:0 0 auto}
+  .room-bio{font-size:13.5px;line-height:1.65;color:var(--bone-dim);margin:0;overflow-wrap:anywhere}
+  .room-empty{grid-column:1/-1;border:1px dashed var(--line);border-radius:4px;padding:22px;
+    text-align:center;font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+
+  .room-form{margin-top:22px;max-width:620px;display:flex;flex-direction:column;gap:10px}
+  .room-row{display:flex;gap:10px;flex-wrap:wrap}
+  .room-form input,.room-form select,.room-form textarea{
+    font-family:var(--body);font-size:14px;color:var(--bone);background:var(--ink-2);
+    border:1px solid var(--line);border-radius:3px;padding:11px 12px;flex:1;min-width:150px;
+  }
+  .room-form textarea{font-family:var(--body);resize:vertical;line-height:1.6}
+  .room-form input:focus,.room-form select:focus,.room-form textarea:focus{
+    outline:2px solid var(--gold);outline-offset:1px}
+  .room-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .room-note{font-family:var(--mono);font-size:11px;color:var(--bone-dim)}
+  .room-note.bad{color:var(--clown)}
+  .room-note.good{color:#8FD9A8}
+
   /* Phone sizing, last in the file on purpose: the scoreboard and play-call rules above are
      later in source than the earlier media block, so overrides placed there lost to them and
      the HUD stayed at desktop size. The frame is only about 180px tall on a phone and the HUD
@@ -1499,6 +1526,42 @@
         <div class="dc-placeholder"><b>The Expansion League</b>Join with the button on the left.<br>The live member panel appears here<br>once the server widget is switched on.</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- THE ROOM — introduce yourself. Sits straight after the Discord section on purpose:
+     joining the room and saying who you are is one move, not two. -->
+<section class="sec-pad" id="room">
+  <div class="wrap">
+    <div class="eyebrow rise">The room &middot; who's in</div>
+    <h2 class="disp rise" style="font-size:clamp(34px,6vw,64px);margin:14px 0 0">Say who<br><span style="color:var(--gold)">you are.</span></h2>
+    <p class="res-note rise">Thirty-six managers across three boards and most of you have never
+      met. Put your name up, say what you're about &mdash; your team, how long you've been
+      playing, what you're going to do to the rest of the field. <b>Anyone in the Discord can
+      post here</b>, seat or no seat. Post again any time and it updates yours rather than
+      adding another.</p>
+
+    <div class="room-grid rise" id="room-grid"></div>
+
+    <form class="room-form rise" id="room-form" autocomplete="off">
+      <div class="room-row">
+        <label class="sr-only" for="ri-name">Your name or handle</label>
+        <input id="ri-name" maxlength="20" placeholder="Name or handle" spellcheck="false">
+        <label class="sr-only" for="ri-team">Your team</label>
+        <select id="ri-team"><option value="">Team (optional)</option></select>
+      </div>
+      <label class="sr-only" for="ri-bio">About you</label>
+      <textarea id="ri-bio" maxlength="220" rows="3"
+        placeholder="Who are you, how long have you been playing, and what are you going to do to the rest of us?"></textarea>
+      <div class="room-row" id="ri-coderow" hidden>
+        <label class="sr-only" for="ri-code">Code from the Discord</label>
+        <input id="ri-code" maxlength="40" placeholder="Code from the Discord" spellcheck="false">
+      </div>
+      <div class="room-actions">
+        <button class="rt-again" id="ri-save" type="submit">Put me up</button>
+        <span class="room-note" id="ri-note" aria-live="polite"></span>
+      </div>
+    </form>
   </div>
 </section>
 
@@ -4841,6 +4904,104 @@
     buildPick();
     fetchBoard();
     paintSB();
+  })();
+
+  // ---- the room: who is in, in their own words ----
+  //
+  // Thirty-six managers across three boards who mostly have not met. Same plumbing as the
+  // leaderboard — a file in the repo, written through the API — and the same treatment of
+  // anything typed in: it is stored as plain text and escaped again on the way out, so
+  // whatever somebody puts in the box is inert by the time it reaches the page.
+  (function room(){
+    var grid=document.getElementById('room-grid'), form=document.getElementById('room-form');
+    if(!grid || !form || !window.fetch) return;
+    var nameEl=document.getElementById('ri-name'), teamEl=document.getElementById('ri-team'),
+        bioEl=document.getElementById('ri-bio'), codeEl=document.getElementById('ri-code'),
+        codeRow=document.getElementById('ri-coderow'), saveEl=document.getElementById('ri-save'),
+        noteEl=document.getElementById('ri-note');
+
+    var ticket=null, intros=[];
+    function esc(s){
+      return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+    function say(msg,kind){ noteEl.textContent=msg||''; noteEl.className='room-note'+(kind?' '+kind:''); }
+
+    // the same thirty-two the game uses, so a badge here means the same thing there
+    var TEAMS=['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND',
+               'JAX','KC','LAC','LAR','LV','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SEA',
+               'SF','TB','TEN','WSH'];
+    TEAMS.forEach(function(t){
+      var o=document.createElement('option'); o.value=t; o.textContent=t; teamEl.appendChild(o);
+    });
+
+    function paint(freshName){
+      if(!intros.length){
+        grid.innerHTML='<div class="room-empty">Nobody has said anything yet. Be the first &mdash; the box is right below.</div>';
+        return;
+      }
+      grid.innerHTML=intros.map(function(p){
+        var fresh = freshName && String(p.n).toLowerCase()===String(freshName).toLowerCase();
+        return '<div class="room-card'+(fresh?' fresh':'')+'">'+
+          '<div class="room-who"><span class="room-name">'+esc(p.n)+'</span>'+
+          (p.t?('<span class="room-team">'+esc(p.t)+'</span>'):'')+'</div>'+
+          '<p class="room-bio">'+esc(p.b)+'</p></div>';
+      }).join('');
+    }
+
+    function getTicket(){
+      return fetch('/api/intros?ticket=1',{cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){
+          if(!j) return;
+          ticket=j.ticket||null;
+          if(j.needsCode) codeRow.hidden=false;
+        }).catch(function(){});
+    }
+
+    fetch('/api/intros',{cache:'no-store'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){
+        if(j && j.configured){
+          intros=j.intros||[];
+          if(j.needsCode) codeRow.hidden=false;
+          paint(null);
+          getTicket();
+        } else {
+          grid.innerHTML='<div class="room-empty">The room isn\'t switched on yet.</div>';
+          form.hidden=true;
+        }
+      })
+      .catch(function(){
+        grid.innerHTML='<div class="room-empty">Couldn\'t load the room.</div>';
+        form.hidden=true;
+      });
+
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      var n=(nameEl.value||'').trim(), b=(bioEl.value||'').trim();
+      if(n.length<2){ say('Put a name in.','bad'); nameEl.focus(); return; }
+      if(b.length<2){ say('Say something about yourself.','bad'); bioEl.focus(); return; }
+      if(!ticket){ say('One moment…'); getTicket().then(function(){ say(''); }); return; }
+      saveEl.disabled=true; say('Putting you up…');
+      fetch('/api/intros',{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({n:n,b:b,t:teamEl.value||'',code:codeEl?codeEl.value:'',ticket:ticket})})
+        .then(function(r){ return r.json().catch(function(){return null;})
+                 .then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(x){
+          saveEl.disabled=false;
+          if(x.ok && x.j && x.j.intros){
+            intros=x.j.intros; paint(n); say('You\'re up.','good');
+            bioEl.value=bioEl.value;            // leave it, so an edit is one word away
+            ticket=null; getTicket();           // one ticket, one post
+            return;
+          }
+          say((x.j && x.j.error) || 'That didn\'t go through.','bad');
+          ticket=null; getTicket();
+        })
+        .catch(function(){ saveEl.disabled=false; say('Couldn\'t reach the room.','bad'); });
+    });
   })();
 
   // ---- fold the reference material away ----
