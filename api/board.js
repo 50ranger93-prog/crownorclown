@@ -59,7 +59,10 @@ const API = "https://api.github.com";
 --------------------------------------------------------------------------------------- */
 const crypto = require("crypto");
 
-const TICKET_MIN_AGE = 40 * 1000;          // four possessions take longer than this
+// Long enough that a ticket cannot be requested and spent in the same breath, short enough
+// that a real game never trips it. Forty seconds did: four possessions that stall on downs
+// are over in well under that, and the score was refused and then quietly kept on the phone.
+const TICKET_MIN_AGE = 8 * 1000;
 const TICKET_MAX_AGE = 3 * 60 * 60 * 1000; // stale after three hours
 const USED_KEEP = 200;
 

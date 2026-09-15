@@ -4052,7 +4052,8 @@
         pick=document.getElementById('rt-pick'), teamsBox=document.getElementById('rt-teams'),
         iniBox=document.getElementById('rt-ini'), iniIn=document.getElementById('rt-name'),
         saveBtn=document.getElementById('rt-save'), list=document.getElementById('rt-list'),
-        note=document.getElementById('rt-note'), bhead=document.getElementById('rt-bhead');
+        note=document.getElementById('rt-note'), bhead=document.getElementById('rt-bhead'),
+        btitle=document.getElementById('rt-btitle');
 
     var DIVS=['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
     var TEAMS=[
@@ -4201,7 +4202,13 @@
       fetch('/api/board',{cache:'no-store'})
         .then(function(r){ return r.ok?r.json():null; })
         .then(function(j){
-          if(j && j.configured){ shared=true; board=j.scores||[]; paintBoard(-1); bestLine(); carryUp(); return; }
+          if(j && j.configured){
+            shared=true; board=j.scores||[];
+            paintBoard(-1); bestLine();
+            getTicket();              // take one now so it is well aged by the final whistle
+            carryUp();
+            return;
+          }
           shared=false; board=loadLocal();
           paintBoard(-1); bestLine();
         })
@@ -4220,41 +4227,34 @@
       var known={};
       board.forEach(function(r){ known[r.i+'|'+r.p+'|'+r.y]=1; });
       var todo=mine.filter(function(r){ return !known[r.i+'|'+r.p+'|'+r.y]; });
-      function done(){ try{ localStorage.setItem(K_MOVED,'1'); }catch(e){} paintBoard(-1); bestLine(); }
-      if(!todo.length){ done(); return; }
+      function mark(){ try{ localStorage.setItem(K_MOVED,'1'); }catch(e){} }
+      if(!todo.length){ mark(); return; }
 
-      // These need a ticket like any other score, and a ticket is deliberately not accepted
-      // until it has aged — so one is taken now and spent in a minute. Nothing is shown and
-      // nothing is waited on; if the reader leaves first, the next visit picks it up again.
-      fetch('/api/board?ticket=1',{cache:'no-store'})
-        .then(function(r){ return r.ok?r.json():null; })
-        .then(function(j){
-          if(!j || !j.ticket) return;
-          setTimeout(function(){
-            var i=0;
-            (function next(){
-              if(i>=todo.length){ done(); return; }
-              var r=todo[i++], send={};
-              for(var k in r) send[k]=r[k];
-              send.ticket=j.ticket;
-              fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
-                                  body:JSON.stringify(send)})
-                .then(function(x){ return x.ok?x.json():null; })
-                .then(function(res){
-                  if(res&&res.scores) board=res.scores;
-                  // one ticket is good for one score, so the rest need their own
-                  if(i<todo.length){
-                    fetch('/api/board?ticket=1',{cache:'no-store'})
-                      .then(function(t){ return t.ok?t.json():null; })
-                      .then(function(t){ if(t&&t.ticket){ j.ticket=t.ticket; setTimeout(next,45000); } else done(); })
-                      .catch(done);
-                  } else next();
-                })
-                .catch(function(){ done(); });
-            })();
-          }, 45000);
-        })
-        .catch(function(){});
+      // These need a ticket like any other score, and a ticket is not accepted until it has
+      // aged — so each one is taken, left to ripen, then spent. Nothing is shown and nothing
+      // is waited on. Only a clean sweep marks the job done: a failure here used to set the
+      // flag anyway, which meant one bad moment stranded those games on the device forever.
+      var i=0, clean=true;
+      (function step(){
+        if(i>=todo.length){ if(clean) mark(); paintBoard(-1); bestLine(); return; }
+        var r=todo[i++];
+        fetch('/api/board?ticket=1',{cache:'no-store'})
+          .then(function(t){ return t.ok?t.json():null; })
+          .then(function(t){
+            if(!t || !t.ticket){ clean=false; return; }
+            var send={}; for(var k in r) send[k]=r[k];
+            send.ticket=t.ticket;
+            return new Promise(function(go){ setTimeout(go,11000); }).then(function(){
+              return fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
+                                         body:JSON.stringify(send)});
+            }).then(function(x){
+              if(!x.ok){ clean=false; return; }
+              return x.json().then(function(res){ if(res && res.scores) board=res.scores; });
+            });
+          })
+          .catch(function(){ clean=false; })
+          .then(step);
+      })();
     }
 
     /* ---- state ---- */
@@ -4568,28 +4568,45 @@
       var ini=(iniIn.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3) || 'AAA';
       pending.i=ini;
       saveBtn.disabled=true;
+
       function localSave(){
-        board.push(pending);
-        board.sort(function(a,c){ return c.p-a.p; });
-        board=board.slice(0,10);
-        saveLocal(board);
-        paintBoard(board.indexOf(pending));
+        var mine=loadLocal();
+        mine.push(pending);
+        mine.sort(function(a,c){ return c.p-a.p; });
+        mine=mine.slice(0,10);
+        saveLocal(mine);
+        if(!shared){ board=mine; paintBoard(board.indexOf(pending)); }
       }
-      if(shared && window.fetch){
-        var send={}; for(var k in pending) send[k]=pending[k];
-        send.ticket=ticket;
-        fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
-                            body:JSON.stringify(send)})
-          .then(function(r){ return r.ok?r.json():null; })
-          .then(function(j){
-            if(j && j.scores){ board=j.scores; paintBoard(-1); }
-            else localSave();
-          })
-          .catch(localSave)
-          .then(function(){ saveBtn.disabled=false; iniBox.hidden=true; pending=null; bestLine(); });
-      } else {
-        localSave(); saveBtn.disabled=false; iniBox.hidden=true; pending=null; bestLine();
+      function finish(){ saveBtn.disabled=false; iniBox.hidden=true; pending=null; bestLine(); }
+      // A refusal has to look like a refusal. Writing the game quietly to this device and
+      // leaving the box looking exactly like a save is how a score sits on somebody's phone
+      // and never reaches anybody else — which is precisely what happened.
+      function refused(msg){
+        localSave();
+        if(btitle) btitle.textContent = msg;
+        saveBtn.disabled=false;
+        try{ localStorage.removeItem(K_MOVED); }catch(e){}   // let the next visit carry it up
       }
+
+      if(!(shared && window.fetch)){ localSave(); finish(); return; }
+
+      var send={}; for(var k in pending) send[k]=pending[k];
+      send.ticket=ticket;
+      fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},
+                          body:JSON.stringify(send)})
+        .then(function(r){
+          return r.json().catch(function(){ return null; })
+                  .then(function(j){ return { ok:r.ok, j:j }; });
+        })
+        .then(function(x){
+          if(x.ok && x.j && x.j.scores){
+            board=x.j.scores; paintBoard(-1);
+            ticket=null; getTicket();            // one ticket, one game
+            finish(); return;
+          }
+          refused((x.j && x.j.error) || 'The board said no — kept on this device');
+        })
+        .catch(function(){ refused('Could not reach the board — kept on this device'); });
     });
     iniIn && iniIn.addEventListener('keydown',function(e){
       if(e.key==='Enter'){ e.preventDefault(); saveBtn.click(); }
