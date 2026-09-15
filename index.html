@@ -1689,9 +1689,13 @@
       tilts the odds: most runs are a couple, the odd one breaks, and a shot downfield is a
       chunk or it's nothing. Miss and it costs you &mdash; a run gets <b>stuffed for a loss</b>,
       a pass can be a <b>sack</b>, and a shot thrown badly enough gets <b>picked off</b>.
-      Scored exactly the way your league is scored: <b>0.1 a yard, a point a catch, six for the
-      score, minus one for the interception, kickers paid by distance</b> and the hundred-yard
-      bonuses.</p>
+      You only get the offence, so the magic lives either side of it: some kickoffs you
+      <b>run back yourself</b>, and now and then your <b>defence gets one snap</b> to jump a
+      route. Hit those and you're taking one to the house or bringing a pick back the other
+      way. Scored exactly the way your league is scored: <b>0.1 a yard, a point a catch, six
+      for the score, minus one for the interception, kickers paid by distance</b>, the
+      hundred-yard bonuses, and the defence paid DraftKings' way &mdash; <b>two a takeaway,
+      six for a return touchdown, and the points-allowed ladder</b>.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -4155,8 +4159,25 @@
        anything and this board is a fantasy score, not a pinball machine. */
     function fgPoints(d){ return d>=50 ? 5 : d>=40 ? 4 : 3; }
     var rushY=0, recY=0, recs=0, tds=0, kickPts=0, ints=0;
+    var retTDs=0, defTDs=0, takeaways=0;
+
+    // DraftKings pays the defence and the return game too, and the score here was already a
+    // roster rather than one man — the kicker's extra points have been in it all along. So a
+    // return taken to the house is six, a takeaway is two, one brought back is another six,
+    // and what the defence gave up pays on DraftKings' own points-allowed ladder.
+    function paTier(){
+      var p=oppPts;
+      if(p===0) return 10;
+      if(p<=6)  return 7;
+      if(p<=13) return 4;
+      if(p<=20) return 1;
+      if(p<=27) return 0;
+      if(p<=34) return -1;
+      return -4;
+    }
     function dkRaw(){
-      var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts - ints;
+      var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts - ints
+            + retTDs*6 + defTDs*6 + takeaways*2 + paTier();
       if(rushY>=100) p+=3;
       if(recY>=100) p+=3;
       return p;
@@ -4261,7 +4282,7 @@
     var me=null, opp=null;
     var myPts=0, oppPts=0, poss=0, oppPoss=0;
     var pos=25, down=1, toGo=10;
-    var i4=null;                                  // the call in flight
+    var i4=null, lastLine='';                    // the call in flight, and the last headline
     var centre=.5, width=.4, span=1500, t0=0, raf=null, live=false, phase='pick';
 
     function swap(name){
@@ -4344,6 +4365,7 @@
     function startGame(){
       myPts=0; oppPts=0; poss=0; oppPoss=0;
       rushY=0; recY=0; recs=0; tds=0; kickPts=0; ints=0;
+      retTDs=0; defTDs=0; takeaways=0;
       paintScore(); iniBox.hidden=true; pending=null;
       getTicket();
       newDrive();
@@ -4359,16 +4381,67 @@
       return {p:64+Math.round(Math.random()*16), t:'He nearly took it'};
     }
 
-    function newDrive(){
-      var k=kickReturn();
-      pos=k.p; down=1; toGo=Math.min(10,100-pos);
+    function startAt(p,said){
+      pos=Math.max(1,Math.min(99,p)); down=1; toGo=Math.min(10,100-pos);
       phase='call';
-      call.className='rt-call'; call.textContent=k.t;
+      call.className='rt-call'; call.textContent=said;
       hint.textContent='Call the play';
       again.hidden=true;
       paintSB(); paintSit(); paintScore();
       swap('run1');
       renderCalls();
+    }
+
+    // You only get the offence, so the magic has to live either side of it — on the kickoff
+    // you run back, and on the one snap your defence gets a play on. Both are earned on the
+    // same timing window as everything else rather than handed over by a dice roll, and both
+    // score the way DraftKings scores them: six for a return touchdown, six for taking one
+    // back, two for the takeaway itself.
+    function newDrive(){
+      if(Math.random()<0.38){ beginReturn(); return; }
+      var k=kickReturn();
+      startAt(k.p,k.t);
+    }
+
+    function beginReturn(){
+      phase='ret';
+      call.className='rt-call'; call.textContent='Kick is in the air';
+      hint.textContent='Tap on the gold to hit the seam';
+      calls.innerHTML=''; again.hidden=true;
+      paintSB(); paintScore();
+      sit.textContent='Kickoff · bring it out';
+      swap('run2');
+      armWindow(.26,1060);
+    }
+
+    function beginTakeaway(){
+      phase='def';
+      call.className='rt-call'; call.textContent=esc(opp[0])+' are driving';
+      hint.textContent='Tap on the gold to jump the route';
+      calls.innerHTML=''; again.hidden=true;
+      sit.textContent=lastLine+' · your defence is on the field';
+      swap('drop');
+      armWindow(.22,940);
+    }
+
+    // The rival answers. Nothing here is under your control, which is the point of playing
+    // somebody rather than playing the clock.
+    function oppPossession(extra){
+      var r=Math.random(), got=0, said;
+      if(r<.32){ got=7; said=opp[0]+' march it in'; }
+      else if(r<.56){ got=3; said=opp[0]+' settle for three'; }
+      else if(r<.72){ said=opp[0]+' turn it over'; }
+      else { said=opp[0]+' go three and out'; }
+      oppPts+=got; oppPoss++;
+      paintSB(); paintScore();
+      betweenDrives(extra || said);
+    }
+
+    function betweenDrives(said){
+      phase='between';
+      sit.textContent=lastLine+' · '+said;
+      hint.textContent='Tap Next drive';
+      again.textContent='Next drive'; again.hidden=false;
     }
 
     function renderCalls(){
@@ -4435,24 +4508,12 @@
       stop(); phase='between'; calls.innerHTML='';
       if(why){ call.className='rt-call bad'; call.textContent=why; swap('tackled'); }
       poss++;
+      lastLine = headline||why||'Drive over';
 
-      // The rival answers. Nothing here is under your control, which is the point of playing
-      // somebody rather than playing the clock.
-      var r=Math.random(), got=0, said;
-      if(r<.32){ got=7; said=opp[0]+' march it in'; }
-      else if(r<.56){ got=3; said=opp[0]+' settle for three'; }
-      else if(r<.72){ said=opp[0]+' turn it over'; }
-      else { said=opp[0]+' go three and out'; }
-      oppPts+=got; oppPoss++;
-      paintSB();
-
-      var line=(headline||why||'Drive over')+' · '+said;
-      sit.textContent=line;
-
-      if(poss>=POSS){ setTimeout(finalWhistle,700); return; }
-      hint.textContent='Tap Next drive';
-      again.textContent='Next drive';
-      again.hidden=false;
+      if(poss>=POSS){ oppPossession(); setTimeout(finalWhistle,900); return; }
+      // Sometimes there is a play to be made on their possession instead of just watching it.
+      if(Math.random()<0.45){ setTimeout(beginTakeaway,760); return; }
+      oppPossession();
     }
 
     function finalWhistle(){
@@ -4520,6 +4581,52 @@
       if(!live) return;
       var v=parseFloat(mark.dataset.pos||'0'),
           off=Math.abs(v-centre), half=width/2;
+
+      // The kickoff you run back yourself. Nail it and you are out past midfield; nail it
+      // dead centre and there is a lane all the way.
+      if(phase==='ret'){
+        stop();
+        if(off>half){
+          sfxFail();
+          startAt(11+Math.round(Math.random()*9),'Wrapped up inside the 20');
+          return;
+        }
+        var rq=1-(off/half);
+        if(rq>0.90 && Math.random()<0.30){
+          retTDs++; kickPts+=1; myPts+=7; paintScore(); sfxTD();
+          call.className='rt-call good'; call.textContent='Took it to the house';
+          swap('catch6');
+          endDrive(null,'Kick return touchdown');
+          return;
+        }
+        sfxGood(rq);
+        startAt(Math.min(88, 30+Math.round(rq*38)+Math.round(Math.random()*8)), 'Big return');
+        return;
+      }
+
+      // The one snap your defence gets a play on.
+      if(phase==='def'){
+        stop();
+        if(off>half){
+          sfxFail();
+          call.className='rt-call bad'; call.textContent='He got it away';
+          oppPossession();
+          return;
+        }
+        var dq=1-(off/half);
+        takeaways++; oppPoss++;
+        if(dq>0.88 && Math.random()<0.30){
+          defTDs++; kickPts+=1; myPts+=7; paintScore(); sfxTD();
+          call.className='rt-call good'; call.textContent='Pick six';
+          swap('catch6'); paintSB();
+          betweenDrives('Taken back the other way');
+          return;
+        }
+        paintScore(); sfxGood(dq); paintSB();
+        call.className='rt-call good'; call.textContent='Takeaway';
+        betweenDrives(opp[0]+' cough it up');
+        return;
+      }
 
       if(phase==='kick'){
         stop();

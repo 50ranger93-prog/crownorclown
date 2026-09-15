@@ -98,7 +98,11 @@ function checkTicket(t) {
 // The score has to be reachable from the rest of the submission. Team points decompose into
 // touchdowns and field goals; everything the DraftKings total could have come from is bounded
 // by the yards, a ceiling on receptions, and those scores.
-const MAX_RECS = 40;          // four possessions is not fifty catches
+const MAX_RECS = 28;          // four possessions is not fifty catches
+// The defence and the return game score too: the points-allowed ladder tops out at ten with a
+// shutout, and a handful of takeaways are two apiece. Touchdowns taken back or run back are
+// already in the touchdown decomposition, because they put seven on the board like any other.
+const MAX_DST = 20;
 function plausible(e) {
   let cap = -1;
   for (let td = 0; td * 7 <= e.pf; td++) {
@@ -106,7 +110,10 @@ function plausible(e) {
     if (rest % 3) continue;                    // not reachable with touchdowns and threes
     const fg = rest / 3;
     const kick = td * 1 + fg * 5;              // extra points, and every kick a fifty-plus
-    const here = e.y * 0.1 + MAX_RECS + td * 6 + kick + 6;   // +6 = both hundred-yard bonuses
+    // Catches are worth a point each, so they have to be bounded by the yards as well as by
+    // the count — twenty-eight receptions for no yardage is not a game anyone played.
+    const recs = Math.min(MAX_RECS, e.y / 2 + 4);
+    const here = e.y * 0.1 + recs + td * 6 + kick + 6 + MAX_DST;   // +6 = both 100-yd bonuses
     if (here > cap) cap = here;
   }
   if (cap < 0) return false;
