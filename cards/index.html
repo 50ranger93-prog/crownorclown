@@ -1,0 +1,248 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expansion League card builder</title>
+<style>
+:root{--page:#e3e5e8;--ink:#2e3035;--sub:#5c5e66}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#1a1b1e;--ink:#f2f3f5;--sub:#a3a6ad}}
+:root[data-theme="dark"]{--page:#1a1b1e;--ink:#f2f3f5;--sub:#a3a6ad}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"gg sans","Helvetica Neue",Helvetica,Arial,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:20px 14px 40px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.top h1{font-size:20px;margin:0} #bar{color:var(--sub);font-size:13px}
+.dm{background:#313338;border-radius:12px;padding:16px;color:#dbdee1}
+.dm h3{color:#f2f3f5;font-size:17px;margin:0 0 12px}
+.dl{display:block;color:#b5bac1;font-size:11px;font-weight:700;margin:10px 0 5px;letter-spacing:.03em}
+.di{background:#1e1f22;border:1px solid transparent;border-radius:4px;color:#dbdee1;width:100%;padding:8px 10px;font-size:14px;margin-bottom:6px;font-family:inherit}
+.di:focus,button:focus-visible{outline:2px solid #5865F2;outline-offset:1px}
+button{font-family:inherit}
+.db{background:#5865F2;color:#fff;border:none;border-radius:4px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
+.dg{background:#4e5058;color:#fff;border:none;border-radius:4px;padding:10px 18px;font-size:14px;cursor:pointer}
+.ch{display:inline-flex;align-items:center;gap:5px;border:1px solid #4e5058;background:#2b2d31;color:#dbdee1;border-radius:14px;padding:5px 11px;font-size:13px;cursor:pointer;margin:0 5px 6px 0}
+.ch.on{border-color:#5865F2;background:#3c45a5;color:#fff}
+.sws{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sw{width:30px;height:30px;border-radius:6px;cursor:pointer;border:2px solid transparent;padding:0}
+.sw.on{border-color:#fff;outline:2px solid #5865F2}
+.sws input{width:34px;height:32px;padding:0;border:none;background:none;cursor:pointer}
+.er{color:#f23f43;font-size:13px;margin:10px 0 0}
+.nv{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.tm{display:flex;align-items:center;gap:7px;padding:6px;border-radius:6px;cursor:pointer;background:#2b2d31;border:1px solid #3f4147;color:#dbdee1;min-width:0;text-align:left;font-size:12px}
+.tm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tm.on{background:#3c45a5;border-color:#5865F2;color:#fff}
+.r2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px}
+.r3{display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:6px}
+.up{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #4e5058;border-radius:8px;padding:16px;cursor:pointer;color:#b5bac1;font-size:14px;margin-bottom:8px}
+.fi{color:#dbdee1;font-size:14px;max-width:100%}.fi::file-selector-button{background:#5865F2;color:#fff;border:none;border-radius:4px;padding:9px 14px;margin-right:10px;font-weight:700;cursor:pointer}
+.pr{background:#2b2d31;border:1px solid #3f4147;border-radius:6px;padding:9px;margin-bottom:8px}
+.split{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:700px){.split{grid-template-columns:minmax(0,1fr) 360px;align-items:start}.split>div:last-child{position:sticky;top:12px}}
+.card{max-width:360px;border-radius:10px;overflow:hidden;background:#2b2d31}
+.bcard{width:280px;max-width:100%;border-radius:8px;overflow:hidden;background:#2b2d31}
+.chan{color:#949ba4;font-size:14px;margin-bottom:10px}
+.sug{background:#2b2d31;border-radius:6px;padding:8px;margin-bottom:6px}
+.cmd{display:flex;gap:10px;align-items:center;width:100%;background:#3f4147;border:none;border-radius:4px;padding:9px;margin-top:6px;cursor:pointer;color:#f2f3f5;text-align:left;font-size:14px}
+.cmd small{color:#b5bac1}
+.bot{width:34px;height:34px;border-radius:50%;background:#5865F2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px}
+.app{background:#5865F2;color:#fff;font-size:10px;padding:1px 4px;border-radius:3px}
+.pv{background:#faa61a;color:#2b1a00;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px}
+.db[disabled]{opacity:.6;cursor:wait}
+.bx{background:#383a40;border-radius:8px;padding:11px;color:#dbdee1}
+.only{color:#949ba4;font-size:12px;margin-bottom:8px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style></head><body><div class="wrap">
+<div class="top"><h1>Expansion League card builder</h1><span id="bar"></span></div>
+<div id="pv" class="pv" hidden>Preview mode. To post for real, type <b>/intro</b> or <b>/block</b> in the league Discord and tap the button the bot sends you.</div>
+<div id="app" class="dm"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script>let BOARDS={};</script>
+<script>const T=[["ARI","Arizona Cardinals","#97233F","#FFB612"],["ATL","Atlanta Falcons","#A71930","#000000"],["BAL","Baltimore Ravens","#241773","#9E7C0C"],["BUF","Buffalo Bills","#00338D","#C60C30"],["CAR","Carolina Panthers","#0085CA","#101820"],["CHI","Chicago Bears","#0B162A","#C83803"],["CIN","Cincinnati Bengals","#FB4F14","#000000"],["CLE","Cleveland Browns","#311D00","#FF3C00"],["DAL","Dallas Cowboys","#003594","#869397"],["DEN","Denver Broncos","#FB4F14","#002244"],["DET","Detroit Lions","#0076B6","#B0B7BC"],["GB","Green Bay Packers","#203731","#FFB612"],["HOU","Houston Texans","#03202F","#A71930"],["IND","Indianapolis Colts","#002C5F","#A2AAAD"],["JAX","Jacksonville Jaguars","#006778","#D7A22A"],["KC","Kansas City Chiefs","#E31837","#FFB81C"],["LV","Las Vegas Raiders","#000000","#A5ACAF"],["LAC","Los Angeles Chargers","#0080C6","#FFC20E"],["LAR","Los Angeles Rams","#003594","#FFA300"],["MIA","Miami Dolphins","#008E97","#FC4C02"],["MIN","Minnesota Vikings","#4F2683","#FFC62F"],["NE","New England Patriots","#002244","#C60C30"],["NO","New Orleans Saints","#101820","#D3BC8D"],["NYG","New York Giants","#0B2265","#A71930"],["NYJ","New York Jets","#125740","#FFFFFF"],["PHI","Philadelphia Eagles","#004C54","#A5ACAF"],["PIT","Pittsburgh Steelers","#101820","#FFB612"],["SF","San Francisco 49ers","#AA0000","#B3995D"],["SEA","Seattle Seahawks","#002244","#69BE28"],["TB","Tampa Bay Buccaneers","#D50A0A","#34302B"],["TEN","Tennessee Titans","#0C2340","#4B92DB"],["WAS","Washington Commanders","#5A1414","#FFB612"]];
+const BN=["Board 1","Board 2","Board 3"];
+const IMG=u=>"/api/cards/img?u="+encodeURIComponent(u);
+const FL=[["Perfect lineup","📋"],["Worst pick ever","💀"],["Best pick ever","🏆"],["Ride or die","🐐"],["Biggest regret","😤"],["Best trade ever","🤝"],["Worst trade ever","🤡"],["Walk-up song","📻"],["Gameday ritual","🍺"],["Gameday snack","🍕"],["This year's goal","🎯"],["Who I'm gunning for","👊"],["Biggest rival","⚔️"],["Favorite player ever","⭐"],["Most hated player","👎"],["Sleeper pick","😴"],["Draft strategy","♟️"],["Superstition","🍀"],["Trash talk target","🗣️"],["Championship prediction","🔮"],["Day job","💼"]];
+const BG=[["Shark","🦈"],["DFS grinder","🎰"],["Trade machine","🔁"],["Waiver hawk","🦅"],["Homer","🏠"],["Long-timer","📅"],["Sleeper hunter","😴"],["Chaos agent","⚡"],["Crown chaser","👑"],["Clown alert","🤡"],["Stats nerd","📊"],["Gut player","🔥"],["Draft day king","📝"],["Trash talker","🗯️"],["Mock draft junkie","🔄"],["Bench boss","🪑"],["Grinder","💪"],["Risk taker","🎲"],["Rookie mistake","⚠️"],["Undefeated","🛡️"],["Former champ","🏆"],["Last place survivor","🛟"],["Set and forget","⏰"],["Lineup tinkerer","🔧"],["Podcast addict","🎧"],["Injury magnet","🩹"],["Rivalry week","⚔️"],["Night owl","🦉"]];
+const PAL=["#E24B4A","#FFC62F","#C0C0C0","#F2F3F5","#00A8FC","#1D9E75","#7F77DD","#FF7A00"];
+const POS={QB:"#E24B4A",RB:"#1D9E75",WR:"#00A8FC",TE:"#EF9F27",K:"#888780","D/ST":"#7F77DD"};
+const WANTS=["QB","RB","WR","TE","K","D/ST","Depth","Upside","Handcuff","Bye-week fill","Future picks","Anything"];
+const STAT=[["Open to anything","#1D9E75"],["Selling","#E24B4A"],["Buying","#00A8FC"],["Must move","#FF7A00"],["Just listening","#888780"]];
+const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],photo:"",
+ players:[{pos:"RB",name:"",nfl:"CAR",note:"",board:""}],wants:[],cw:["","",""],status:"Open to anything",pitch:"",week:"3",bAccent:"#003594"};
+const $=id=>document.getElementById(id);
+const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tm=()=>T.find(t=>t[0]==S.nfl);
+const helm=(c,sz,op)=>`<img alt="" src="${IMG("https://raw.githubusercontent.com/spatto12/NFL/main/"+(c=="LAR"?"LA":c)+".png")}" style="width:${sz}px;height:${sz}px;object-fit:contain;opacity:${op||1};display:block">`;
+const selB=()=>BN.filter(b=>S.sel.includes(b));
+const mainB=()=>selB().find(b=>S.teams[b]);
+const mainT=()=>{const b=mainB();return b?S.teams[b]:""};
+const logoOf=(b,n)=>{const r=(BOARDS[b]||[]).find(x=>x[0]==n);return r&&r[1]?IMG(r[1]):""};
+function lg(b,n,sz){const d=logoOf(b,n);return d?`<img alt="" src="${d}" style="width:${sz}px;height:${sz}px;border-radius:${Math.round(sz/5)}px;background:#fff;object-fit:contain;flex-shrink:0;border:2px solid #fff">`:`<div style="width:${sz}px;height:${sz}px;border-radius:${Math.round(sz/5)}px;background:#4e5058;flex-shrink:0"></div>`}
+const bshort=a=>a.length?"Board"+(a.length>1?"s ":" ")+a.map(b=>b.slice(6)).join(a.length>2?", ":" & ").replace(/, (\d)$/," & $1"):"";
+function R(){draw()}
+function serial(){const m=mainB();if(!m)return "#— / 36";const i=BOARDS[m].findIndex(x=>x[0]==S.teams[m]);return "#"+String(BN.indexOf(m)*12+i+1).padStart(3,"0")+" / 36"}
+const Q=new URLSearchParams(location.search);S.token=Q.get("t")||"";
+if(S.token){try{const d=JSON.parse(atob(S.token.split(".")[0].replace(/-/g,"+").replace(/_/g,"/")));if(d.n)S.name=d.n.split(" ")[0];}catch(e){}}
+if(Q.get("cmd")=="intro"||Q.get("cmd")=="block"){S.cmd=Q.get("cmd");S.step=1;}
+async function postIt(){
+ S.err="";
+ if(!S.token){S.err="Preview only. Type /"+S.cmd+" in Discord to get your posting link.";return draw()}
+ S.sending=true;draw();
+ try{
+  const node=document.getElementById("shot");
+  const png=await htmlToImage.toPng(node,{pixelRatio:2});
+  const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT()})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||"Posting failed. Try again.");
+  S.sending=false;S.step=S.cmd=="intro"?7:5;draw();window.scrollTo({top:0});
+ }catch(e){S.sending=false;S.err=e.message||"Posting failed. Try again.";draw()}
+}
+function postBar(back){return `${S.err?`<div class="er">${S.err}</div>`:""}<div class="nv"><button class="dg" onclick="go(${back})">Edit</button><button class="db" ${S.sending?"disabled":""} onclick="postIt()">${S.sending?"Posting…":"Post it"}</button></div>`}
+function go(n){
+ S.err="";
+ if(S.step==1&&n==2){
+  if(!S.name.trim())S.err="Enter your first name.";
+  else if(!S.sel.length)S.err="Pick at least one board.";
+  else{const miss=selB().filter(b=>!S.teams[b]);if(miss.length)S.err="Pick your team on "+miss.join(" and ")+".";}
+  if(S.err)return draw();
+ }
+ if(S.cmd=="block"&&S.step==2&&n==3&&!S.players.some(p=>p.name.trim())){S.err="Add at least one player.";return draw()}
+ S.step=n;draw();window.scrollTo({top:0});
+}
+function tgBoard(b){const i=S.sel.indexOf(b);if(i>-1){S.sel.splice(i,1);delete S.teams[b]}else S.sel.push(b);S.err="";draw()}
+function pickTeam(b,i){S.teams[b]=BOARDS[b][i][0];S.err="";draw()}
+function tgF(i){const f=FL[i][0];if(f in S.flair)delete S.flair[f];else S.flair[f]="";draw()}
+function tgBg(i){const b=BG[i][0];const k=S.badges.indexOf(b);if(k>-1)S.badges.splice(k,1);else S.badges.push(b);draw()}
+function tgW(i){const w=WANTS[i];const k=S.wants.indexOf(w);if(k>-1)S.wants.splice(k,1);else S.wants.push(w);draw()}
+function photo(e){const f=e.target.files&&e.target.files[0];if(!f)return;S.err="";const r=new FileReader();
+r.onerror=()=>{S.err="That photo couldn't be read. Try a different one.";draw()};
+r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL("image/jpeg",0.85);draw()};
+im.onerror=()=>{S.err="That file type won't load. Use a JPG or PNG.";draw()};im.src=r.result};r.readAsDataURL(f)}
+function sw(key,list){const cur=S[key];return `<div class="sws">`+list.map(c=>`<button class="sw ${cur==c?'on':''}" style="background:${c}" aria-label="Color ${c}" onclick="S.${key}='${c}';R()"></button>`).join("")+`<input type="color" value="${cur||'#003594'}" onchange="S.${key}=this.value;R()" aria-label="Custom color"></div>`}
+const chip=(on,label,js)=>`<button class="ch ${on?'on':''}" onclick="${js}">${label}</button>`;
+function whoStep(title){
+ return `<h3>${title}</h3>
+ <label class="dl">FIRST NAME *</label><input class="di" value="${esc(S.name)}" placeholder="John" oninput="S.name=this.value">
+ ${S.cmd=="intro"?`<label class="dl">NICKNAME</label><input class="di" value="${esc(S.nick)}" placeholder="The Commish" oninput="S.nick=this.value">`:""}
+ <label class="dl">YOUR BOARDS — PICK EVERY ONE YOU'RE IN</label><div>${BN.map(b=>chip(S.sel.includes(b),b,`tgBoard('${b}')`)).join("")}</div>
+ ${selB().map(b=>`<label class="dl" style="margin-top:10px">YOUR TEAM ON ${b.toUpperCase()} *</label><div class="tg">${BOARDS[b].map((r,i)=>`<button class="tm ${S.teams[b]==r[0]?'on':''}" onclick="pickTeam('${b}',${i})">${lg(b,r[0],30)}<span>${esc(r[0])}</span></button>`).join("")}</div>`).join("")}`;
+}
+function nav(b,n,l){return `${S.err?`<div class="er">${S.err}</div>`:""}<div class="nv"><button class="dg" onclick="${b<0?"S.cmd='';S.step=0;R()":`go(${b})`}">${b<0?"Cancel":"Back"}</button><button class="db" onclick="go(${n})">${l||"Next"}</button></div>`}
+function alsoOn(sz){const m=mainB();return selB().filter(b=>b!=m&&S.teams[b]!=mainT()).map(b=>`<span style="display:inline-flex;align-items:center;gap:5px;margin:0 8px 4px 0">${lg(b,S.teams[b],sz)}<span style="color:#dbdee1;font-size:12px">${esc(S.teams[b])}</span></span>`).join("")}
+function card(){
+ const t=tm(),a=S.accent||t[2],sec=t[3],L=S.layout,m=mainB();
+ const plate=`<div style="min-width:0;flex:1;padding:14px 12px;display:flex;flex-direction:column;justify-content:center;text-align:${L=='center'?'center':'left'}">
+  <div style="color:${S.nameC};font-size:18px;font-weight:700;line-height:1.2">${esc(S.name)||"Name"}</div>
+  ${S.nick?`<div style="color:#b5bac1;font-size:12px;font-style:italic">“${esc(S.nick)}”</div>`:""}
+  <div style="display:flex;align-items:center;gap:9px;margin-top:8px;justify-content:${L=='center'?'center':'flex-start'}">${m?lg(m,mainT(),52):lg("","",52)}
+  <div style="color:${S.teamC};font-size:19px;font-weight:700;line-height:1.15;word-wrap:break-word;min-width:0">${esc(mainT())||"Team name"}</div></div></div>`;
+ let head;
+ if(L=="center"){
+  head=`<div style="background:${a};height:${S.photo?220:112}px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">${S.photo?`<img alt="" src="${S.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:""}
+  <div style="position:absolute;right:0;bottom:0;width:36%;height:18px;background:${sec};clip-path:polygon(12% 0,100% 0,100% 100%,0 100%)"></div>
+  <div style="position:${S.photo?'absolute':'relative'};${S.photo?'left:8px;bottom:8px;background:#1e1f22;border-radius:50%;padding:5px;border:2px solid '+a:''}">${helm(S.nfl,S.photo?58:88)}</div></div>
+  <div style="background:#1e1f22">${plate}</div>`;
+ }else{
+  const w=S.photo?170:124,hg=S.photo?196:116,cut=L=='left'?'polygon(0 0,100% 0,82% 100%,0 100%)':'polygon(18% 0,100% 0,100% 100%,0 100%)';
+  const inner=S.photo?`<img alt="" src="${S.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div style="position:absolute;${L=='left'?'left':'right'}:6px;bottom:6px;background:#1e1f22;border-radius:50%;padding:4px;border:2px solid ${a}">${helm(S.nfl,50)}</div>`
+   :`<div style="position:absolute;inset:0;background:${sec};clip-path:${L=='left'?'polygon(0 78%,100% 100%,0 100%)':'polygon(100% 78%,100% 100%,0 100%)'}"></div><div style="position:relative">${helm(S.nfl,82)}</div>`;
+  const hs=`<div style="width:${w}px;flex-shrink:0;position:relative;background:${a};clip-path:${cut};display:flex;align-items:center;justify-content:center;min-height:${hg}px">${inner}</div>`;
+  head=`<div style="display:flex;background:#1e1f22;align-items:stretch">${L=='left'?hs+plate:plate+hs}</div>`;
+ }
+ const items=Object.keys(S.flair).map(f=>[f,FL.find(x=>x[0]==f)[1],S.flair[f]]).concat(S.cf.filter(c=>c[0].trim()).map(c=>[c[0],"✏️",c[1]]));
+ const fl=items.map(x=>`<div style="min-width:0"><div style="color:${S.teamC};font-size:11px;font-weight:700;letter-spacing:.04em">${x[1]} ${esc(x[0]).toUpperCase()}</div><div style="color:#dbdee1;font-size:13px;word-wrap:break-word;white-space:pre-line">${esc(x[2])||"—"}</div></div>`).join("");
+ const bl=(S.ed=="Commissioner"?[["Commissioner","👑"]]:[]).concat(S.badges.map(b=>BG.find(x=>x[0]==b))).concat(S.cb.filter(c=>c.trim()).map(c=>[c,"✨"]));
+ const bd=bl.map(b=>{const g=b[0]=="Commissioner";return `<span style="display:inline-block;border:1px solid ${g?'#FFC62F':'#4e5058'};color:${g?'#FFC62F':'#dbdee1'};border-radius:10px;padding:2px 8px;font-size:11px;margin:0 4px 5px 0">${b[1]} ${esc(b[0])}</span>`}).join("");
+ const edc={Rookie:"#1D9E75",Veteran:"#7F77DD",Commissioner:"#FFC62F"}[S.ed];
+ const meta=[t[1],bshort(selB()),S.where?"📍 "+esc(S.where):"",S.since?"Playing since "+esc(S.since):""].filter(Boolean).join("  |  ");
+ const also=alsoOn(24);
+ return `<div class="card" style="border:3px solid ${a}">
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1e1f22"><span style="background:${edc};color:${S.ed=='Commissioner'?'#412402':'#fff'};font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px">${S.ed.toUpperCase()} EDITION</span><span style="color:#949ba4;font-size:11px">${serial()}</span></div>
+ ${head}<div style="height:4px;background:${a}"></div>
+ <div style="position:relative;padding:12px;overflow:hidden">
+ <div style="position:absolute;right:-24px;bottom:-24px;pointer-events:none">${helm(S.nfl,180,.07)}</div>
+ <div style="position:relative">
+ <div style="color:#949ba4;font-size:12px;margin-bottom:6px;line-height:1.5">${meta}</div>
+ ${also?`<div style="margin-bottom:6px"><div style="color:#949ba4;font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:4px">ALSO RUNNING</div>${also}</div>`:""}
+ <div style="margin-bottom:6px">${bd}</div>
+ ${fl?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">${fl}</div>`:""}
+ ${S.take?`<div style="background:#1e1f22;border-left:3px solid ${S.nameC};padding:8px 10px;margin-bottom:10px"><div style="color:${S.nameC};font-size:11px;font-weight:700;letter-spacing:.04em">🔥 THE TAKE</div><div style="color:#dbdee1;font-size:13px;line-height:1.45;word-wrap:break-word">${esc(S.take)}</div></div>`:""}
+ <div style="color:#949ba4;font-size:11px">EXPANSION LEAGUE  |  2026 SEASON</div>
+ </div></div></div>`;
+}
+function bcard(){
+ const a=S.bAccent,st=STAT.find(s=>s[0]==S.status),m=mainB(),multi=selB().length>1;
+ const ps=S.players.filter(p=>p.name.trim()).map(p=>{const pb=p.board||m;return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #3f4147">
+  <span style="background:${POS[p.pos]};color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:1px 5px;min-width:26px;text-align:center;flex-shrink:0">${p.pos}</span>
+  ${helm(p.nfl,20)}
+  <div style="min-width:0;flex:1"><div style="color:#f2f3f5;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</div>${p.note?`<div style="color:#949ba4;font-size:11px;line-height:1.3">${esc(p.note)}</div>`:""}</div>
+  ${multi&&pb?`<span style="display:flex;align-items:center;gap:3px;color:#949ba4;font-size:10px;flex-shrink:0">${lg(pb,S.teams[pb],16)}B${pb.slice(6)}</span>`:""}</div>`}).join("");
+ const wl=S.wants.concat(S.cw.filter(c=>c.trim()));
+ return `<div class="bcard" style="border:2px solid ${a}">
+ <div style="background:${a};display:flex;justify-content:space-between;align-items:center;padding:5px 9px"><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em">🔁 ON THE BLOCK</span><span style="color:#fff;font-size:11px">WK ${S.week}</span></div>
+ <div style="display:flex;align-items:center;gap:8px;padding:8px 9px;background:#1e1f22">${m?lg(m,mainT(),36):lg("","",36)}
+  <div style="min-width:0;flex:1"><div style="color:#f2f3f5;font-size:14px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(mainT())||"Team name"}</div><div style="color:#949ba4;font-size:11px">${esc(S.name)||"Name"}  |  ${bshort(selB())||"Board"}</div></div></div>
+ <div style="padding:6px 9px 8px">
+ <div style="color:#949ba4;font-size:10px;font-weight:700;letter-spacing:.06em;margin-top:2px">SHOPPING</div>
+ ${ps||`<div style="color:#949ba4;font-size:12px;padding:4px 0">No players yet</div>`}
+ ${wl.length?`<div style="color:#949ba4;font-size:10px;font-weight:700;letter-spacing:.06em;margin:7px 0 4px">LOOKING FOR</div><div>${wl.map(w=>`<span style="display:inline-block;border:1px solid #6d6f78;color:#dbdee1;border-radius:9px;padding:1px 7px;font-size:11px;margin:0 3px 4px 0">${esc(w)}</span>`).join("")}</div>`:""}
+ ${S.pitch?`<div style="color:#dbdee1;font-size:12px;line-height:1.4;font-style:italic;margin-top:5px;border-left:2px solid ${a};padding-left:7px">${esc(S.pitch)}</div>`:""}
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><span style="background:${st[1]};color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px">${S.status.toUpperCase()}</span><span style="color:#949ba4;font-size:10px">💬 DMs open</span></div>
+ </div></div>`;
+}
+function posted(ch,msg,body,btns){return `<div class="chan"># ${ch}</div><div style="display:flex;gap:10px"><div class="bot">🤖</div><div style="min-width:0;flex:1"><div style="font-size:14px"><b style="color:#f2f3f5">Crown or Clown</b> <span class="app">APP</span> <span style="color:#949ba4;font-size:11px">Today</span></div><div style="font-size:14px;margin:3px 0 8px">${msg}</div>${body}<div style="margin-top:6px">${btns}</div></div></div><div class="only" style="margin-top:14px">✅ Posted. You can close this tab and head back to Discord.</div>`}
+function draw(){
+ let h="",total=S.cmd=="intro"?8:6;
+ $("bar").textContent=S.cmd?`/${S.cmd}  step ${S.step} of ${total-1}`:"Pick a command";
+ if(!S.cmd){
+  h=`<div class="chan"># the-expansion-league</div><div class="sug"><div class="dl">COMMANDS MATCHING /</div>
+  <button class="cmd" onclick="S.cmd='intro';S.step=1;R()"><span class="bot">🤖</span><span><b>/intro</b><br><small>Build your league card</small></span></button>
+  <button class="cmd" onclick="S.cmd='block';S.step=1;R()"><span class="bot">🤖</span><span><b>/block</b><br><small>Put players on the trade block</small></span></button></div>
+  <div class="bx">/</div>`;
+ } else if(S.cmd=="intro"){
+  const st=S.step;
+  if(st==1)h=whoStep("Make your card")+`
+   <label class="dl" style="margin-top:10px">NFL TEAM</label><select class="di" onchange="S.nfl=this.value;S.accent='';R()">${T.map(t=>`<option value="${t[0]}" ${t[0]==S.nfl?'selected':''}>${t[1]}</option>`).join("")}</select>
+   <div class="r2"><div><label class="dl">PLAYING SINCE</label><input class="di" value="${esc(S.since)}" placeholder="2019" oninput="S.since=this.value"></div><div><label class="dl">WHERE YOU AT</label><input class="di" value="${esc(S.where)}" placeholder="Orem, UT" oninput="S.where=this.value"></div></div>
+   <label class="dl">YOUR TAKE</label><textarea class="di" rows="3" placeholder="Nobody won their draft..." oninput="S.take=this.value">${esc(S.take)}</textarea>`+nav(-1,2);
+  else if(st==2)h=`<h3>Your photo</h3><label class="dl">PHOTO, GOES BIG IN THE HEADER (OPTIONAL)</label>
+   <div class="up">${S.photo?`<img alt="" src="${S.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover">`:`📷`}<input class="fi" type="file" accept="image/jpeg,image/png,image/webp,image/*" onchange="photo(event)" aria-label="Upload photo"></div>
+   ${S.photo?chip(false,"Remove photo","S.photo='';R()"):""}${S.err?`<div class="er">${S.err}</div>`:""}<div class="split"><div>${nav(1,3)}</div><div>${card()}</div></div>`;
+  else if(st==3)h=`<h3>Pick your look</h3><div class="split"><div>
+   <label class="dl">LAYOUT</label><div>${[["left","Photo left"],["right","Photo right"],["center","Photo top"]].map(l=>chip(S.layout==l[0],l[1],`S.layout='${l[0]}';R()`)).join("")}</div>
+   <label class="dl">CARD COLOR</label>${sw('accent',[tm()[2],tm()[3]].concat(PAL))}
+   <label class="dl">NAME COLOR</label>${sw('nameC',PAL)}
+   <label class="dl">TEAM NAME COLOR</label>${sw('teamC',PAL)}
+   <label class="dl">EDITION</label><div>${["Rookie","Veteran","Commissioner"].map(e=>chip(S.ed==e,e,`S.ed='${e}';R()`)).join("")}</div>
+   ${nav(2,4)}</div><div>${card()}</div></div>`;
+  else if(st==4)h=`<h3>Flair</h3><label class="dl">PICK AS MANY AS YOU WANT</label><div>${FL.map((f,i)=>chip(f[0] in S.flair,f[1]+" "+f[0],`tgF(${i})`)).join("")}</div>
+   ${Object.keys(S.flair).map(f=>`<label class="dl">${f.toUpperCase()}</label>${f=='Perfect lineup'?`<textarea class="di" rows="3" placeholder="QB Burrow, RB McCaffrey, WR Lamb..." oninput="S.flair['Perfect lineup']=this.value">${esc(S.flair[f])}</textarea>`:`<input class="di" value="${esc(S.flair[f])}" placeholder="Your answer" oninput="S.flair[${JSON.stringify(f).replace(/"/g,'&quot;')}]=this.value">`}`).join("")}
+   <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cf.map((c,i)=>`<div class="r2"><input class="di" value="${esc(c[0])}" placeholder="Your label" oninput="S.cf[${i}][0]=this.value"><input class="di" value="${esc(c[1])}" placeholder="Your answer" oninput="S.cf[${i}][1]=this.value"></div>`).join("")}`+nav(3,5);
+  else if(st==5)h=`<h3>Badges</h3><label class="dl">PICK AS MANY AS YOU WANT (${S.badges.length} PICKED)</label><div>${BG.map((b,i)=>chip(S.badges.includes(b[0]),b[1]+" "+b[0],`tgBg(${i})`)).join("")}</div>
+   <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cb.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="24" placeholder="Your badge" oninput="S.cb[${i}]=this.value">`).join("")}`+nav(4,6,"Preview card");
+  else if(st==6)h=`<div class="only">👁 Only you can see this</div><div id="shot" style="display:inline-block;max-width:100%">${card()}</div>${postBar(5)}`;
+  else h=posted("introductions",`New card in the pack. Welcome ${esc(S.name)}`,card(),`<span class="ch">👑 0</span><span class="ch">🤡 0</span>`);
+ } else {
+  const st=S.step;
+  if(st==1)h=whoStep("Who's dealing")+nav(-1,2);
+  else if(st==2){const multi=selB().length>1;h=`<h3>Who you're shopping</h3>${S.players.map((p,i)=>`<div class="pr">
+   <div>${Object.keys(POS).map(k=>chip(p.pos==k,k,`S.players[${i}].pos='${k}';R()`)).join("")}</div>
+   <div class="r3"><input class="di" value="${esc(p.name)}" placeholder="Player name" oninput="S.players[${i}].name=this.value"><select class="di" onchange="S.players[${i}].nfl=this.value;R()">${T.map(t=>`<option ${t[0]==p.nfl?'selected':''}>${t[0]}</option>`).join("")}</select></div>
+   <input class="di" value="${esc(p.note)}" placeholder="Quick note (optional)" oninput="S.players[${i}].note=this.value">
+   ${multi?`<label class="dl">FROM WHICH BOARD</label><div>${selB().map(b=>chip((p.board||mainB())==b,b,`S.players[${i}].board='${b}';R()`)).join("")}</div>`:""}
+   ${chip(false,"🗑 Remove",`S.players.splice(${i},1);if(!S.players.length)S.players.push({pos:'WR',name:'',nfl:'DAL',note:'',board:''});R()`)}</div>`).join("")}
+   ${chip(false,"＋ Add another player","S.players.push({pos:'WR',name:'',nfl:'DAL',note:'',board:''});R()")}`+nav(1,3);}
+  else if(st==3)h=`<h3>What you want back</h3><div class="split"><div>
+   <label class="dl">LOOKING FOR, PICK AS MANY AS YOU WANT</label><div>${WANTS.map((w,i)=>chip(S.wants.includes(w),w,`tgW(${i})`)).join("")}</div>
+   <label class="dl">MAKE YOUR OWN (UP TO 3)</label>${S.cw.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="28" placeholder="WR2 with a pulse" oninput="S.cw[${i}]=this.value">`).join("")}
+   <label class="dl">STATUS</label><div>${STAT.map(s=>chip(S.status==s[0],s[0],`S.status='${s[0]}';R()`)).join("")}</div>
+   <label class="dl">YOUR PITCH</label><textarea class="di" rows="2" placeholder="Make it fair and it gets done same day." oninput="S.pitch=this.value">${esc(S.pitch)}</textarea>
+   <label class="dl">WEEK</label><select class="di" style="width:90px" onchange="S.week=this.value;R()">${Array.from({length:18},(_,i)=>i+1).map(w=>`<option ${w==S.week?'selected':''}>${w}</option>`).join("")}</select>
+   <label class="dl">CARD COLOR</label>${sw('bAccent',["#003594"].concat(PAL))}
+   ${nav(2,4,"Preview card")}</div><div>${bcard()}</div></div>`;
+  else if(st==4)h=`<div class="only">👁 Only you can see this</div><div id="shot" style="display:inline-block;max-width:100%">${bcard()}</div>${postBar(3)}`;
+  else h=posted("trade-block",`${esc(mainT())} is dealing`,bcard(),`<span class="ch">📞 Interested 0</span><span class="ch">✋ Pass 0</span>`);
+ }
+ $("app").innerHTML=h;
+}
+if(!S.token)$('pv').hidden=false;
+$('app').innerHTML='Loading your league…';
+fetch('/api/cards/teams').then(r=>r.json()).then(d=>{BOARDS=d.boards;draw()}).catch(()=>{$('app').innerHTML='Couldn\'t load the league from ESPN. Refresh to try again.'});
+</script></body></html>
