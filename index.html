@@ -543,6 +543,8 @@
   .gd-best ul{list-style:none;margin:0;padding:0}
   .gd-best li{padding:4px 0}
   .gd-best li + li{border-top:1px solid rgba(255,255,255,.04)}
+  /* the defences that did not crack the six still get listed, just set apart */
+  .gd-best li.sep{padding:0;height:0;border-top:1px solid var(--line)}
   .gd-best .r{display:flex;align-items:baseline;gap:9px}
   .gd-best .pn{flex:1;color:var(--bone);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .gd-best .pt{font-family:var(--mono);font-size:10px;color:var(--bone-dim);flex:none}
@@ -3178,7 +3180,8 @@
             var scored = [];
             if(g.state!=='pre' && s.boxscore){
               scored = dkFromBox(s.boxscore);
-              g.top = scored.slice(0,5);
+              g.dst = dstFromBox(s.boxscore, g);
+              g.top = scored.concat(g.dst).sort(function(a,b){ return b.dk-a.dk; }).slice(0,6);
             }
             if(scored.length) out.forEach(function(p){ if(p.sure) p.took = tookOver(p, scored, names); });
 
@@ -3247,6 +3250,49 @@
       });
       return out.sort(function(a,b){ return b.dk-a.dk; });
     }
+    /* ---- the defences ----
+       A defence outscores the bottom of the box more often than people think — a unit that
+       gets two sacks and keeps them under fourteen beats a receiver with three catches — and
+       leaving them off meant the card only ever showed half the DraftKings slate.
+
+       ESPN reports team statistics from the offence's side: sacks TAKEN, picks THROWN,
+       fumbles LOST. So a team's defence is read off its opponent's line, which is exactly the
+       inversion needed. Points allowed is the other team's score. */
+    function paTier(p){
+      if(p===0) return 10;
+      if(p<=6)  return 7;
+      if(p<=13) return 4;
+      if(p<=20) return 1;
+      if(p<=27) return 0;
+      if(p<=34) return -1;
+      return -4;
+    }
+    function dstFromBox(box,g){
+      var teams=(box&&box.teams)||[];
+      if(teams.length<2) return [];
+      function stat(t,name){
+        var s=(t.statistics||[]).filter(function(x){ return x.name===name; })[0];
+        return s ? String(s.displayValue==null?'':s.displayValue) : '';
+      }
+      var out=[];
+      for(var i=0;i<2;i++){
+        var me=teams[i], them=teams[1-i],
+            ab=(me.team&&me.team.abbreviation)||'';
+        if(!ab) continue;
+        var sacks=parseFloat(String(stat(them,'sacksYardsLost')).split('-')[0])||0,
+            ints =parseFloat(stat(them,'interceptions'))||0,
+            fum  =parseFloat(stat(them,'fumblesLost'))||0,
+            dtd  =parseFloat(stat(me,'defensiveTouchdowns'))||0,
+            pa   =(ab===g.home)?g.aScore:g.hScore;
+        if(pa==null) continue;
+        var p=sacks + ints*2 + fum*2 + dtd*6 + paTier(pa);
+        out.push({ name:ab+' D/ST', team:ab, pos:'DST', dk:Math.round(p*10)/10,
+          line:[sacks?(sacks+' sk'):'', ints?(ints+' int'):'', fum?(fum+' fum'):'',
+                dtd?(dtd+' TD'):'', pa+' allowed'].filter(Boolean).join(', ') });
+      }
+      return out;
+    }
+
     function posOf(name, team){
       var t = depth && depth[team];
       if(!t) return '';
@@ -3368,14 +3414,21 @@
 
       var topRow = '';
       if(g.top && g.top.length){
-        topRow = '<div class="gd-best"><h5>Top five &middot; DK points</h5><ul>'+
-          g.top.map(function(p){
-            return '<li><div class="r">'+
-                   '<span class="pn">'+esc(p.name)+'</span>'+
-                   '<span class="pt">'+esc([p.team,p.pos].filter(Boolean).join(' '))+'</span>'+
-                   '<span class="pp">'+Number(p.dk).toFixed(1)+'</span></div>'+
-                   (p.line?('<span class="pl">'+esc(p.line)+'</span>'):'')+'</li>';
-          }).join('')+'</ul></div>';
+        function scoreRow(p){
+          return '<li><div class="r">'+
+                 '<span class="pn">'+esc(p.name)+'</span>'+
+                 '<span class="pt">'+esc([p.team,p.pos].filter(Boolean).join(' '))+'</span>'+
+                 '<span class="pp">'+Number(p.dk).toFixed(1)+'</span></div>'+
+                 (p.line?('<span class="pl">'+esc(p.line)+'</span>'):'')+'</li>';
+        }
+        // Both defences are always listed, even the one that had a bad afternoon — you cannot
+        // see that a defence beat the bottom of the box if it disappears whenever it loses.
+        var shown={}; g.top.forEach(function(p){ shown[p.name]=1; });
+        var rest=(g.dst||[]).filter(function(p){ return !shown[p.name]; });
+        topRow = '<div class="gd-best"><h5>Top six &middot; DK points</h5><ul>'+
+          g.top.map(scoreRow).join('')+
+          (rest.length ? '<li class="sep"></li>'+rest.map(scoreRow).join('') : '')+
+          '</ul></div>';
       }
 
       var wxRow;

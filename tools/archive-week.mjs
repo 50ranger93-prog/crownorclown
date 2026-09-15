@@ -301,6 +301,54 @@ function dkFromBox(box, posOf) {
   return out.sort((a, b) => b.dk - a.dk);
 }
 
+/* ---- the defences ----
+   A defence outscores the bottom of the box more often than people think — a unit that gets
+   two sacks and keeps them under fourteen beats a receiver with three catches — and leaving
+   them off meant the card was only ever showing half the DraftKings slate.
+
+   ESPN reports team statistics from the offence's side of the ball: sacks TAKEN, picks
+   THROWN, fumbles LOST. So a team's defence is read off its opponent's line, which is exactly
+   the inversion needed. Points allowed is simply the other team's score.
+--------------------------------------------------------------------------------------- */
+function paTier(p) {
+  if (p === 0) return 10;
+  if (p <= 6) return 7;
+  if (p <= 13) return 4;
+  if (p <= 20) return 1;
+  if (p <= 27) return 0;
+  if (p <= 34) return -1;
+  return -4;
+}
+
+function dstFromBox(box, g) {
+  const teams = box?.teams || [];
+  if (teams.length < 2) return [];
+  const stat = (t, name) => {
+    const s = (t.statistics || []).find(x => x.name === name);
+    return s ? String(s.displayValue ?? "") : "";
+  };
+  const out = [];
+  for (let i = 0; i < 2; i++) {
+    const me = teams[i], them = teams[1 - i];
+    const ab = me.team?.abbreviation || "";
+    if (!ab) continue;
+    const sacks = parseFloat(String(stat(them, "sacksYardsLost")).split("-")[0]) || 0;
+    const ints  = parseFloat(stat(them, "interceptions")) || 0;
+    const fum   = parseFloat(stat(them, "fumblesLost")) || 0;
+    const dtd   = parseFloat(stat(me, "defensiveTouchdowns")) || 0;
+    const pa    = ab === g.home ? g.aScore : g.hScore;
+    if (pa == null) continue;
+    const p = sacks + ints * 2 + fum * 2 + dtd * 6 + paTier(pa);
+    out.push({
+      name: ab + " D/ST", team: ab, pos: "DST",
+      dk: Math.round(p * 10) / 10,
+      line: [sacks ? `${sacks} sk` : "", ints ? `${ints} int` : "", fum ? `${fum} fum` : "",
+             dtd ? `${dtd} TD` : "", `${pa} allowed`].filter(Boolean).join(", "),
+    });
+  }
+  return out;
+}
+
 // The number on its own says a player scored; the line says how, which is the part that
 // tells you whether to expect it again.
 function statLine(r) {
@@ -616,7 +664,11 @@ async function buildWeek(week) {
         return "";
       };
       scored = dkFromBox(s.boxscore, posOf);
-      g.top = scored.slice(0, 5);
+      // Defences rank against the skill players rather than sitting in a box of their own,
+      // and both are shown either way — the point is being able to see that a defence beat
+      // the bottom of the box, which you cannot do if it is missing when it loses.
+      g.dst = dstFromBox(s.boxscore, g);
+      g.top = scored.concat(g.dst).sort((a, b) => b.dk - a.dk).slice(0, 6);
     }
     if (scored.length) out.forEach(p => { if (p.sure) p.took = tookOver(p, scored, outNames); });
 
