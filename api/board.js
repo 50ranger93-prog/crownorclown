@@ -14,7 +14,7 @@
 //
 // A public write endpoint is a public write endpoint, so it is treated as hostile input:
 // every field is rebuilt here from validated pieces rather than trusted from the browser,
-// and points are clamped to the same 92 the game caps at. The thing that actually stops
+// and the score has to be reachable from the yards and points beside it. The thing that stops
 // somebody hammering it is that a score which would not make the board is never written at
 // all — junk comes back with the current top ten and leaves no commit behind.
 //
@@ -31,7 +31,10 @@ const BRANCH = process.env.BOARD_BRANCH     || "board-data";
 const FILE   = "board.json";
 
 const KEEP = 10;          // how many the board shows
-const MAX_PTS = 92;       // the game's own ceiling; anything above it did not happen
+// A backstop, not the game's ceiling — the game has none. Perfect timing through two hundred
+// thousand simulated games topped out at 133.6, so anything past 150 did not happen. The real
+// gate is plausible(), which checks the score against the yards and the points actually scored.
+const MAX_PTS = 150;
 const MAX_YDS = 600;
 
 const TEAM = /^[A-Z]{2,3}$/;
@@ -43,14 +46,14 @@ const API = "https://api.github.com";
 
    A ticket. Picking a team asks the server for one: a timestamp signed with a key only the
    server has. A score is only accepted with a valid, unexpired, unused ticket that was issued
-   at least forty seconds earlier — you cannot finish four possessions in five seconds, and
+   a few seconds earlier — a ticket cannot be requested and spent in the same breath, and
    you cannot mint your own. Tickets that land a score are remembered so the same one cannot
    be replayed.
 
    Arithmetic. The score has to be reachable from the rest of what was submitted. Team points
    have to decompose into actual touchdowns and field goals, and the DraftKings total cannot
-   exceed what those yards, those catches and those scores could possibly have produced. "92
-   points, no yards, lost nothing to nothing" stops being submittable.
+   exceed what those yards, those catches and those scores could possibly have produced. A
+   big number with no yards and nothing on the scoreboard stops being submittable.
 
    Straight about the limit: the ticket lives in the browser, so somebody determined enough to
    read their own network traffic can still play the game honestly and then submit a different

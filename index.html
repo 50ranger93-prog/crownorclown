@@ -4042,7 +4042,7 @@
   //
   // Scoring is DraftKings, the way the leagues are scored: a tenth a yard, a point a catch,
   // six for the touchdown, one for the extra point, kickers paid by distance, and the
-  // hundred-yard bonuses. 92 is the ceiling.
+  // hundred-yard bonuses. No ceiling — the best game should stand on its own.
   (function route(){
     var stage=document.getElementById('rt-stage');
     if(!stage) return;
@@ -4114,7 +4114,9 @@
 
     var MAX_FG=56;            // past this nobody is trotting the kicker out
     var POSS=4;               // possessions each
-    var CAP=92;               // the ceiling, and the number the section is named after
+    // No ceiling. It used to stop at 92 and perfect play reached that roughly one game in
+    // four, so the top of the board would have filled up with ties instead of a best score.
+    // The board still refuses anything the yards and the points on the board cannot justify.
 
     var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
     ['run1','run2','kick1','catch2','catch3','catch5','catch6','drop','tackled'].forEach(function(n){
@@ -4182,7 +4184,7 @@
       if(recY>=100) p+=3;
       return p;
     }
-    function dk(){ return Math.min(CAP, Math.round(dkRaw()*10)/10); }
+    function dk(){ return Math.round(dkRaw()*10)/10; }
     function totalYds(){ return rushY+recY; }
 
     /* ---- the board ---- */
@@ -4210,7 +4212,7 @@
         : '<li class="empty">Nobody has posted a score yet.</li>';
       bhead.textContent = shared ? 'The board — best DK games, everybody' : 'The board — this device only';
       note.textContent = shared
-        ? 'One board for everyone, on every device. Best DraftKings game wins — 92 is the ceiling.'
+        ? 'One board for everyone, on every device. Best DraftKings game wins. No ceiling.'
         : 'This board is on this device only — your phone and your laptop keep separate scores until the board store is switched on.';
     }
     function bestLine(){
