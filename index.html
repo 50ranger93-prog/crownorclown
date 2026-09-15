@@ -1142,7 +1142,9 @@
   .rt-yards .gain{font-family:var(--mono);font-size:12px;color:var(--gold);
     margin-top:4px;opacity:0;transition:opacity .18s ease}
   .rt-yards .gain.show{opacity:1}
-  @media (max-width:640px){ .rt-yards{padding:11px 14px} .rt-yards .n{font-size:30px} }
+  @media (max-width:640px){
+    .rt-yards{padding:11px 14px} .rt-yards .n{font-size:30px}
+  }
 
   /* The situation line: down, distance and where you are. It is what turns a timing bar
      into a play - a fade from the 7 and a post from your own 8 are different problems. */
@@ -1203,6 +1205,10 @@
   .rt-teams button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 
   /* you, them, and how much football is left */
+  /* The points panel sits top-right over the same frame, so these two lines have to stop
+     short of it — full width ran the scoreboard straight under the DK number on a phone. */
+  .rt-sb,.rt-sit{padding-right:122px}
+  @media (max-width:640px){ .rt-sb,.rt-sit{padding-right:96px} }
   .rt-sb{display:flex;gap:9px;align-items:baseline;font-family:var(--mono);font-size:11.5px;
     color:var(--bone-dim);margin-bottom:6px;flex-wrap:wrap}
   .rt-sb b{color:var(--bone);font-size:15px;font-variant-numeric:tabular-nums}
@@ -1225,6 +1231,24 @@
   .rt-board .rs{font-family:var(--mono);font-size:10px;width:34px;text-align:right}
   .rt-board .rs.w{color:#8FD9A8}
   .rt-board .rs.l{color:var(--clown)}
+
+  /* Phone sizing, last in the file on purpose: the scoreboard and play-call rules above are
+     later in source than the earlier media block, so overrides placed there lost to them and
+     the HUD stayed at desktop size. The frame is only about 180px tall on a phone and the HUD
+     was 207 — it spilled out over the top of the picture and collided with the points panel. */
+  @media (max-width:640px){
+    /* Sixteen-by-nine on a narrow phone is about 184px of frame, and the HUD needs nearly all
+       of it — one long play name wrapping to a third line put it back over the top. Headroom
+       instead of shaving type until it fits. */
+    .rt-stage{min-height:238px}
+    .rt-call{font-size:clamp(22px,7.2vw,34px)}
+    .rt-track{margin:9px 0 7px;height:10px}
+    .rt-hint{font-size:10px;letter-spacing:.1em}
+    .rt-sb{font-size:10.5px;margin-bottom:4px;gap:6px}
+    .rt-sb b{font-size:13px}
+    .rt-sit{font-size:9px;margin-bottom:4px}
+    .rt-sb,.rt-sit{padding-right:78px}
+  }
 </style>
 </head>
 <body>
@@ -4318,7 +4342,7 @@
         '<span class="dot">·</span>'+
         '<span>'+esc(opp[0])+' <b>'+oppPts+'</b></span>'+
         '<span class="dot">·</span>'+
-        '<span>Possession '+Math.min(poss+1,POSS)+' of '+POSS+'</span>';
+        '<span>Drive '+Math.min(poss+1,POSS)+'/'+POSS+'</span>';
     }
     function paintSit(){
       var goal = pos+toGo>=100;
@@ -4428,7 +4452,7 @@
 
     // The rival answers. Nothing here is under your control, which is the point of playing
     // somebody rather than playing the clock.
-    function oppPossession(extra){
+    function oppPossession(extra,last){
       var r=Math.random(), got=0, said;
       if(r<.32){ got=7; said=opp[0]+' march it in'; }
       else if(r<.56){ got=3; said=opp[0]+' settle for three'; }
@@ -4436,6 +4460,9 @@
       else { said=opp[0]+' go three and out'; }
       oppPts+=got; oppPoss++;
       paintSB(); paintScore();
+      // On the last possession the whistle is next, not another drive. Offering the button
+      // here let you start a fifth one in the second before the game ended.
+      if(last){ phase='between'; sit.textContent=lastLine+' · '+said; again.hidden=true; return; }
       betweenDrives(extra || said);
     }
 
@@ -4512,7 +4539,7 @@
       poss++;
       lastLine = headline||why||'Drive over';
 
-      if(poss>=POSS){ oppPossession(); setTimeout(finalWhistle,900); return; }
+      if(poss>=POSS){ oppPossession(null,true); setTimeout(finalWhistle,900); return; }
       // Sometimes there is a play to be made on their possession instead of just watching it.
       if(Math.random()<0.45){ setTimeout(beginTakeaway,760); return; }
       oppPossession();
@@ -4523,8 +4550,10 @@
       var res = myPts>oppPts?'W':(myPts<oppPts?'L':'T');
       call.className='rt-call '+(res==='W'?'good':res==='L'?'bad':'');
       call.textContent = res==='W'?'You win':(res==='L'?'You lose':'Tied');
-      sit.innerHTML = esc(me[0])+' '+myPts+' · '+esc(opp[0])+' '+oppPts+
-        ' — '+totalYds()+' yards, '+dk().toFixed(1)+' DK points';
+      // The scoreboard line above already carries the score, and the panel already carries the
+      // points — repeating both here is what pushed this into two lines and up into them.
+      sit.innerHTML = totalYds()+' yards · '+recs+' catches · '+
+        (tds+retTDs+defTDs)+' TD'+((tds+retTDs+defTDs)===1?'':'s');
       hint.textContent='Tap Play again';
       swap(res==='W'?'catch6':'tackled');
       again.textContent='Play again'; again.hidden=false;
