@@ -103,9 +103,9 @@ function checkTicket(t) {
 // by the yards, a ceiling on receptions, and those scores.
 const MAX_RECS = 28;          // four possessions is not fifty catches
 // The defence and the return game score too: the points-allowed ladder tops out at ten with a
-// shutout, and a handful of takeaways are two apiece. Touchdowns taken back or run back are
+// shutout, takeaways are two apiece, sacks a point and a safety two. Touchdowns taken back or run back are
 // already in the touchdown decomposition, because they put seven on the board like any other.
-const MAX_DST = 20;
+const MAX_DST = 30;
 function plausible(e) {
   let cap = -1;
   for (let td = 0; td * 7 <= e.pf; td++) {

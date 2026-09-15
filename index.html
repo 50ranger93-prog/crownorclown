@@ -1718,8 +1718,9 @@
       route. Hit those and you're taking one to the house or bringing a pick back the other
       way. Scored exactly the way your league is scored: <b>0.1 a yard, a point a catch, six
       for the score, minus one for the interception, kickers paid by distance</b>, the
-      hundred-yard bonuses, and the defence paid DraftKings' way &mdash; <b>two a takeaway,
-      six for a return touchdown, and the points-allowed ladder</b>.</p>
+      hundred-yard bonuses, and the defence paid DraftKings' way &mdash; <b>a point a sack, two a
+      takeaway, two a safety, six for a return or defensive touchdown, and the
+      points-allowed ladder</b>.</p>
 
     <!-- Deliberately not .rise: a scroll-reveal that misses would leave the whole game
          invisible while it happily played itself underneath. -->
@@ -4185,7 +4186,7 @@
        anything and this board is a fantasy score, not a pinball machine. */
     function fgPoints(d){ return d>=50 ? 5 : d>=40 ? 4 : 3; }
     var rushY=0, recY=0, recs=0, tds=0, kickPts=0, ints=0;
-    var retTDs=0, defTDs=0, takeaways=0;
+    var retTDs=0, defTDs=0, takeaways=0, sacks=0, safeties=0;
 
     // DraftKings pays the defence and the return game too, and the score here was already a
     // roster rather than one man — the kicker's extra points have been in it all along. So a
@@ -4203,7 +4204,7 @@
     }
     function dkRaw(){
       var p = (rushY+recY)*0.1 + recs + tds*6 + kickPts - ints
-            + retTDs*6 + defTDs*6 + takeaways*2 + paTier();
+            + retTDs*6 + defTDs*6 + takeaways*2 + sacks*1 + safeties*2 + paTier();
       if(rushY>=100) p+=3;
       if(recY>=100) p+=3;
       return p;
@@ -4391,7 +4392,7 @@
     function startGame(){
       myPts=0; oppPts=0; poss=0; oppPoss=0;
       rushY=0; recY=0; recs=0; tds=0; kickPts=0; ints=0;
-      retTDs=0; defTDs=0; takeaways=0;
+      retTDs=0; defTDs=0; takeaways=0; sacks=0; safeties=0;
       paintScore(); iniBox.hidden=true; pending=null;
       getTicket();
       newDrive();
@@ -4552,8 +4553,16 @@
       call.textContent = res==='W'?'You win':(res==='L'?'You lose':'Tied');
       // The scoreboard line above already carries the score, and the panel already carries the
       // points — repeating both here is what pushed this into two lines and up into them.
-      sit.innerHTML = totalYds()+' yards · '+recs+' catches · '+
-        (tds+retTDs+defTDs)+' TD'+((tds+retTDs+defTDs)===1?'':'s');
+      // What is worth saying instead is what the defence put up, because on DraftKings it is
+      // a real slice of the number and it was invisible.
+      var d=[];
+      if(takeaways) d.push(takeaways+' TO');
+      if(sacks)     d.push(sacks+' sack'+(sacks>1?'s':''));
+      if(defTDs)    d.push(defTDs+' def TD');
+      if(retTDs)    d.push(retTDs+' ret TD');
+      if(safeties)  d.push('safety');
+      d.push(oppPts+' allowed');
+      sit.innerHTML = totalYds()+' yds · '+recs+' rec · '+tds+' TD &nbsp;—&nbsp; D: '+d.join(', ');
       hint.textContent='Tap Play again';
       swap(res==='W'?'catch6':'tackled');
       again.textContent='Play again'; again.hidden=false;
@@ -4639,13 +4648,30 @@
       if(phase==='def'){
         stop();
         if(off>half){
+          // A near miss is still pressure: you did not come away with the ball, but you got
+          // him down. A sack is a point on DraftKings and it is the most common thing a
+          // defence actually does.
+          if(off<=half*1.7){
+            sacks++; paintScore(); sfxGood(0.3);
+            call.className='rt-call'; call.textContent='Sacked him';
+            oppPossession(opp[0]+' go backwards and punt');
+            return;
+          }
           sfxFail();
           call.className='rt-call bad'; call.textContent='He got it away';
           oppPossession();
           return;
         }
         var dq=1-(off/half);
-        takeaways++; oppPoss++;
+        oppPoss++;
+        // Dropping him in his own end zone is two points and the ball straight back.
+        if(dq>0.82 && Math.random()<0.10){
+          safeties++; myPts+=2; paintScore(); sfxTD(); paintSB();
+          call.className='rt-call good'; call.textContent='Safety';
+          betweenDrives('Dropped him in his own end zone');
+          return;
+        }
+        takeaways++;
         if(dq>0.88 && Math.random()<0.30){
           defTDs++; kickPts+=1; myPts+=7; paintScore(); sfxTD();
           call.className='rt-call good'; call.textContent='Pick six';
