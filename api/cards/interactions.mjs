@@ -13,15 +13,9 @@ export async function POST(request) {
   const body = await request.text();
   const sig = request.headers.get("x-signature-ed25519") || "";
   const ts = request.headers.get("x-signature-timestamp") || "";
-  const pk = process.env.DISCORD_PUBLIC_KEY || "";
-  const ok = verify(pk, sig, ts, body);
-  // TEMPORARY. Discord will not say why it rejected an endpoint, so this says it for us.
-  // No secrets: the public key is public by design and only its shape is logged anyway.
-  console.log("PING-DEBUG " + JSON.stringify({
-    ok, pkLen: pk.length, pkHead: pk.slice(0, 6), pkTail: pk.slice(-6),
-    sigLen: sig.length, tsLen: ts.length, bodyLen: body.length, bodyHead: body.slice(0, 48),
-  }));
-  if (!ok) return new Response("bad signature", { status: 401 });
+  if (!verify(process.env.DISCORD_PUBLIC_KEY || "", sig, ts, body)) {
+    return new Response("bad signature", { status: 401 });
+  }
   const i = JSON.parse(body);
   if (i.type === 1) return json({ type: 1 });
 
