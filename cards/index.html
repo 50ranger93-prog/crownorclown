@@ -34,6 +34,15 @@ button{font-family:inherit}
 .up{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #4e5058;border-radius:8px;padding:16px;cursor:pointer;color:#b5bac1;font-size:14px;margin-bottom:8px}
 .fi{color:#dbdee1;font-size:14px;max-width:100%}.fi::file-selector-button{background:#5865F2;color:#fff;border:none;border-radius:4px;padding:9px 14px;margin-right:10px;font-weight:700;cursor:pointer}
 .pr{background:#2b2d31;border:1px solid #3f4147;border-radius:6px;padding:9px;margin-bottom:8px}
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:5px;margin-bottom:4px}
+.pl{display:flex;align-items:center;gap:6px;width:100%;min-width:0;text-align:left;background:#2b2d31;border:1px solid #3f4147;border-radius:6px;padding:6px 7px;color:#dbdee1;font-size:13px;cursor:pointer}
+.pl.on{background:#3c45a5;border-color:#5865F2;color:#fff}
+.pl.bn{opacity:.72}.pl.on.bn{opacity:1}
+.pp{font-size:10px;font-weight:700;color:#fff;border-radius:3px;padding:1px 4px;min-width:26px;text-align:center;flex-shrink:0}
+.pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt{color:#949ba4;font-size:11px;flex-shrink:0}.pl.on .pt{color:#c9ccd1}
+.ld{color:#949ba4;font-size:13px;padding:6px 0}
+.hd{display:flex;align-items:center;gap:6px;background:#1e1f22;border-radius:6px;padding:7px 8px;margin-bottom:5px}
 .split{display:grid;grid-template-columns:1fr;gap:16px}
 @media (min-width:700px){.split{grid-template-columns:minmax(0,1fr) 360px;align-items:start}.split>div:last-child{position:sticky;top:12px}}
 .card{max-width:360px;border-radius:10px;overflow:hidden;background:#2b2d31}
@@ -65,7 +74,8 @@ const POS={QB:"#E24B4A",RB:"#1D9E75",WR:"#00A8FC",TE:"#EF9F27",K:"#888780","D/ST
 const WANTS=["QB","RB","WR","TE","K","D/ST","Depth","Upside","Handcuff","Bye-week fill","Future picks","Anything"];
 const STAT=[["Open to anything","#1D9E75"],["Selling","#E24B4A"],["Buying","#00A8FC"],["Must move","#FF7A00"],["Just listening","#888780"]];
 const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],photo:"",
- players:[{pos:"RB",name:"",nfl:"CAR",note:"",board:""}],wants:[],cw:["","",""],status:"Open to anything",pitch:"",week:"3",bAccent:"#003594"};
+ players:[],wants:[],cw:["","",""],status:"Open to anything",pitch:"",week:"3",bAccent:"#003594"};
+const ROST={},RQ={};
 const $=id=>document.getElementById(id);
 const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const tm=()=>T.find(t=>t[0]==S.nfl);
@@ -106,11 +116,21 @@ function go(n){
  if(S.cmd=="block"&&S.step==2&&n==3&&!S.players.some(p=>p.name.trim())){S.err="Add at least one player.";return draw()}
  S.step=n;draw();window.scrollTo({top:0});
 }
-function tgBoard(b){const i=S.sel.indexOf(b);if(i>-1){S.sel.splice(i,1);delete S.teams[b]}else S.sel.push(b);S.err="";draw()}
-function pickTeam(b,i){S.teams[b]=BOARDS[b][i][0];S.err="";draw()}
+const dropFrom=b=>{S.players=S.players.filter(p=>p.board!==b||p.man)};
+function tgBoard(b){const i=S.sel.indexOf(b);if(i>-1){S.sel.splice(i,1);delete S.teams[b];dropFrom(b)}else S.sel.push(b);S.err="";draw()}
+function pickTeam(b,i){const n=BOARDS[b][i][0];if(S.teams[b]!==n)dropFrom(b);S.teams[b]=n;S.err="";draw()}
 function tgF(i){const f=FL[i][0];if(f in S.flair)delete S.flair[f];else S.flair[f]="";draw()}
 function tgBg(i){const b=BG[i][0];const k=S.badges.indexOf(b);if(k>-1)S.badges.splice(k,1);else S.badges.push(b);draw()}
 function tgW(i){const w=WANTS[i];const k=S.wants.indexOf(w);if(k>-1)S.wants.splice(k,1);else S.wants.push(w);draw()}
+// ESPN already knows every roster, so the block is a tap list instead of 40 keystrokes per player.
+function needRosters(){selB().forEach(b=>{if(ROST[b]||RQ[b])return;RQ[b]=1;
+ fetch("/api/cards/roster?b="+encodeURIComponent(b)).then(r=>r.json()).then(d=>{ROST[b]=d.teams||{};draw()}).catch(()=>{ROST[b]={};draw()})})}
+const rosterOf=b=>ROST[b]?(ROST[b][S.teams[b]]||[]):null;
+const picked=(b,n)=>S.players.findIndex(p=>p.name===n&&(p.board||mainB())===b);
+function tgP(b,pos,name,nfl){const i=picked(b,name);
+ if(i>-1)S.players.splice(i,1);else S.players.push({pos,name,nfl,note:"",board:b});
+ S.err="";draw()}
+function addByHand(){S.players.push({pos:"WR",name:"",nfl:"DAL",note:"",board:mainB()||"",man:1});draw()}
 function photo(e){const f=e.target.files&&e.target.files[0];if(!f)return;S.err="";const r=new FileReader();
 r.onerror=()=>{S.err="That photo couldn't be read. Try a different one.";draw()};
 r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL("image/jpeg",0.85);draw()};
@@ -222,13 +242,29 @@ function draw(){
  } else {
   const st=S.step;
   if(st==1)h=whoStep("Who's dealing")+nav(-1,2);
-  else if(st==2){const multi=selB().length>1;h=`<h3>Who you're shopping</h3>${S.players.map((p,i)=>`<div class="pr">
-   <div>${Object.keys(POS).map(k=>chip(p.pos==k,k,`S.players[${i}].pos='${k}';R()`)).join("")}</div>
-   <div class="r3"><input class="di" value="${esc(p.name)}" placeholder="Player name" oninput="S.players[${i}].name=this.value"><select class="di" onchange="S.players[${i}].nfl=this.value;R()">${T.map(t=>`<option ${t[0]==p.nfl?'selected':''}>${t[0]}</option>`).join("")}</select></div>
-   <input class="di" value="${esc(p.note)}" placeholder="Quick note (optional)" oninput="S.players[${i}].note=this.value">
-   ${multi?`<label class="dl">FROM WHICH BOARD</label><div>${selB().map(b=>chip((p.board||mainB())==b,b,`S.players[${i}].board='${b}';R()`)).join("")}</div>`:""}
-   ${chip(false,"🗑 Remove",`S.players.splice(${i},1);if(!S.players.length)S.players.push({pos:'WR',name:'',nfl:'DAL',note:'',board:''});R()`)}</div>`).join("")}
-   ${chip(false,"＋ Add another player","S.players.push({pos:'WR',name:'',nfl:'DAL',note:'',board:''});R()")}`+nav(1,3);}
+  else if(st==2){const multi=selB().length>1;needRosters();
+   h=`<h3>Who you're shopping</h3>`;
+   for(const b of selB()){
+    const rows=rosterOf(b);
+    h+=multi?`<div class="hd">${lg(b,S.teams[b],22)}<b style="color:#f2f3f5;font-size:13px">${esc(S.teams[b])}</b><span style="color:#949ba4;font-size:11px">${b}</span></div>`
+            :`<label class="dl">YOUR ROSTER, TAP ANYONE TO PUT THEM ON THE BLOCK</label>`;
+    if(!rows)h+=`<div class="ld">Pulling your roster from ESPN…</div>`;
+    else if(!rows.length)h+=`<div class="ld">Couldn't find that roster. Add players by hand below.</div>`;
+    else h+=`<div class="rg">`+rows.map(r=>`<button class="pl ${picked(b,r[1])>-1?'on':''} ${r[3]?'':'bn'}" onclick="tgP('${b.replace(/'/g,"\\'")}','${r[0]}',${JSON.stringify(r[1]).replace(/"/g,'&quot;')},'${r[2]}')">
+     <span class="pp" style="background:${POS[r[0]]}">${r[0]}</span><span class="pn">${esc(r[1])}</span><span class="pt">${r[2]}${r[4]?" 🩹":""}</span></button>`).join("")+`</div>`;
+   }
+   h+=`<label class="dl" style="margin-top:12px">ON THE BLOCK${S.players.length?" ("+S.players.length+")":""}</label>`;
+   h+=S.players.length?S.players.map((p,i)=>`<div class="pr">
+    ${p.man?`<div>${Object.keys(POS).map(k=>chip(p.pos==k,k,`S.players[${i}].pos='${k}';R()`)).join("")}</div>
+    <div class="r3"><input class="di" value="${esc(p.name)}" placeholder="Player name" oninput="S.players[${i}].name=this.value"><select class="di" onchange="S.players[${i}].nfl=this.value;R()">${T.map(t=>`<option ${t[0]==p.nfl?'selected':''}>${t[0]}</option>`).join("")}</select></div>`
+    :`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;min-width:0">
+      <span class="pp" style="background:${POS[p.pos]}">${p.pos}</span>${helm(p.nfl,20)}
+      <b style="color:#f2f3f5;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</b></div>`}
+    <input class="di" value="${esc(p.note)}" placeholder="Quick note, what you want for him (optional)" oninput="S.players[${i}].note=this.value">
+    ${p.man&&multi?`<label class="dl">FROM WHICH BOARD</label><div>${selB().map(b=>chip((p.board||mainB())==b,b,`S.players[${i}].board='${b}';R()`)).join("")}</div>`:""}
+    ${chip(false,"🗑 Remove",`S.players.splice(${i},1);R()`)}</div>`).join("")
+    :`<div class="ld">Nobody yet. Tap a name above.</div>`;
+   h+=chip(false,"＋ Add someone not on my roster","addByHand()")+nav(1,3);}
   else if(st==3)h=`<h3>What you want back</h3><div class="split"><div>
    <label class="dl">LOOKING FOR, PICK AS MANY AS YOU WANT</label><div>${WANTS.map((w,i)=>chip(S.wants.includes(w),w,`tgW(${i})`)).join("")}</div>
    <label class="dl">MAKE YOUR OWN (UP TO 3)</label>${S.cw.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="28" placeholder="WR2 with a pulse" oninput="S.cw[${i}]=this.value">`).join("")}
