@@ -20,9 +20,12 @@ name: Archive the week
 
 on:
   schedule:
-    - cron: '0 15 * * *'    # every day 09:00 MT — forecasts, lines and the injury report,
-                            # while the games they belong to are still ahead of us
-    - cron: '0 16 * * 2'    # Tue 10:00 MT — the settled week, with results
+    # GitHub throttles top-of-the-hour crons hard (runs get delayed hours or dropped), so these
+    # sit at :07 off the rush. Two daily passes — morning and a late-afternoon backup — so one
+    # dropped run doesn't cost a whole day of forecasts/lines/injuries.
+    - cron: '7 15 * * *'    # every day 09:07 MT — the upcoming week, while its games are ahead
+    - cron: '7 22 * * *'    # every day 16:07 MT — backup pass in case the morning one was dropped
+    - cron: '20 16 * * 2'   # Tue 10:20 MT — the settled week, with results
   workflow_dispatch:
     inputs:
       week:
@@ -56,7 +59,7 @@ jobs:
           MANUAL="${{ github.event.inputs.week }}"
           if [ -n "$MANUAL" ] && [ "$MANUAL" != "auto" ]; then
             echo "week=$MANUAL" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 16 * * 2" ]; then
+          elif [ "${{ github.event.schedule }}" = "20 16 * * 2" ]; then
             echo "week=auto" >> "$GITHUB_OUTPUT"
           else
             echo "week=upcoming" >> "$GITHUB_OUTPUT"

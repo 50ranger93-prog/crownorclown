@@ -171,13 +171,16 @@ async function resolveWeek() {
   if (WEEK_ARG !== "auto" && WEEK_ARG !== "upcoming" && WEEK_ARG !== true) return Number(WEEK_ARG);
   const sb = await getJSON(`${SITE}/scoreboard`);
   const cur = Number(sb?.week?.number || 1);
-  // "upcoming" is the Sunday-morning beat: the week about to be played, so the closing line
-  // gets written down before kickoff turns it into a live in-play number.
-  if (WEEK_ARG === "upcoming") return cur;
-  // "auto" means the last week that is actually finished. If every game on the current
-  // week's board is final we can take it; otherwise the settled week is the one before.
   const events = sb?.events || [];
   const allDone = events.length > 0 && events.every(e => e?.status?.type?.state === "post");
+  // "upcoming" is the week about to be played, so the closing line gets written down before
+  // kickoff turns it into a live in-play number. ESPN's default scoreboard lags: on a Tue/Wed
+  // it can still report the just-finished week (all games final) instead of flipping to the
+  // next one. When that week is already done, the week about to be played is the next one, so
+  // advance — otherwise the new week never auto-populates until ESPN gets around to flipping.
+  if (WEEK_ARG === "upcoming") return (allDone && cur < 18) ? cur + 1 : cur;
+  // "auto" means the last week that is actually finished. If every game on the current
+  // week's board is final we can take it; otherwise the settled week is the one before.
   return allDone ? cur : Math.max(1, cur - 1);
 }
 
