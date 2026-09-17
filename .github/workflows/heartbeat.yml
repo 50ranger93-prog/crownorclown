@@ -1,18 +1,26 @@
 name: Channel heartbeat
 
-# The always-on pulse. Wakes every half hour, every day, but does NOT post every time — the script
-# rolls the dice (PULSE_FIRE_RATE) and honors quiet hours, so something lands at an unpredictable
-# time instead of on a visible clock. That's what makes the channel feel alive instead of automated.
-# The scheduled beats (pulse.yml) are the anchored, know-what-you're-getting posts; this is the
-# ambient chatter between them. Turn it up or down with the PULSE_FIRE_RATE repo variable.
+# The daytime pulse. Wakes a handful of times through the day — NOT at night, and NOT on the
+# top of the hour — but does not post every time: the script rolls the dice (PULSE_FIRE_RATE), so
+# something lands at a time nobody can predict instead of on a visible clock. That's what makes the
+# channel feel alive instead of automated. The scheduled beats (pulse.yml) are the anchored posts
+# every day; this is the ambient chatter between them.
 #
-# GitHub can't fire faster than every few minutes and throttles crons under load anyway, so "every
-# 10 seconds" isn't a thing this platform does — but every 30 min × a fire rate lands several posts
-# a day at times nobody can predict, which is the part that actually keeps people coming back.
+# Cost: this repo is public, so GitHub Actions minutes are free and unlimited — frequency costs
+# nothing. The reason it's only seven daytime wakes rather than every-30-min is that nobody wants
+# pings while they sleep, not the runner bill.
+#
+# Times are UTC; Mountain is UTC-6 in season. Roughly 8am–8pm MT, every two hours, at odd minutes.
 
 on:
   schedule:
-    - cron: '*/30 * * * *'   # every 30 minutes, all week — the script decides whether to speak
+    - cron: '13 14 * * *'   #  8:13 MT
+    - cron: '47 16 * * *'   # 10:47 MT
+    - cron: '21 18 * * *'   # 12:21 MT
+    - cron: '8 20 * * *'    #  2:08 MT
+    - cron: '39 22 * * *'   #  4:39 MT
+    - cron: '52 0 * * *'    #  6:52 MT
+    - cron: '26 2 * * *'    #  8:26 MT
   workflow_dispatch:
     inputs:
       dry:
