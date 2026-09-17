@@ -303,6 +303,7 @@ async function dget(path) {
 async function handles() {
   if (!DISCORD_TOKEN) return null;
   const chans = await dget(`/guilds/${DISCORD_GUILD}/channels`);
+  if (DRY) console.log(`(channels seen: ${chans.map(c => `${c.name}[t${c.type}]`).join(", ") || "none"})`);
   const ch = chans.find(c => /meet.*crew|introduc/i.test(c.name || "")) || chans.find(c => /\bintro\b/i.test(c.name || ""));
   if (!ch) return null;
   const map = new Map();
