@@ -1,0 +1,37 @@
+name: Post the week
+
+# Tuesday morning, after Monday night has settled: crown, clown and the arguing points for all
+# three boards, straight to Discord. Reads ESPN, needs nobody to have done anything.
+#
+# Times are UTC. Mountain is UTC-6 in season (MDT). Off the hour because GitHub throttles
+# top-of-the-hour crons hard.
+
+on:
+  schedule:
+    - cron: '25 15 * * 2'   # Tue 09:25 MT
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to post (blank = newest week all three boards have finished)'
+        required: false
+      dry:
+        description: 'Print it instead of posting it'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Post the week
+        env:
+          WEBHOOK_WEEKLY: ${{ secrets.WEBHOOK_WEEKLY }}
+        run: |
+          node tools/weekly-post.mjs \
+            ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }} \
+            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}

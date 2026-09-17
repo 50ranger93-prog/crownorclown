@@ -36,12 +36,16 @@ export async function POST(request) {
     const origin = process.env.PUBLIC_URL || new URL(request.url).origin;
     const link = `${origin}/cards?cmd=${cmd}&t=${encodeURIComponent(t)}`;
     const label = cmd === "intro" ? "Build your card" : "Build your trade block";
-    const where = cmd === "intro" ? "#introductions" : "#trade-block";
+    // Lead with what they get, not with the mechanics. The old copy opened by explaining the
+    // privacy of a message they were already reading.
+    const content = cmd === "intro"
+      ? `Let's get you in the pack${name ? ", " + name.split(" ")[0] : ""}. Tap below, fill it out, hit **Post it** — your card drops in #introductions and that's it.\n-# Only you can see this. Link's good for 45 minutes.`
+      : `Your roster's already loaded — just tap whoever you're shopping. Hit **Post it** and it lands in #trade-block where all 36 can see it.\n-# Only you can see this. Link's good for 45 minutes.`;
     return json({
       type: 4,
       data: {
         flags: 64,
-        content: `Only you can see this. Build it, hit **Post it**, and it lands in ${where}. Link is good for 45 minutes.`,
+        content,
         components: [{ type: 1, components: [{ type: 2, style: 5, label, url: link }] }]
       }
     });

@@ -13,9 +13,11 @@ export async function POST(request) {
   const png = Buffer.from(m[1], "base64");
   if (png.length > 7.5 * 1024 * 1024) return json({ error: "Card image is too big. Try a smaller photo." }, 413);
   const team = String(p.team || "").slice(0, 80);
+  // Every card that lands recruits the next one. Cheaper than another announcement nobody reads,
+  // and it shows up at the only moment anyone is actually looking at the channel.
   const content = tok.c === "block"
-    ? `<@${tok.u}> put players on the block${team ? ` for **${team}**` : ""}. Slide into the DMs.`
-    : `New card in the pack. Welcome <@${tok.u}>${team ? ` of **${team}**` : ""}.`;
+    ? `<@${tok.u}> is dealing${team ? ` for **${team}**` : ""}. DMs are open.\n-# Your turn — type \`/block\`, it already knows your roster.`
+    : `New card in the pack. Welcome <@${tok.u}>${team ? ` of **${team}**` : ""}.\n-# Want yours? Type \`/intro\` — takes about a minute.`;
   const fd = new FormData();
   fd.append("payload_json", JSON.stringify({
     content, username: "Crown or Clown",
