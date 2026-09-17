@@ -224,4 +224,11 @@ async function main() {
   console.log(r.ok ? "  posted." : `  post failed: HTTP ${r.status}`);
 }
 
-main().catch(e => { console.error(String(e.message || e)); process.exit(1); });
+main().catch(e => {
+  const m = String(e.message || e);
+  // A config problem isn't a code failure — say what's wrong in plain words and exit clean so it
+  // doesn't show up as a scary red X.
+  if (/HTTP 401/.test(m)) { console.log("Discord rejected the bot token (401). The DISCORD_BOT_TOKEN value is wrong or stale — reset the token in the Discord portal and re-paste it into the secret."); process.exit(0); }
+  if (/HTTP 403/.test(m)) { console.log("Discord accepted the token but denied access (403) — the bot needs Server Members Intent turned on, and access to the channel."); process.exit(0); }
+  console.error(m); process.exit(1);
+});
