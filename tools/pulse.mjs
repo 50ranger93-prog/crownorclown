@@ -320,7 +320,7 @@ async function handles() {
     let before = "";
     for (let p = 0; p < 3; p++) {
       const msgs = await dget(`/channels/${ch.id}/messages?limit=100${before ? `&before=${before}` : ""}`);
-      if (DRY) console.log(`(read ${msgs.length} msg(s); samples: ${msgs.slice(0, 3).map(m => JSON.stringify(String(m.content || "").slice(0, 90))).join(" | ")})`);
+      if (DRY) for (const m of msgs.slice(0, 4)) console.log(`(msg by ${m.author && m.author.username}: content=${JSON.stringify(String(m.content || "").slice(0, 80))} mentions=[${(m.mentions || []).map(u => u.id).join(",")}] embeds=${JSON.stringify((m.embeds || []).map(e => [e.author && e.author.name, e.title, e.description].filter(Boolean)))} files=[${(m.attachments || []).map(a => a.filename).join(",")}])`);
       scan(msgs); if (!msgs.length || msgs.length < 100) break; before = msgs[msgs.length - 1].id;
     }
   }
