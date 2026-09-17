@@ -87,21 +87,28 @@ async function gameBoard() {
   } catch { return null; }
 }
 
-function embed(label, color, w, r) {
-  const f = [
-    { name: "👑 CROWN", value: `**${nm(r.crown)}**\n${pts(r.crown.pf)}`, inline: true },
-    { name: "🤡 CLOWN", value: `**${nm(r.clown)}**\n${pts(r.clown.pf)}`, inline: true },
-    { name: "Came down to it", value: `${nm(r.close.win)} over ${nm(r.close.lose)} by **${pts(r.close.gap)}**`, inline: false },
-    { name: "Beatdown", value: `${nm(r.blow.win)} over ${nm(r.blow.lose)} by **${pts(r.blow.gap)}**`, inline: false }
-  ];
-  // Only worth saying when the loser actually put up a number — otherwise it's just the clown again.
+// Every stock ESPN logo is an SVG and Discord won't render those in an embed, so a logo only
+// shows for someone who uploaded their own. Right now that's nobody; it costs a line to be
+// ready for the first person who does.
+const thumb = t => (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(t.logo || "") ? { url: t.logo } : undefined);
+
+// The week splits in two. What you'd want your name on goes to #crown-and-vest; what you
+// wouldn't goes to #hall-of-shame. "Robbed" sits with the crowns on purpose — hanging 200 and
+// losing anyway is bad luck, not a bad team, and it reads as an insult in the wrong room.
+function crownEmbed(label, color, w, r) {
+  const f = [{ name: "👑 CROWN", value: `**${nm(r.crown)}** — ${pts(r.crown.pf)}`, inline: false },
+             { name: "Came down to it", value: `${nm(r.close.win)} over ${nm(r.close.lose)} by **${pts(r.close.gap)}**`, inline: false }];
   if (r.robbed.lose.pf > r.crown.pf * 0.82 && r.robbed.lose !== r.clown)
     f.push({ name: "Robbed", value: `${nm(r.robbed.lose)} scored **${pts(r.robbed.lose.pf)}** and lost`, inline: false });
-  // Every stock ESPN logo is an SVG and Discord won't render those in an embed, so the crown's
-  // logo only shows for someone who uploaded their own. Right now that's nobody; it costs a
-  // line to be ready for the first person who does.
-  const raster = /\.(png|jpe?g|gif|webp)(\?|$)/i.test(r.crown.logo || "");
-  return { title: `${label} · Week ${w}`, color, thumbnail: raster ? { url: r.crown.logo } : undefined, fields: f };
+  return { title: `${label} · Week ${w}`, color, thumbnail: thumb(r.crown), fields: f };
+}
+
+function shameEmbed(label, color, w, r) {
+  return {
+    title: `${label} · Week ${w}`, color, thumbnail: thumb(r.clown),
+    fields: [{ name: "🤡 CLOWN", value: `**${nm(r.clown)}** — ${pts(r.clown.pf)}`, inline: false },
+             { name: "Run off the field", value: `${nm(r.blow.win)} over ${nm(r.blow.lose)} by **${pts(r.blow.gap)}**`, inline: false }]
+  };
 }
 
 const boards = await Promise.all(LEAGUES.map(async ([label, id, color]) => ({ label, color, ...await board(id) })));
@@ -111,23 +118,38 @@ const forced = arg("week") ? Number(arg("week")) : null;
 const week = forced || Math.max(0, ...boards[0].done.filter(w => boards.every(b => b.done.includes(w))));
 if (!week) { console.log("No completed week on all three boards yet. Nothing to post."); process.exit(0); }
 
-const embeds = [];
+const crowns = [], shames = [];
 for (const b of boards) {
   const r = readWeek(b, week);
-  if (r) embeds.push(embed(b.label, b.color, week, r));
+  if (!r) continue;
+  crowns.push(crownEmbed(b.label, b.color, week, r));
+  shames.push(shameEmbed(b.label, 0x88632A, week, r));
 }
-if (!embeds.length) { console.log(`Week ${week} had no scored matchups. Nothing to post.`); process.exit(0); }
+if (!crowns.length) { console.log(`Week ${week} had no scored matchups. Nothing to post.`); process.exit(0); }
 
 const game = await gameBoard();
-if (game) embeds.push(game);
+if (game) crowns.push(game);
+crowns[crowns.length - 1].footer = { text: "No card in the pack yet? Type /intro — takes a minute. Shopping somebody? /block already knows your roster." };
 
-embeds[embeds.length - 1].footer = { text: "No card in the pack yet? Type /intro — takes a minute. Shopping somebody? /block already knows your roster." };
+const CROWN = process.env.WEBHOOK_CROWN;
+const SHAME = process.env.WEBHOOK_SHAME;
 
-const body = { username: "Crown or Clown", content: `**Week ${week} is in the books.**`, embeds, allowed_mentions: { parse: [] } };
+// With no shame hook the clowns ride along with the crowns rather than vanishing, so a missing
+// secret costs you a channel, never a result.
+const posts = SHAME
+  ? [[CROWN, `**Week ${week} is in the books.**`, crowns], [SHAME, `**Week ${week}.** Somebody has to be down here.`, shames]]
+  : [[CROWN, `**Week ${week} is in the books.**`, crowns.concat(shames)]];
 
-if (DRY) { console.log(JSON.stringify(body, null, 2)); process.exit(0); }
-const hook = process.env.WEBHOOK_WEEKLY;
-if (!hook) { console.error("WEBHOOK_WEEKLY isn't set."); process.exit(1); }
-const res = await fetch(hook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-if (!res.ok) { console.error(`Discord said no (${res.status}): ${await res.text()}`); process.exit(1); }
-console.log(`Posted week ${week}.`);
+if (DRY) {
+  for (const [, content, embeds] of posts) console.log(JSON.stringify({ content, embeds }, null, 2));
+  process.exit(0);
+}
+if (!CROWN) { console.error("WEBHOOK_CROWN isn't set."); process.exit(1); }
+for (const [hook, content, embeds] of posts) {
+  const res = await fetch(hook, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "Crown or Clown", content, embeds, allowed_mentions: { parse: [] } })
+  });
+  if (!res.ok) { console.error(`Discord said no (${res.status}): ${await res.text()}`); process.exit(1); }
+}
+console.log(`Posted week ${week} to ${posts.length} channel${posts.length > 1 ? "s" : ""}.`);

@@ -30,7 +30,10 @@ jobs:
           node-version: '20'
       - name: Post the week
         env:
-          WEBHOOK_WEEKLY: ${{ secrets.WEBHOOK_WEEKLY }}
+          # Crowns to #crown-and-vest, clowns to #hall-of-shame. Without the second one the
+          # clowns ride along with the crowns rather than disappearing.
+          WEBHOOK_CROWN: ${{ secrets.WEBHOOK_CROWN }}
+          WEBHOOK_SHAME: ${{ secrets.WEBHOOK_SHAME }}
         run: |
           node tools/weekly-post.mjs \
             ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }} \

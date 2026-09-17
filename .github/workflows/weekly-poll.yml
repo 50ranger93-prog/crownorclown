@@ -35,12 +35,12 @@ jobs:
           node-version: '20'
       - name: Post the polls
         env:
-          # Per-board channels if they exist; otherwise everything lands wherever the weekly
-          # recap goes, so this works before the channels do.
-          WEBHOOK_POLL_BOARD1: ${{ secrets.WEBHOOK_POLL_BOARD1 }}
-          WEBHOOK_POLL_BOARD2: ${{ secrets.WEBHOOK_POLL_BOARD2 }}
-          WEBHOOK_POLL_BOARD3: ${{ secrets.WEBHOOK_POLL_BOARD3 }}
-          WEBHOOK_WEEKLY: ${{ secrets.WEBHOOK_WEEKLY }}
+          # The rooms the polls rotate through. Whichever of these is set gets used; if none
+          # are, everything falls back to wherever the crowns go so this still works.
+          WEBHOOK_TRASH: ${{ secrets.WEBHOOK_TRASH }}
+          WEBHOOK_WAIVERS: ${{ secrets.WEBHOOK_WAIVERS }}
+          WEBHOOK_GENERAL: ${{ secrets.WEBHOOK_GENERAL }}
+          WEBHOOK_CROWN: ${{ secrets.WEBHOOK_CROWN }}
         run: |
           node tools/poll-post.mjs \
             --per ${{ github.event.inputs.per || '1' }} \

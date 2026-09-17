@@ -11,10 +11,16 @@
 //   node tools/poll-post.mjs                 post them
 
 const LEAGUES = [
-  ["Board 1", "951407474", "WEBHOOK_POLL_BOARD1"],
-  ["Board 2", "1963204215", "WEBHOOK_POLL_BOARD2"],
-  ["Board 3", "976183547", "WEBHOOK_POLL_BOARD3"]
+  ["Board 1", "951407474"],
+  ["Board 2", "1963204215"],
+  ["Board 3", "976183547"]
 ];
+
+// Spread them out. Three polls landing in one room every Thursday is a bot talking to itself;
+// three rooms each getting one is three rooms with something in them. Which board lands where
+// shifts with the week, so no channel becomes "the poll channel" and no board's crowd gets
+// trained to only check one place. Whichever of these is configured gets used.
+const ROOMS = ["WEBHOOK_TRASH", "WEBHOOK_WAIVERS", "WEBHOOK_GENERAL"];
 const SEASON = 2026;
 const HOURS = 72;               // opens Thursday, closes Sunday
 const A_MAX = 55;               // Discord's cap on answer text
@@ -116,14 +122,21 @@ async function send(hook, poll) {
   return "message";
 }
 
-for (const [label, id, hookVar] of LEAGUES) {
+const live = ROOMS.filter(v => process.env[v]);
+const rooms = live.length ? live : (process.env.WEBHOOK_CROWN ? ["WEBHOOK_CROWN"] : []);
+
+for (const [i, [label, id]] of LEAGUES.entries()) {
   const L = await league(id);
   for (let n = 0; n < PER; n++) {
-    const poll = pick(L, label, LEAGUES.findIndex(x => x[0] === label), n);
+    const poll = pick(L, label, i, n);
     if (!poll) { console.log(`${label}: nothing to ask yet.`); continue; }
-    if (DRY) { console.log(`\n${label} (week ${L.week})\n  ${poll.q}`); poll.a.forEach(a => console.log(`   - ${a.emoji ? a.emoji.name + " " : ""}${a.text}`)); continue; }
-    const hook = process.env[hookVar] || process.env.WEBHOOK_WEEKLY;
-    if (!hook) { console.error(`${label}: no ${hookVar} and no WEBHOOK_WEEKLY.`); process.exitCode = 1; continue; }
-    console.log(`${label}: posted as ${await send(hook, poll)}.`);
+    const room = rooms.length ? rooms[(L.week + i + n) % rooms.length] : null;
+    if (DRY) {
+      console.log(`\n${label} (week ${L.week}) → ${room ? room.replace("WEBHOOK_", "#").toLowerCase() : "nowhere — no webhook set"}\n  ${poll.q}`);
+      poll.a.forEach(a => console.log(`   - ${a.emoji ? a.emoji.name + " " : ""}${a.text}`));
+      continue;
+    }
+    if (!room) { console.error(`${label}: no poll webhook configured.`); process.exitCode = 1; continue; }
+    console.log(`${label} → ${room}: posted as ${await send(process.env[room], poll)}.`);
   }
 }
