@@ -521,10 +521,26 @@ async function post(hookEnv, text, as, ping, chan) {
 // into "muted": quiet hours (no 3am pings — managers span time zones, one's in Sweden), and a fire
 // rate you can crank. jab is the light everyday needle and gets fired most; the heavier beats drop
 // in now and then. Turn the whole thing up or down with PULSE_FIRE_RATE (0..1).
-// Are the games on? Reads the live NFL scoreboard (same source as the slate) and returns true when
-// a game is in progress OR kicks off within the next hour — and flips back to false once the games
-// go final. This is what lets the heartbeat "dial up around gametime and ease off the rest of the
-// time" without hardcoding kickoff times that move every single week.
+// The reliable gametime signal: the NFL's fixed weekly brackets (times UTC; ET = UTC-4 in season).
+// These mirror the gametime cron windows in heartbeat.yml and need no network call, so they work
+// even though ESPN's public scoreboard 403s GitHub's runners. This is what actually drives the
+// "dial up around gametime" behavior; gameWindow() below only refines it when reachable.
+function inGameBracket(d = new Date()) {
+  const day = d.getUTCDay();   // 0 Sun … 6 Sat
+  const h = d.getUTCHours();
+  if (day === 0 && h >= 16) return true;   // Sun 10:00 MT onward — early + afternoon slate
+  if (day === 1 && h <= 4)  return true;   // → Sunday Night Football (UTC Mon early)
+  if (day === 4 && h === 23) return true;  // Thu pregame lead-in
+  if (day === 5 && h <= 4)  return true;   // → Thursday Night Football (UTC Fri early)
+  if (day === 1 && h === 23) return true;  // Mon pregame lead-in
+  if (day === 2 && h <= 4)  return true;   // → Monday Night Football (UTC Tue early)
+  return false;
+}
+
+// A bonus refinement: when we're NOT already in a bracket, try the live NFL scoreboard for an
+// off-schedule game (international window, flex, playoffs). Returns true if a game is live or kicks
+// off within the hour. ESPN's public scoreboard currently 403s datacenter IPs, so this often just
+// returns false — that's fine, the brackets above carry the feature on their own. Fails safe.
 async function gameWindow() {
   try {
     const j = await get("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard");
@@ -543,7 +559,11 @@ async function gameWindow() {
 
 async function heartbeat() {
   const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
-  const hot = await gameWindow();
+  // Gametime = we're in a known NFL bracket (reliable, no network), OR — only when we're not —
+  // the live scoreboard catches an off-schedule game. Skipping the call inside brackets keeps the
+  // common path fast and quiet instead of logging a 403 every gametime tick.
+  let hot = inGameBracket();
+  if (!hot) hot = await gameWindow();
   // Quiet hours keep 3am pings away — but a live game overrides them, since night games (SNF/MNF)
   // run past 11pm MT and that's exactly when the room is talking.
   if ((mtHour < 8 || mtHour >= 23) && !hot) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
