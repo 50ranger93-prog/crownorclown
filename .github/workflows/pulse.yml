@@ -57,12 +57,25 @@ jobs:
             *)             echo "beats=${{ github.event.inputs.beat || 'all' }}" >> $GITHUB_OUTPUT ;;
           esac
 
+      # Real people don't post on the exact same minute every week. Slide the chatter beats by a
+      # random 0-30 minutes so the channel reads organic instead of clockwork. Skip the jitter for
+      # the two time-critical Sunday beats (the slate and the pre-kickoff inactives) — those have to
+      # land before the games, not whenever the dice say.
+      - name: Organic jitter
+        if: >-
+          github.event_name == 'schedule' &&
+          github.event.schedule != '3 15 * * 0' &&
+          github.event.schedule != '12 17 * * 0'
+        run: sleep $(( (RANDOM % 31) * 60 ))
+
       - name: Run pulse
         env:
           PULSE_WEBHOOK_GENERAL:   ${{ secrets.PULSE_WEBHOOK_GENERAL }}
           PULSE_WEBHOOK_CROWNVEST: ${{ secrets.PULSE_WEBHOOK_CROWNVEST }}
           PULSE_WEBHOOK_TRADE:     ${{ secrets.PULSE_WEBHOOK_TRADE }}
           PULSE_WEBHOOK_HOTTAKE:   ${{ secrets.PULSE_WEBHOOK_HOTTAKE }}
+          DISCORD_BOT_TOKEN:       ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID:        ${{ secrets.DISCORD_GUILD_ID }}
           DRY: ${{ github.event.inputs.dry }}
         run: |
           FLAG=""

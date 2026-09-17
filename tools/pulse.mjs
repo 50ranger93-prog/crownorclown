@@ -285,6 +285,41 @@ function matchupLine(a, b, vest, used) {
   const pool = undef ? UNDEF : (dog.w === 0 && dog.l >= 2) ? WINLESS : skid ? SKID : even ? EVEN : FAVE;
   return fill(pickU(used, pool), m);
 }
+// ── who's who ──────────────────────────────────────────────────────────────
+// The intro card already ties a person to a team: every card the bot posts reads
+// "Welcome <@id> of **Team**" (or "<@id> is dealing for **Team**"). So there's no claim form and
+// no member database to keep — the mapping lives in #meet-the-crew, and we read it back off
+// Discord's own message content. With this, the fights stop naming teams and start pinging the
+// actual human. Needs DISCORD_BOT_TOKEN (the token Vercel already has) + Server Members Intent;
+// without it, handles() returns null and the matchups fall back to plain team names.
+const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+const DISCORD_GUILD = process.env.DISCORD_GUILD_ID || "1543364312028946432";
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+async function dget(path) {
+  const r = await fetch("https://discord.com/api/v10" + path, { headers: { Authorization: `Bot ${DISCORD_TOKEN}`, "user-agent": "CrownOrClownBot (crownorclown.com, 1.0)" } });
+  if (!r.ok) throw new Error(`GET ${path} → HTTP ${r.status}`);
+  return r.json();
+}
+async function handles() {
+  if (!DISCORD_TOKEN) return null;
+  const chans = await dget(`/guilds/${DISCORD_GUILD}/channels`);
+  const ch = chans.find(c => /meet.*crew|introduc/i.test(c.name || "")) || chans.find(c => /\bintro\b/i.test(c.name || ""));
+  if (!ch) return null;
+  const map = new Map();
+  // <@id> ... **Team** — the id and the team name the bot itself wrote onto the card.
+  const scan = (msgs) => { for (const msg of msgs || []) { const x = /<@!?(\d+)>[^*]*\*\*(.+?)\*\*/.exec(msg.content || ""); if (x) map.set(norm(x[2]), x[1]); } };
+  if (ch.type === 15) {   // forum: each card is a thread, starter message shares the thread id
+    const active = await dget(`/guilds/${DISCORD_GUILD}/threads/active`).catch(() => ({ threads: [] }));
+    const arch = await dget(`/channels/${ch.id}/threads/archived/public?limit=100`).catch(() => ({ threads: [] }));
+    const threads = [...(active.threads || []).filter(t => t.parent_id === ch.id), ...(arch.threads || [])].slice(0, 100);
+    for (const t of threads) { const m = await dget(`/channels/${t.id}/messages/${t.id}`).catch(() => null); if (m) scan([m]); }
+  } else {
+    let before = "";
+    for (let p = 0; p < 3; p++) { const msgs = await dget(`/channels/${ch.id}/messages?limit=100${before ? `&before=${before}` : ""}`); scan(msgs); if (!msgs.length || msgs.length < 100) break; before = msgs[msgs.length - 1].id; }
+  }
+  return map.size ? map : null;
+}
+
 // how loud a matchup is, so a 12-team board can be trimmed to its 4 best fights
 function spice(a, b) {
   const even = a.w === b.w && Math.abs(a.pf - b.pf) < 12;
@@ -322,7 +357,14 @@ async function matchups() {
     blocks.push(`__${l.name} · Week ${period}__\n` + lines.join("\n"));
   }
   if (!blocks.length) return null;
-  return [`**This week's fights** ⚔️`, "", ...blocks, "", `_Your board, your channel. Answer for it._`].join("\n");
+  let text = [`**This week's fights** ⚔️`, "", ...blocks, "", `_Your board, your channel. Answer for it._`].join("\n");
+
+  // If we can see who's who, swap the bold team names for the actual person. A team we can't match
+  // (never introduced, or typed their name differently than ESPN has it) just stays bold — better a
+  // plain name than a wrong ping. The header/footer aren't team names so they never match.
+  const H = await safe(handles);
+  if (H) text = text.replace(/\*\*(.+?)\*\*/g, (m, name) => { const id = H.get(norm(name)); return id ? `<@${id}>` : m; });
+  return text;
 }
 
 // ── wiring ───────────────────────────────────────────────────────────────────
@@ -344,15 +386,19 @@ const BEATS = {
   slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
-  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
+  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true },
   crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
   faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
   hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
 };
 
-async function post(hookEnv, text, as) {
+async function post(hookEnv, text, as, ping) {
   const url = process.env[hookEnv];
   if (!url) { console.log(`  (no ${hookEnv} set — not posted)`); return; }
+  // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
+  // calling someone out by name is the whole point, so that beat pings exactly the ids it named
+  // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
+  const users = ping ? [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map(x => x[1]))] : [];
   const r = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -360,8 +406,7 @@ async function post(hookEnv, text, as) {
       content: text.slice(0, 1900),
       username: as.username,
       avatar_url: as.avatar_url,
-      // allowed_mentions empty: these post on a schedule, and a schedule should never ping anyone.
-      allowed_mentions: { parse: [] },
+      allowed_mentions: { parse: [], users },
     }),
   });
   console.log(r.ok ? `  posted as ${as.username}` : `  post failed: HTTP ${r.status}`);
@@ -381,5 +426,5 @@ for (const name of which) {
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say"); continue; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping);
 }
