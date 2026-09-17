@@ -473,7 +473,7 @@ async function post(hookEnv, text, as, ping) {
 async function heartbeat() {
   const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
   if (mtHour < 8 || mtHour >= 23) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
-  const rate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.35)));
+  const rate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.9)));
   if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (fire rate ${rate}).`); return; }
   const weights = { jab: 6, hottake: 2, injuries: 1, slate: 1 };
   const bag = [];
