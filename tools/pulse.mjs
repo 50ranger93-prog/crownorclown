@@ -363,6 +363,9 @@ async function matchups() {
   // (never introduced, or typed their name differently than ESPN has it) just stays bold — better a
   // plain name than a wrong ping. The header/footer aren't team names so they never match.
   const H = await safe(handles);
+  // On a dry run, show exactly which intro cards we could read and map, so we can confirm the
+  // person↔team link is landing (a team only becomes a ping if it also shows up in the fights).
+  if (DRY) console.log(`(handles: ${H ? `${H.size} card(s) read — ${[...H.keys()].join(", ")}` : "none — no cards read / intro channel not found"})`);
   if (H) text = text.replace(/\*\*(.+?)\*\*/g, (m, name) => { const id = H.get(norm(name)); return id ? `<@${id}>` : m; });
   return text;
 }

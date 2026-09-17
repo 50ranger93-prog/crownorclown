@@ -228,7 +228,13 @@ main().catch(e => {
   const m = String(e.message || e);
   // A config problem isn't a code failure — say what's wrong in plain words and exit clean so it
   // doesn't show up as a scary red X.
-  if (/HTTP 401/.test(m)) { console.log("Discord rejected the bot token (401). The DISCORD_BOT_TOKEN value is wrong or stale — reset the token in the Discord portal and re-paste it into the secret."); process.exit(0); }
-  if (/HTTP 403/.test(m)) { console.log("Discord accepted the token but denied access (403) — the bot needs Server Members Intent turned on, and access to the channel."); process.exit(0); }
+  if (/HTTP 401/.test(m)) { console.log(`Discord rejected the bot token (401) on [${m}]. The DISCORD_BOT_TOKEN value is wrong or stale — reset the token in the Discord portal and re-paste it into the secret.`); process.exit(0); }
+  if (/HTTP 403/.test(m)) {
+    const members = /members/.test(m);
+    console.log(`Discord denied access (403) on [${m}].` + (members
+      ? " That endpoint needs the Server Members Intent — turn it on in the Discord portal → your app → Bot → Privileged Gateway Intents → Server Members Intent → Save."
+      : " The bot needs to be in the server with View Channels on that channel."));
+    process.exit(0);
+  }
   console.error(m); process.exit(1);
 });
