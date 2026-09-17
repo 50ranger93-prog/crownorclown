@@ -228,32 +228,32 @@ const rec = (t) => `${t.w}-${t.l}`;
 function matchupLine(a, b, vest) {
   let fav = a, dog = b;
   if (winpct(b) > winpct(a) || (winpct(b) === winpct(a) && b.pf > a.pf)) { fav = b; dog = a; }
-  const even = fav.w === dog.w && Math.abs(fav.pf - dog.pf) < 12;
   const skid = dog.streakType === "LOSS" && dog.streakLen >= 2;
-  const undef = fav.l === 0 && dog.l === 0 && fav.w > 0;
-  const vestJab = vest.has(dog.name) ? ` ${dog.name} is in vest range.` : "";
-  if (even) return pick([
-    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — dead even. Loser slides toward the 🤡.`,
-    `Toss-up: **${a.name}** vs **${b.name}**. Whoever loses this one earned it.`,
-    `**${a.name}** vs **${b.name}**, nothing between 'em. Somebody talk.`,
+  const undef = fav.l === 0 && dog.l === 0 && fav.w > 0 && dog.w > 0;
+  const even = fav.w === dog.w && Math.abs(fav.pf - dog.pf) < 15;
+  const vestJab = vest.has(dog.name) ? ` Lose and ${dog.name} is trying on the vest.` : "";
+  if (undef) return pick([
+    `Both unbeaten: **${a.name}** vs **${b.name}**. One of these perfect records dies this week.`,
+    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — somebody takes their first loss here.`,
   ]);
   if (dog.w === 0 && dog.l >= 2) return pick([
-    `**${dog.name}** (${rec(dog)}) draws **${fav.name}** (${rec(fav)}). Check for a pulse.${vestJab}`,
-    `**${fav.name}** (${rec(fav)}) gets winless **${dog.name}**. Free win, or the upset of the year?`,
-    `**${dog.name}** is ${rec(dog)} and now has **${fav.name}**. Woof.${vestJab}`,
+    `**${dog.name}** (${rec(dog)}) draws **${fav.name}** (${rec(fav)}). Turn it around here, or start measuring for the vest.`,
+    `**${fav.name}** (${rec(fav)}) gets winless **${dog.name}**. Should be a layup — unless ${dog.name} finally shows up.`,
+    `**${dog.name}** is ${rec(dog)} and drew **${fav.name}** (${rec(fav)}). Brutal.${vestJab}`,
   ]);
   if (skid) return pick([
-    `**${dog.name}** rides a ${dog.streakLen}-game skid into **${fav.name}** (${rec(fav)}). It gets worse.${vestJab}`,
-    `**${fav.name}** vs **${dog.name}**, loser of ${dog.streakLen} straight. Mercy rule?`,
+    `**${dog.name}** carries a ${dog.streakLen}-game skid into **${fav.name}** (${rec(fav)}). Make it stop or make it worse.`,
+    `**${fav.name}** (${rec(fav)}) vs **${dog.name}**, loser of ${dog.streakLen} straight. Bounce back or free-fall?`,
   ]);
-  if (undef) return pick([
-    `Undefeated showdown: **${a.name}** vs **${b.name}**. One 0 hits the board.`,
-    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — both perfect. Not for long.`,
+  if (even) return pick([
+    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — nothing between you two. Loser drops to the bottom half.`,
+    `Coin flip: **${a.name}** vs **${b.name}**. This is the one you'll be talking about all week.`,
+    `**${a.name}** and **${b.name}** are dead even. Somebody's about to be very wrong.${vestJab}`,
   ]);
   return pick([
-    `**${fav.name}** (${rec(fav)}) over **${dog.name}** (${rec(dog)}) on paper. Prove it or eat it.`,
-    `**${a.name}** vs **${b.name}**. On paper it's ${fav.name}. Paper's undefeated, right?`,
-    `**${dog.name}**, meet **${fav.name}** (${rec(fav)}). Say something before kickoff.${vestJab}`,
+    `**${fav.name}** (${rec(fav)}) is the pick over **${dog.name}** (${rec(dog)}). ${dog.name}, you got an upset in you?`,
+    `**${dog.name}** (${rec(dog)}) is the underdog against **${fav.name}** (${rec(fav)}). Prove the record wrong.${vestJab}`,
+    `On the numbers it's **${fav.name}** over **${dog.name}**. Numbers don't set your lineup for you, though.`,
   ]);
 }
 // how loud a matchup is, so a 12-team board can be trimmed to its 4 best fights
