@@ -439,18 +439,69 @@ const BEATS = {
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true },
   jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
-  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
-  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
-  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
+  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"] },
+  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"] },
+  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"] },
 };
 
-async function post(hookEnv, text, as, ping) {
-  const url = process.env[hookEnv];
-  if (!url) { console.log(`  (no ${hookEnv} set — not posted)`); return; }
+// ── Discord bot fallback ─────────────────────────────────────────────────────
+// A webhook targets exactly one channel, so a beat whose webhook secret isn't set has nowhere to
+// go and drops silently. But the bot token (already used by the instigator) can post to ANY channel
+// it can see. So when a beat has no webhook, we resolve its channel by name off the live guild list
+// and post as the bot — no per-channel webhook to create. Content is identical; only the poster
+// identity differs (the bot's name, since only webhooks can override username/avatar per message).
+const DISCORD_API = "https://discord.com/api/v10";
+const GUILD_ID = process.env.DISCORD_GUILD_ID || "1543364312028946432";
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+const BOT_HEADERS = { Authorization: `Bot ${BOT_TOKEN}`, "user-agent": "CrownOrClownBot (crownorclown.com, 1.0)" };
+
+let _channelCache = null;
+async function guildChannels() {
+  if (_channelCache) return _channelCache;
+  try {
+    const r = await fetch(`${DISCORD_API}/guilds/${GUILD_ID}/channels`, { headers: BOT_HEADERS });
+    if (!r.ok) { console.log(`  bot channel lookup failed: HTTP ${r.status}`); return (_channelCache = []); }
+    return (_channelCache = await r.json());
+  } catch (e) { console.log(`  bot channel lookup errored: ${e.message || e}`); return (_channelCache = []); }
+}
+
+// Match a text channel (type 0) by trying each name candidate as a case-insensitive substring,
+// most-specific first. Logs the available channel names when nothing matches, so a missed name is
+// obvious rather than silent.
+async function findChannel(candidates) {
+  const chans = (await guildChannels()).filter(c => c.type === 0);
+  for (const want of candidates) {
+    const w = want.toLowerCase();
+    const hit = chans.find(c => (c.name || "").toLowerCase().includes(w));
+    if (hit) return hit;
+  }
+  if (chans.length) console.log(`  no channel matched [${candidates.join(", ")}] — available: ${chans.map(c => "#" + c.name).join(", ")}`);
+  return null;
+}
+
+async function post(hookEnv, text, as, ping, chan) {
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
   const users = ping ? [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map(x => x[1]))] : [];
+  const url = process.env[hookEnv];
+  if (!url) {
+    // No webhook for this channel — fall back to the bot token if we have one and know the channel.
+    if (BOT_TOKEN && chan && chan.length) {
+      const ch = await findChannel(chan);
+      if (ch) {
+        const r = await fetch(`${DISCORD_API}/channels/${ch.id}/messages`, {
+          method: "POST",
+          headers: { ...BOT_HEADERS, "content-type": "application/json" },
+          body: JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [], users } }),
+        });
+        console.log(r.ok ? `  posted to #${ch.name} as bot (no ${hookEnv})` : `  bot post to #${ch.name} failed: HTTP ${r.status}`);
+        return;
+      }
+    }
+    console.log(`  (no ${hookEnv} set${BOT_TOKEN ? ", bot fallback found no channel" : ""} — not posted)`);
+    return;
+  }
   const r = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -506,5 +557,5 @@ for (const name of which) {
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say"); continue; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
 }
