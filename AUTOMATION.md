@@ -48,7 +48,7 @@ top-of-the-hour schedules hard.
 |---|---|
 | `/api/board` | Go get it leaderboard. Stored as `board.json` on the **`board-data`** branch of this repo via the GitHub Contents API — no database, nothing rented. Deployments are disabled for that branch both ways so posting a score never triggers a build. |
 | `/api/cards/interactions` | Discord slash-command endpoint (`/intro`, `/block`). Ed25519 verified, locked to one guild id. |
-| `/api/cards/post` | Renders a built card into `#introductions` or `#trade-block`. Asks for a forum thread and falls back once if the channel doesn't want one. |
+| `/api/cards/post` | Renders a built card into `#meet-the-crew` or `#trade-block`. Asks for a forum thread and falls back once if the channel doesn't want one. |
 | `/api/cards/teams` | Team names + logos per board, from ESPN. |
 | `/api/cards/roster` | One board's rosters, so `/block` is a tap list instead of typing. |
 | `/api/cards/register` | Re-registers the slash commands. Closed behind `?key=<DISCORD_PUBLIC_KEY>`. |
@@ -79,6 +79,10 @@ interactions endpoint. `fetch` does, which hides the problem from every test you
 **Vercel environment variables** — used by the live site, *not* by the workflows:
 `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `LINK_SECRET`,
 `WEBHOOK_INTRODUCTIONS`, `WEBHOOK_TRADE_BLOCK`, `GH_TOKEN` (board writes).
+
+`WEBHOOK_INTRODUCTIONS` still carries its old name and points at **#meet-the-crew** — a webhook
+follows the channel, not the channel's name, so renaming the room didn't break it and renaming
+the variable would mean touching Vercel for nothing.
 
 Two different places. A webhook the workflows need goes in **GitHub**; a webhook the site needs
 goes in **Vercel**. `/api/cards/health` lists what Vercel has.

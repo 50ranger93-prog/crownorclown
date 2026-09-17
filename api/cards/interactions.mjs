@@ -21,7 +21,7 @@ export async function POST(request) {
 
   // This app serves exactly one server. post.js writes to a fixed webhook no matter where the
   // command came from, so without this an install anywhere else would drop that stranger's
-  // card straight into our #introductions. Turning Public Bot off in the portal closes the
+  // card straight into our #meet-the-crew. Turning Public Bot off in the portal closes the
   // same hole, but the whole defence should not rest on one toggle nobody will check again.
   const GUILD = process.env.DISCORD_GUILD_ID || "1543364312028946432";
   if (i.guild_id && i.guild_id !== GUILD) {
@@ -39,7 +39,7 @@ export async function POST(request) {
     // Lead with what they get, not with the mechanics. The old copy opened by explaining the
     // privacy of a message they were already reading.
     const content = cmd === "intro"
-      ? `Let's get you in the pack${name ? ", " + name.split(" ")[0] : ""}. Tap below, fill it out, hit **Post it** — your card drops in #introductions and that's it.\n-# Only you can see this. Link's good for 45 minutes.`
+      ? `Let's get you in the pack${name ? ", " + name.split(" ")[0] : ""}. Tap below, fill it out, hit **Post it** — your card drops in #meet-the-crew and that's it.\n-# Only you can see this. Link's good for 45 minutes.`
       : `Your roster's already loaded — just tap whoever you're shopping. Hit **Post it** and it lands in #trade-block where all 36 can see it.\n-# Only you can see this. Link's good for 45 minutes.`;
     return json({
       type: 4,

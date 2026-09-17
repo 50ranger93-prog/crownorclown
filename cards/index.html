@@ -239,7 +239,7 @@ function draw(){
   else if(st==5)h=`<h3>Badges</h3><label class="dl">PICK AS MANY AS YOU WANT (${S.badges.length} PICKED)</label><div>${BG.map((b,i)=>chip(S.badges.includes(b[0]),b[1]+" "+b[0],`tgBg(${i})`)).join("")}</div>
    <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cb.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="24" placeholder="Your badge" oninput="S.cb[${i}]=this.value">`).join("")}`+nav(4,6,"Preview card");
   else if(st==6)h=`<div class="only">👁 Only you can see this</div><div id="shot" style="display:inline-block;max-width:100%">${card()}</div>${postBar(5)}`;
-  else h=posted("introductions",`New card in the pack. Welcome ${esc(S.name)}`,card(),`<span class="ch">👑 0</span><span class="ch">🤡 0</span>`);
+  else h=posted("meet-the-crew",`New card in the pack. Welcome ${esc(S.name)}`,card(),`<span class="ch">👑 0</span><span class="ch">🤡 0</span>`);
  } else {
   const st=S.step;
   if(st==1)h=whoStep("Who's dealing")+nav(-1,2);
