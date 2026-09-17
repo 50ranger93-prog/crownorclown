@@ -8,13 +8,17 @@ name: Channel pulse
 
 on:
   schedule:
-    - cron: '0 15 * * 0'   # Sun 09:00 MT — the slate, before anyone sets a lineup
-    - cron: '15 17 * * 0'  # Sun 11:15 MT — inactives, ~90 min before the 1pm ET kicks
-    - cron: '0 16 * * 2'   # Tue 10:00 MT — crown and vest for the week just settled
-    - cron: '0 16 * * 3'   # Wed 10:00 MT — first injury designations of the week
-    - cron: '0 16 * * 4'   # Thu 10:00 MT — FAAB check
-    - cron: '10 15 * * 4'  # Thu 09:10 MT — the week's fights, before Thursday night kicks the week off
-    - cron: '0 16 * * 5'   # Fri 10:00 MT — injuries again (Friday is when OUT gets real) + hot take
+    # Spread across the whole week at off-:00 minutes (GitHub throttles top-of-hour crons hard).
+    # The channel should feel alive most days, not just gameday. Mountain is UTC-6 in season.
+    - cron: '22 16 * * 1'  # Mon 10:22 MT — hot take to open the week while last week still stings
+    - cron: '8 16 * * 2'   # Tue 10:08 MT — crown and vest for the week just settled
+    - cron: '17 16 * * 3'  # Wed 10:17 MT — first injury designations of the week
+    - cron: '6 16 * * 4'   # Thu 10:06 MT — FAAB check
+    - cron: '40 22 * * 4'  # Thu 16:40 MT — the week's fights, afternoon, before Thursday night kicks it off
+    - cron: '14 16 * * 5'  # Fri 10:14 MT — injuries again (Friday is when OUT gets real) + hot take
+    - cron: '33 17 * * 6'  # Sat 11:33 MT — the fights again + a take, heading into the weekend
+    - cron: '3 15 * * 0'   # Sun 09:03 MT — the slate, before anyone sets a lineup
+    - cron: '12 17 * * 0'  # Sun 11:12 MT — inactives, ~90 min before the 1pm ET kicks
   workflow_dispatch:
     inputs:
       beat:
@@ -41,13 +45,15 @@ jobs:
         id: pick
         run: |
           case "${{ github.event.schedule }}" in
-            '0 15 * * 0')  echo "beats=slate" >> $GITHUB_OUTPUT ;;
-            '15 17 * * 0') echo "beats=inactives" >> $GITHUB_OUTPUT ;;
-            '0 16 * * 2')  echo "beats=crownvest" >> $GITHUB_OUTPUT ;;
-            '0 16 * * 3')  echo "beats=injuries" >> $GITHUB_OUTPUT ;;
-            '10 15 * * 4') echo "beats=matchups" >> $GITHUB_OUTPUT ;;
-            '0 16 * * 4')  echo "beats=faab" >> $GITHUB_OUTPUT ;;
-            '0 16 * * 5')  echo "beats=injuries hottake" >> $GITHUB_OUTPUT ;;
+            '22 16 * * 1') echo "beats=hottake" >> $GITHUB_OUTPUT ;;
+            '8 16 * * 2')  echo "beats=crownvest" >> $GITHUB_OUTPUT ;;
+            '17 16 * * 3') echo "beats=injuries" >> $GITHUB_OUTPUT ;;
+            '6 16 * * 4')  echo "beats=faab" >> $GITHUB_OUTPUT ;;
+            '40 22 * * 4') echo "beats=matchups" >> $GITHUB_OUTPUT ;;
+            '14 16 * * 5') echo "beats=injuries hottake" >> $GITHUB_OUTPUT ;;
+            '33 17 * * 6') echo "beats=matchups hottake" >> $GITHUB_OUTPUT ;;
+            '3 15 * * 0')  echo "beats=slate" >> $GITHUB_OUTPUT ;;
+            '12 17 * * 0') echo "beats=inactives" >> $GITHUB_OUTPUT ;;
             *)             echo "beats=${{ github.event.inputs.beat || 'all' }}" >> $GITHUB_OUTPUT ;;
           esac
 

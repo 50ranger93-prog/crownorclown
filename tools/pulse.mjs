@@ -225,36 +225,65 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const winpct = (t) => (t.w + t.l) ? t.w / (t.w + t.l) : 0;
 const rec = (t) => `${t.w}-${t.l}`;
 
-function matchupLine(a, b, vest) {
+// Deep, deduped pools. A Week-2 slate is mostly 1-0-vs-0-1, so a few templates read like the
+// same sentence six times. `used` is shared across the whole post, so a line can never repeat in
+// one drop, and each pool is deep enough to cover a 12-team board without running dry.
+const fill = (t, m) => t.replace(/\{(\w+)\}/g, (_, k) => (m[k] != null ? String(m[k]) : ""));
+function pickU(used, arr) {
+  const fresh = arr.filter(t => !used.has(t));
+  const pool = fresh.length ? fresh : arr;
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  used.add(t);
+  return t;
+}
+const FAVE = [
+  `**{F}** ({rf}) should handle **{D}** ({rd}). "Should."`,
+  `**{D}** ({rd}) drew **{F}** ({rf}). Nobody's walking through that door to save you.`,
+  `Everybody's got **{F}** over **{D}** this week. Everybody's been wrong before, {D}.`,
+  `**{F}** ({rf}) is the pick. **{D}**, spoil it or wear it.{vest}`,
+  `**{D}** ({rd}) is a live dog against **{F}** — or a dead one. We'll know by Monday.`,
+  `**{F}** ({rf}) vs **{D}** ({rd}): one of you feels real good Monday, one feels real dumb.`,
+  `**{D}**, you drew **{F}** ({rf}). Set a real lineup or don't bother.`,
+  `**{F}** ({rf}) over **{D}** ({rd}) is the smart money. Smart money loses all the time.`,
+  `**{F}** ({rf}) is favored. **{D}** ({rd}) is why they invented the word upset.`,
+  `Prove me right, **{F}** ({rf}). Prove me wrong, **{D}** ({rd}). One of you will.`,
+];
+const EVEN = [
+  `**{a}** ({ra}) vs **{b}** ({rb}) — coin flip. Loser's got no excuse.`,
+  `Dead heat: **{a}** vs **{b}**. This is the one you'll be chirping about all week.`,
+  `Nothing separates **{a}** ({ra}) and **{b}** ({rb}). Go make it personal.{vest}`,
+  `**{a}** vs **{b}**, pick 'em. Whoever loses earned every bit of it.`,
+  `**{a}** and **{b}** are even on paper. Somebody's about to look real stupid.`,
+];
+const UNDEF = [
+  `Both perfect: **{a}** vs **{b}**. One of these clean records dies this week.`,
+  `**{a}** ({ra}) vs **{b}** ({rb}) — somebody's first L is loading.`,
+  `Undefeated meets undefeated: **{a}** vs **{b}**. Winner struts, loser goes quiet.`,
+  `**{a}** and **{b}**, both spotless. Not for much longer.`,
+];
+const WINLESS = [
+  `**{D}** ({rd}) still hasn't won a game, and now it's **{F}** ({rf}). Woof.{vest}`,
+  `**{F}** ({rf}) draws winless **{D}**. Should be easy — unless {D} finally wakes up.`,
+  `**{D}** is {rd} and drew **{F}** ({rf}). Somebody go check on {D}.{vest}`,
+  `**{D}** ({rd}) vs **{F}** ({rf}). Turn it around now, or measure for the vest.`,
+];
+const SKID = [
+  `**{D}** drags a {n}-game skid into **{F}** ({rf}). Make it stop or make it worse.`,
+  `**{F}** ({rf}) vs **{D}**, loser of {n} straight. Bounce back, or the wheels come off?`,
+  `**{D}** has dropped {n} in a row and now gets **{F}** ({rf}). This could get ugly.{vest}`,
+];
+
+function matchupLine(a, b, vest, used) {
   let fav = a, dog = b;
   if (winpct(b) > winpct(a) || (winpct(b) === winpct(a) && b.pf > a.pf)) { fav = b; dog = a; }
   const skid = dog.streakType === "LOSS" && dog.streakLen >= 2;
   const undef = fav.l === 0 && dog.l === 0 && fav.w > 0 && dog.w > 0;
   const even = fav.w === dog.w && Math.abs(fav.pf - dog.pf) < 15;
-  const vestJab = vest.has(dog.name) ? ` Lose and ${dog.name} is trying on the vest.` : "";
-  if (undef) return pick([
-    `Both unbeaten: **${a.name}** vs **${b.name}**. One of these perfect records dies this week.`,
-    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — somebody takes their first loss here.`,
-  ]);
-  if (dog.w === 0 && dog.l >= 2) return pick([
-    `**${dog.name}** (${rec(dog)}) draws **${fav.name}** (${rec(fav)}). Turn it around here, or start measuring for the vest.`,
-    `**${fav.name}** (${rec(fav)}) gets winless **${dog.name}**. Should be a layup — unless ${dog.name} finally shows up.`,
-    `**${dog.name}** is ${rec(dog)} and drew **${fav.name}** (${rec(fav)}). Brutal.${vestJab}`,
-  ]);
-  if (skid) return pick([
-    `**${dog.name}** carries a ${dog.streakLen}-game skid into **${fav.name}** (${rec(fav)}). Make it stop or make it worse.`,
-    `**${fav.name}** (${rec(fav)}) vs **${dog.name}**, loser of ${dog.streakLen} straight. Bounce back or free-fall?`,
-  ]);
-  if (even) return pick([
-    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — nothing between you two. Loser drops to the bottom half.`,
-    `Coin flip: **${a.name}** vs **${b.name}**. This is the one you'll be talking about all week.`,
-    `**${a.name}** and **${b.name}** are dead even. Somebody's about to be very wrong.${vestJab}`,
-  ]);
-  return pick([
-    `**${fav.name}** (${rec(fav)}) is the pick over **${dog.name}** (${rec(dog)}). ${dog.name}, you got an upset in you?`,
-    `**${dog.name}** (${rec(dog)}) is the underdog against **${fav.name}** (${rec(fav)}). Prove the record wrong.${vestJab}`,
-    `On the numbers it's **${fav.name}** over **${dog.name}**. Numbers don't set your lineup for you, though.`,
-  ]);
+  const m = { F: fav.name, D: dog.name, rf: rec(fav), rd: rec(dog),
+    a: a.name, b: b.name, ra: rec(a), rb: rec(b), n: dog.streakLen,
+    vest: vest.has(dog.name) ? ` Lose and **${dog.name}** is fitting the vest.` : "" };
+  const pool = undef ? UNDEF : (dog.w === 0 && dog.l >= 2) ? WINLESS : skid ? SKID : even ? EVEN : FAVE;
+  return fill(pickU(used, pool), m);
 }
 // how loud a matchup is, so a 12-team board can be trimmed to its 4 best fights
 function spice(a, b) {
@@ -267,6 +296,7 @@ function spice(a, b) {
 
 async function matchups() {
   const blocks = [];
+  const used = new Set();   // no line repeats anywhere in the post, across all three leagues
   for (const l of LEAGUES) {
     const j = await safe(() => get(fantasy(l.id, "view=mMatchupScore&view=mTeam")));
     if (!j) continue;
@@ -288,7 +318,7 @@ async function matchups() {
     }
     if (!games.length) continue;
     games.sort((x, y) => spice(y.a, y.b) - spice(x.a, x.b));
-    const lines = games.slice(0, 4).map(g => "· " + matchupLine(g.a, g.b, vest));
+    const lines = games.slice(0, 4).map(g => "· " + matchupLine(g.a, g.b, vest, used));
     blocks.push(`__${l.name} · Week ${period}__\n` + lines.join("\n"));
   }
   if (!blocks.length) return null;
