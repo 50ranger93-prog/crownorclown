@@ -521,24 +521,56 @@ async function post(hookEnv, text, as, ping, chan) {
 // into "muted": quiet hours (no 3am pings — managers span time zones, one's in Sweden), and a fire
 // rate you can crank. jab is the light everyday needle and gets fired most; the heavier beats drop
 // in now and then. Turn the whole thing up or down with PULSE_FIRE_RATE (0..1).
+// Are the games on? Reads the live NFL scoreboard (same source as the slate) and returns true when
+// a game is in progress OR kicks off within the next hour — and flips back to false once the games
+// go final. This is what lets the heartbeat "dial up around gametime and ease off the rest of the
+// time" without hardcoding kickoff times that move every single week.
+async function gameWindow() {
+  try {
+    const j = await get("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard");
+    const now = Date.now();
+    for (const e of j.events || []) {
+      const state = e.status && e.status.type && e.status.type.state;   // 'pre' | 'in' | 'post'
+      if (state === "in") return true;                                  // a game is live right now
+      if (state === "pre") {
+        const mins = (new Date(e.date).getTime() - now) / 60000;
+        if (mins <= 60 && mins > -20) return true;                      // within the hour before kickoff
+      }
+    }
+  } catch (e) { console.log(`  gameWindow check failed: ${String(e.message || e)}`); }
+  return false;
+}
+
 async function heartbeat() {
   const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
-  if (mtHour < 8 || mtHour >= 23) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
-  const rate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.9)));
-  if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (fire rate ${rate}).`); return; }
-  const weights = { jab: 6, hottake: 2, injuries: 1, slate: 1 };
+  const hot = await gameWindow();
+  // Quiet hours keep 3am pings away — but a live game overrides them, since night games (SNF/MNF)
+  // run past 11pm MT and that's exactly when the room is talking.
+  if ((mtHour < 8 || mtHour >= 23) && !hot) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
+  // Around gametime the channel should feel busy; the rest of the day it's an occasional needle.
+  // Two dials so you can tune each independently from repo variables without touching code.
+  const baseRate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.9)));
+  const gameRate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE_GAME || 1)));
+  const rate = hot ? gameRate : baseRate;
+  if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (${hot ? "gametime" : "normal"} rate ${rate}).`); return; }
+  // During games the room wants takes and callouts (the stuff that makes people reply); off-hours
+  // stay lighter so it never reads as spam. matchups pings the named managers — kept modest so a
+  // busy game day is a few callouts, not a firehose of notifications.
+  const weights = hot
+    ? { jab: 5, hottake: 4, matchups: 2, injuries: 1 }
+    : { jab: 6, hottake: 2, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
   const name = bag[Math.floor(Math.random() * bag.length)];
   const beat = BEATS[name];
-  console.log(`\n=== heartbeat → ${name} ===`);
+  console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say — quiet tick"); return; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  // The heartbeat is ambient chatter for the main channel — always post it there, regardless of
-  // the beat's own default channel, so a beat like hottake (whose dedicated webhook may be unset)
-  // still lands instead of silently going nowhere.
-  if (!DRY) await post("PULSE_WEBHOOK_GENERAL", text, beat.as, beat.ping);
+  // Route each beat to its own channel (bot-token fallback covers any without a webhook), so the
+  // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
+  // instead of every ambient post stacking in one place.
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
 }
 
 // Feb–Jul there are no games and nothing truthful to say.
