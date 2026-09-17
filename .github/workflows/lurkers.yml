@@ -22,6 +22,11 @@ on:
         type: boolean
         required: false
         default: true
+      kickstart:
+        description: 'One-time launch blast: name everyone without a card and lay out the ask'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   instigate:
@@ -43,4 +48,5 @@ jobs:
         run: |
           FLAG=""
           if [ "${{ github.event.inputs.dry }}" = "true" ]; then FLAG="--dry"; fi
+          if [ "${{ github.event.inputs.kickstart }}" = "true" ]; then FLAG="$FLAG --kickstart"; fi
           node tools/lurkers.mjs $FLAG

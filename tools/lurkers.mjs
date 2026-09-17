@@ -39,6 +39,7 @@ const DUECE = { username: "Duece", avatar_url: `${AVATARS}/duece.png` };
 
 function arg(n) { const i = process.argv.indexOf("--" + n); if (i === -1) return null; const v = process.argv[i + 1]; return v && !v.startsWith("--") ? v : true; }
 const DRY = !!arg("dry");
+const KICKSTART = !!arg("kickstart");
 
 // How many people get pinged in one post. Ping all forty and it reads as spam and nobody feels
 // singled out; name three or four and it's a callout. A rotating sample means nobody gets nagged
@@ -169,23 +170,44 @@ async function main() {
   console.log(`Roster ${members.size} · introduced ${introd.size} · on the block ${blocked.size}`);
   console.log(`No intro: ${noIntro.length} · Intro but no block: ${noBlock.length}`);
 
-  const used = new Set();
-  const lines = [];
+  let text;
+  if (KICKSTART) {
+    // The one-time launch blast. Names everyone still without a card and lays out the 60-second
+    // ask in one shot. Meant to be fired once, by hand, the day the switch goes on — not on a
+    // schedule. Pings up to 20 so the @-wall stays sane; the rest get an honorable mention.
+    if (!noIntro.length) { console.log("Everybody already has a card — no kickstart needed."); return; }
+    const pick = noIntro.slice(0, 20);
+    const extra = noIntro.length - pick.length;
+    text = [
+      `**New blood — this is where you stop lurking.** 👀`,
+      ``,
+      `A bunch of us came in cold and have never actually met. We're 36 deep. Fix it in 60 seconds:`,
+      `**1.** \`/intro\` — builds your card, drops it in the channel. That's your face in the pack.`,
+      `**2.** \`/block\` — it already knows your roster. Put a guy up, start some trades.`,
+      ``,
+      `On the clock: ${mentions(pick)}${extra > 0 ? ` …and ${extra} more of you hiding back there.` : ""}`,
+      ``,
+      `_First card posted after this one takes the least heat all year. Go._`,
+    ].join("\n");
+  } else {
+    const used = new Set();
+    const lines = [];
 
-  // Intro is the front door — that's the priority. Rib a rotating handful.
-  if (noIntro.length) {
-    const pick = shuffle(noIntro.slice()).slice(0, MAX_PING);
-    lines.push(fill(pickU(used, INTRO_RIBS), { who: mentions(pick), n: noIntro.length }));
+    // Intro is the front door — that's the priority. Rib a rotating handful.
+    if (noIntro.length) {
+      const pick = shuffle(noIntro.slice()).slice(0, MAX_PING);
+      lines.push(fill(pickU(used, INTRO_RIBS), { who: mentions(pick), n: noIntro.length }));
+    }
+    // Only nudge trades if the intro front is quiet enough that a second line won't read as pile-on.
+    if (noBlock.length && noIntro.length <= 2) {
+      const pick = shuffle(noBlock.slice()).slice(0, MAX_PING);
+      lines.push(fill(pickU(used, BLOCK_RIBS), { who: mentions(pick), n: noBlock.length }));
+    }
+
+    if (!lines.length) { console.log("Everybody's introduced and shopping — nobody to rib. Quiet run."); return; }
+    text = lines.join("\n\n");
   }
-  // Only nudge trades if the intro front is quiet enough that a second line won't read as pile-on.
-  if (noBlock.length && noIntro.length <= 2) {
-    const pick = shuffle(noBlock.slice()).slice(0, MAX_PING);
-    lines.push(fill(pickU(used, BLOCK_RIBS), { who: mentions(pick), n: noBlock.length }));
-  }
 
-  if (!lines.length) { console.log("Everybody's introduced and shopping — nobody to rib. Quiet run."); return; }
-
-  const text = lines.join("\n\n");
   console.log(`\n(as ${DUECE.username})\n${text}`);
 
   if (DRY) return;
