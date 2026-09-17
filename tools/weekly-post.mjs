@@ -61,6 +61,32 @@ function readWeek(b, week) {
 
 const nm = t => t.name.replace(/[*_`~|]/g, ""); // team names are user input; don't let them style the post
 
+// Go get it's board is public JSON on the site. Folding it in here is the only way the people
+// who played get seen by the people who haven't — and a name at the top of a list is the
+// cheapest dare there is. If the site is down this just doesn't appear; it never fails the post.
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+async function gameBoard() {
+  try {
+    const r = await fetch("https://www.crownorclown.com/api/board", { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return null;
+    const top = ((await r.json()).scores || []).slice(0, 5);
+    if (!top.length) return null;
+    const fresh = top.filter(s => Date.now() - Number(s.ts || 0) < WEEK_MS).length;
+    const line = (s, i) => `**${i + 1}.** \`${String(s.i || "???").replace(/[^A-Z0-9]/gi, "").slice(0, 3)}\` — **${pts(s.p)}**` +
+      `  ${s.team || "?"} over ${s.opp || "?"} ${s.pf ?? "?"}-${s.pa ?? "?"}` +
+      (Date.now() - Number(s.ts || 0) < WEEK_MS ? "  ✨" : "");
+    return {
+      title: "🏈 Go get it · top of the board",
+      color: 0xE24B4A,
+      description: top.map(line).join("\n"),
+      fields: [{
+        name: fresh ? `${fresh} new this week` : "Nobody moved it this week",
+        value: `Beat **${pts(top[0].p)}** at crownorclown.com — one series, DraftKings scoring, your team against a division rival.`
+      }]
+    };
+  } catch { return null; }
+}
+
 function embed(label, color, w, r) {
   const f = [
     { name: "👑 CROWN", value: `**${nm(r.crown)}**\n${pts(r.crown.pf)}`, inline: true },
@@ -91,6 +117,9 @@ for (const b of boards) {
   if (r) embeds.push(embed(b.label, b.color, week, r));
 }
 if (!embeds.length) { console.log(`Week ${week} had no scored matchups. Nothing to post.`); process.exit(0); }
+
+const game = await gameBoard();
+if (game) embeds.push(game);
 
 embeds[embeds.length - 1].footer = { text: "No card in the pack yet? Type /intro — takes a minute. Shopping somebody? /block already knows your roster." };
 
