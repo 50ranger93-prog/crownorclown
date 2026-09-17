@@ -12,9 +12,13 @@ name: Lurker instigator
 # tool itself holds during quiet hours (before 8am / after 10pm MT) so nobody gets poked overnight.
 
 on:
-  schedule:
-    - cron: '41 18 * * *'  # daily ~12:41 MT + jitter — midday, people around, nothing else on
-    - cron: '7 1 * * *'    # daily ~19:07 MT + jitter — evening, off work and on their phones
+  # Card recruitment is a personal job now — warm DMs, a few people at a time — not a group callout.
+  # Blasting the whole room to "go build a card" is the thing that already wasn't working. So this
+  # runs manually only; it's kept around for the day it's useful to poke ONE person, not the room.
+  # (Re-enable the schedule by uncommenting below if that ever changes.)
+  # schedule:
+  #   - cron: '41 18 * * *'  # daily ~12:41 MT + jitter — midday
+  #   - cron: '7 1 * * *'    # daily ~19:07 MT + jitter — evening
   workflow_dispatch:
     inputs:
       dry:
@@ -36,10 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      # Slide the daily run by a random 0-75 min so it doesn't land at the same minute every day.
-      - name: Organic jitter
-        if: github.event_name == 'schedule'
-        run: sleep $(( (RANDOM % 76) * 60 ))
       - name: Run the instigator
         env:
           DISCORD_BOT_TOKEN:     ${{ secrets.DISCORD_BOT_TOKEN }}
