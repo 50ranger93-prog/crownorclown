@@ -122,6 +122,13 @@ and historical archive, no key.
 - **A Discord forum channel has no loose messages.** A webhook posting to one must send
   `thread_name`; a plain text channel rejects that same field. And **a text channel cannot be
   converted into a forum** — you create a new one.
+
+  **#trade-block stays a text channel, decided 2026-09-16.** Forum threads titled with the
+  players on offer would read better in a channel list, but it is the one room with real
+  traffic — a live negotiation, the pinned instructions, and the Thursday FAAB post — and a
+  forum would have meant a second room and splitting it. `post.mjs` asks for a thread and falls
+  back once when the channel refuses, so the card posts work either way and this can be
+  revisited without a code change.
 - **`[hidden]` loses to any author rule that sets `display`.** An invisible overlay ate every tap
   on the game for a day. `[hidden]{display:none !important}` is in the stylesheet for this reason.
 - **`requestAnimationFrame` is frozen in a hidden tab.**
