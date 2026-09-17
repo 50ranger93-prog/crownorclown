@@ -484,7 +484,10 @@ async function heartbeat() {
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say — quiet tick"); return; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping);
+  // The heartbeat is ambient chatter for the main channel — always post it there, regardless of
+  // the beat's own default channel, so a beat like hottake (whose dedicated webhook may be unset)
+  // still lands instead of silently going nowhere.
+  if (!DRY) await post("PULSE_WEBHOOK_GENERAL", text, beat.as, beat.ping);
 }
 
 // Feb–Jul there are no games and nothing truthful to say.
