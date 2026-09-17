@@ -35,8 +35,11 @@ jobs:
           node-version: '20'
       - name: Post the polls
         env:
-          # The rooms the polls rotate through. Whichever of these is set gets used; if none
-          # are, everything falls back to wherever the crowns go so this still works.
+          # Each board's poll goes in that board's own room.
+          WEBHOOK_LEAGUE1: ${{ secrets.WEBHOOK_LEAGUE1 }}
+          WEBHOOK_LEAGUE2: ${{ secrets.WEBHOOK_LEAGUE2 }}
+          WEBHOOK_LEAGUE3: ${{ secrets.WEBHOOK_LEAGUE3 }}
+          # Only used with per=2 — the second poll goes somewhere the whole server sees it.
           WEBHOOK_TRASH: ${{ secrets.WEBHOOK_TRASH }}
           WEBHOOK_WAIVERS: ${{ secrets.WEBHOOK_WAIVERS }}
           WEBHOOK_GENERAL: ${{ secrets.WEBHOOK_GENERAL }}

@@ -10,17 +10,17 @@
 //   node tools/poll-post.mjs --per 2         two polls a board instead of one
 //   node tools/poll-post.mjs                 post them
 
+// Each board's poll goes in that board's own room. A Board 2 question in front of Board 1 is
+// twelve names nobody recognises, which is how a poll gets scrolled past.
 const LEAGUES = [
-  ["Board 1", "951407474"],
-  ["Board 2", "1963204215"],
-  ["Board 3", "976183547"]
+  ["Board 1", "951407474", "WEBHOOK_LEAGUE1"],
+  ["Board 2", "1963204215", "WEBHOOK_LEAGUE2"],
+  ["Board 3", "976183547", "WEBHOOK_LEAGUE3"]
 ];
 
-// Spread them out. Three polls landing in one room every Thursday is a bot talking to itself;
-// three rooms each getting one is three rooms with something in them. Which board lands where
-// shifts with the week, so no channel becomes "the poll channel" and no board's crowd gets
-// trained to only check one place. Whichever of these is configured gets used.
-const ROOMS = ["WEBHOOK_TRASH", "WEBHOOK_WAIVERS", "WEBHOOK_GENERAL"];
+// A second poll a board goes somewhere everyone can see it instead of doubling up in the same
+// room, rotating so it isn't always the same channel. Only used with --per 2.
+const SHARED = ["WEBHOOK_TRASH", "WEBHOOK_WAIVERS", "WEBHOOK_GENERAL"];
 const SEASON = 2026;
 const HOURS = 72;               // opens Thursday, closes Sunday
 const A_MAX = 55;               // Discord's cap on answer text
@@ -122,17 +122,19 @@ async function send(hook, poll) {
   return "message";
 }
 
-const live = ROOMS.filter(v => process.env[v]);
-const rooms = live.length ? live : (process.env.WEBHOOK_CROWN ? ["WEBHOOK_CROWN"] : []);
+const ROOM_LABEL = { WEBHOOK_LEAGUE1: "#expansion-league", WEBHOOK_LEAGUE2: "#expansion-league-2", WEBHOOK_LEAGUE3: "#expansion-league-3", WEBHOOK_TRASH: "#trash-talk", WEBHOOK_WAIVERS: "#waivers-and-lineups", WEBHOOK_GENERAL: "#general", WEBHOOK_CROWN: "#crown-and-vest" };
+const shared = SHARED.filter(v => process.env[v]);
 
-for (const [i, [label, id]] of LEAGUES.entries()) {
+for (const [i, [label, id, own]] of LEAGUES.entries()) {
   const L = await league(id);
   for (let n = 0; n < PER; n++) {
     const poll = pick(L, label, i, n);
     if (!poll) { console.log(`${label}: nothing to ask yet.`); continue; }
-    const room = rooms.length ? rooms[(L.week + i + n) % rooms.length] : null;
+    const room = n === 0
+      ? (process.env[own] ? own : (shared[0] || (process.env.WEBHOOK_CROWN ? "WEBHOOK_CROWN" : null)))
+      : (shared.length ? shared[(L.week + i) % shared.length] : (process.env[own] ? own : null));
     if (DRY) {
-      console.log(`\n${label} (week ${L.week}) → ${room ? room.replace("WEBHOOK_", "#").toLowerCase() : "nowhere — no webhook set"}\n  ${poll.q}`);
+      console.log(`\n${label} (week ${L.week}) → ${room ? ROOM_LABEL[room] || room : "nowhere — no webhook set"}\n  ${poll.q}`);
       poll.a.forEach(a => console.log(`   - ${a.emoji ? a.emoji.name + " " : ""}${a.text}`));
       continue;
     }
