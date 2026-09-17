@@ -1,0 +1,40 @@
+name: Lurker instigator
+
+# Finds managers who joined the Discord but never posted an intro card or a trade block, and ribs
+# a rotating few by name to go do it. Reads the live guild roster and the intro/trade-block posts
+# (which already carry each poster's id) — no member database, Discord is the record.
+#
+# Idle until DISCORD_BOT_TOKEN is added as a repo secret AND Server Members Intent is toggled on
+# in the Discord developer portal; until then every run exits quietly having posted nothing.
+#
+# Twice a week, at off-:00 minutes (GitHub throttles top-of-hour crons). Mountain is UTC-6 in season.
+
+on:
+  schedule:
+    - cron: '33 18 * * 2'  # Tue 12:33 MT — midweek, when people are around but nothing's on
+    - cron: '11 19 * * 6'  # Sat 13:11 MT — weekend, heading into the games
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Print who would be ribbed without posting'
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  instigate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run the instigator
+        env:
+          DISCORD_BOT_TOKEN:     ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID:      ${{ secrets.DISCORD_GUILD_ID }}
+          PULSE_WEBHOOK_GENERAL: ${{ secrets.PULSE_WEBHOOK_GENERAL }}
+        run: |
+          FLAG=""
+          if [ "${{ github.event.inputs.dry }}" = "true" ]; then FLAG="--dry"; fi
+          node tools/lurkers.mjs $FLAG
