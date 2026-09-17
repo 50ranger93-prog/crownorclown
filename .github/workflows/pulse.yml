@@ -14,10 +14,11 @@ on:
     - cron: '0 16 * * 3'   # Wed 10:00 MT — first injury designations of the week
     - cron: '0 16 * * 4'   # Thu 10:00 MT — FAAB check
     - cron: '0 16 * * 5'   # Fri 10:00 MT — injuries again (Friday is when OUT gets real) + hot take
+    - cron: '20 16 * * 6'  # Sat 10:20 MT — the week's fights, a day before the slate (off :00 = less throttling)
   workflow_dispatch:
     inputs:
       beat:
-        description: 'Beat to run (slate, inactives, injuries, crownvest, faab, hottake, or all)'
+        description: 'Beat to run (slate, inactives, injuries, matchups, crownvest, faab, hottake, or all)'
         required: false
         default: 'all'
       dry:
@@ -46,6 +47,7 @@ jobs:
             '0 16 * * 3')  echo "beats=injuries" >> $GITHUB_OUTPUT ;;
             '0 16 * * 4')  echo "beats=faab" >> $GITHUB_OUTPUT ;;
             '0 16 * * 5')  echo "beats=injuries hottake" >> $GITHUB_OUTPUT ;;
+            '20 16 * * 6') echo "beats=matchups" >> $GITHUB_OUTPUT ;;
             *)             echo "beats=${{ github.event.inputs.beat || 'all' }}" >> $GITHUB_OUTPUT ;;
           esac
 

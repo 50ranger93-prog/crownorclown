@@ -102,19 +102,20 @@ async function inactives() {
         const p = e.playerPoolEntry && e.playerPoolEntry.player;
         if (!p) continue;
         if (p.injuryStatus === "OUT" || p.injuryStatus === "DOUBTFUL") {
-          hits.push(`**${teamName(t)}** — ${p.fullName} is ${p.injuryStatus}`);
+          hits.push(`${p.fullName} ${p.injuryStatus === "OUT" ? "OUT" : "DTD"} _(${teamName(t)})_`);
         }
       }
     }
-    if (hits.length) out.push(`__${l.name}__\n` + hits.join("\n"));
+    if (hits.length) out.push(`__${l.name}__ ` + hits.join(" · "));
   }
   if (!out.length) return null;
-  return [`**Starting someone who isn't playing**`, "", ...out, "", "_Lineups lock at kickoff._"].join("\n");
+  return [`⚠️ **Starter's not playing — move 'em**`, ...out].join("\n");
 }
 
-// Midweek designations, starters and bench alike — this one is for planning, not panic, so the
-// bench counts here where it doesn't for inactives.
+// Midweek designations, starters and bench alike — planning, not panic. Tight: initials, capped,
+// one line a league. The manager scans for his own guys; he doesn't need a phone book.
 async function injuries() {
+  const CODE = { QUESTIONABLE: "Q", DOUBTFUL: "D", OUT: "O", SUSPENSION: "S", "INJURY_RESERVE": "IR" };
   const out = [];
   for (const l of LEAGUES) {
     const j = await safe(() => get(fantasy(l.id, "view=mRoster&view=mTeam")));
@@ -124,13 +125,13 @@ async function injuries() {
       for (const e of (t.roster && t.roster.entries) || []) {
         const p = e.playerPoolEntry && e.playerPoolEntry.player;
         if (!p || !p.injuryStatus || p.injuryStatus === "ACTIVE") continue;
-        hits.push(`${p.fullName} — ${p.injuryStatus} _(${teamName(t)})_`);
+        hits.push(`${p.fullName} ${CODE[p.injuryStatus] || p.injuryStatus[0]}`);
       }
     }
-    if (hits.length) out.push(`__${l.name}__\n` + hits.slice(0, 15).join("\n") + (hits.length > 15 ? `\n_+${hits.length - 15} more_` : ""));
+    if (hits.length) out.push(`__${l.name}__ ` + hits.slice(0, 8).join(" · ") + (hits.length > 8 ? ` _+${hits.length - 8}_` : ""));
   }
   if (!out.length) return null;
-  return [`**Injury report — rostered players only**`, "", ...out].join("\n");
+  return [`🩹 **Injury tags this week**`, ...out].join("\n");
 }
 
 // Last week's high and low. The whole brand in two numbers.
@@ -216,6 +217,84 @@ async function hottake() {
   return [`**Hot take of the week**`, "", ...takes].join("\n");
 }
 
+// The instigator. Every other beat talks AT the room; this one names two people and starts a
+// fight, because 36 strangers only start talking when it's about them specifically. Short by
+// design — one line a matchup, drawn from real records so nobody can call it made up. Capped to
+// the spiciest few per league so it stays a quick read, not a wall.
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const winpct = (t) => (t.w + t.l) ? t.w / (t.w + t.l) : 0;
+const rec = (t) => `${t.w}-${t.l}`;
+
+function matchupLine(a, b, vest) {
+  let fav = a, dog = b;
+  if (winpct(b) > winpct(a) || (winpct(b) === winpct(a) && b.pf > a.pf)) { fav = b; dog = a; }
+  const even = fav.w === dog.w && Math.abs(fav.pf - dog.pf) < 12;
+  const skid = dog.streakType === "LOSS" && dog.streakLen >= 2;
+  const undef = fav.l === 0 && dog.l === 0 && fav.w > 0;
+  const vestJab = vest.has(dog.name) ? ` ${dog.name} is in vest range.` : "";
+  if (even) return pick([
+    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — dead even. Loser slides toward the 🤡.`,
+    `Toss-up: **${a.name}** vs **${b.name}**. Whoever loses this one earned it.`,
+    `**${a.name}** vs **${b.name}**, nothing between 'em. Somebody talk.`,
+  ]);
+  if (dog.w === 0 && dog.l >= 2) return pick([
+    `**${dog.name}** (${rec(dog)}) draws **${fav.name}** (${rec(fav)}). Check for a pulse.${vestJab}`,
+    `**${fav.name}** (${rec(fav)}) gets winless **${dog.name}**. Free win, or the upset of the year?`,
+    `**${dog.name}** is ${rec(dog)} and now has **${fav.name}**. Woof.${vestJab}`,
+  ]);
+  if (skid) return pick([
+    `**${dog.name}** rides a ${dog.streakLen}-game skid into **${fav.name}** (${rec(fav)}). It gets worse.${vestJab}`,
+    `**${fav.name}** vs **${dog.name}**, loser of ${dog.streakLen} straight. Mercy rule?`,
+  ]);
+  if (undef) return pick([
+    `Undefeated showdown: **${a.name}** vs **${b.name}**. One 0 hits the board.`,
+    `**${a.name}** (${rec(a)}) vs **${b.name}** (${rec(b)}) — both perfect. Not for long.`,
+  ]);
+  return pick([
+    `**${fav.name}** (${rec(fav)}) over **${dog.name}** (${rec(dog)}) on paper. Prove it or eat it.`,
+    `**${a.name}** vs **${b.name}**. On paper it's ${fav.name}. Paper's undefeated, right?`,
+    `**${dog.name}**, meet **${fav.name}** (${rec(fav)}). Say something before kickoff.${vestJab}`,
+  ]);
+}
+// how loud a matchup is, so a 12-team board can be trimmed to its 4 best fights
+function spice(a, b) {
+  const even = a.w === b.w && Math.abs(a.pf - b.pf) < 12;
+  const winless = a.w === 0 && a.l >= 2 || b.w === 0 && b.l >= 2;
+  const skid = (a.streakType === "LOSS" && a.streakLen >= 2) || (b.streakType === "LOSS" && b.streakLen >= 2);
+  const undef = a.l === 0 && b.l === 0 && a.w > 0;
+  return (even ? 3 : 0) + (winless ? 3 : 0) + (skid ? 2 : 0) + (undef ? 2 : 0) + 1;
+}
+
+async function matchups() {
+  const blocks = [];
+  for (const l of LEAGUES) {
+    const j = await safe(() => get(fantasy(l.id, "view=mMatchupScore&view=mTeam")));
+    if (!j) continue;
+    const period = (j.status && (j.status.currentMatchupPeriod || j.status.latestScoringPeriod)) || 0;
+    if (period < 1) continue;
+    const T = {};
+    for (const t of j.teams || []) {
+      const r = (t.record && t.record.overall) || {};
+      T[t.id] = { name: teamName(t), w: r.wins || 0, l: r.losses || 0, pf: r.pointsFor || 0,
+        streakType: r.streakType, streakLen: r.streakLength || 0 };
+    }
+    const byPf = Object.values(T).sort((a, b) => a.pf - b.pf);
+    const vest = new Set(byPf.slice(0, 2).map(t => t.name));   // bottom two = real vest danger
+    const games = [];
+    for (const m of j.schedule || []) {
+      if (m.matchupPeriodId !== period) continue;
+      const a = T[m.away && m.away.teamId], b = T[m.home && m.home.teamId];
+      if (a && b) games.push({ a, b });
+    }
+    if (!games.length) continue;
+    games.sort((x, y) => spice(y.a, y.b) - spice(x.a, x.b));
+    const lines = games.slice(0, 4).map(g => "· " + matchupLine(g.a, g.b, vest));
+    blocks.push(`__${l.name} · Week ${period}__\n` + lines.join("\n"));
+  }
+  if (!blocks.length) return null;
+  return [`**This week's fights** ⚔️`, "", ...blocks, "", `_Your board, your channel. Answer for it._`].join("\n");
+}
+
 // ── wiring ───────────────────────────────────────────────────────────────────
 
 // The two bots the server already knows by name. A webhook can borrow a name and face per
@@ -235,6 +314,7 @@ const BEATS = {
   slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
+  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
   crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
   faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
   hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
