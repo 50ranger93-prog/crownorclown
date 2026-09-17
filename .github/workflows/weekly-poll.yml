@@ -1,0 +1,48 @@
+name: Post the polls
+
+# Thursday morning, before Thursday night kicks off: one poll per board, built from that
+# league's own standings and that week's own matchups. Different question in every league,
+# different question every week.
+#
+# Times are UTC. Mountain is UTC-6 in season (MDT). Off the hour because GitHub throttles
+# top-of-the-hour crons hard.
+
+on:
+  schedule:
+    - cron: '25 15 * * 4'   # Thu 09:25 MT
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to build the polls from (blank = the week ESPN is on)'
+        required: false
+      per:
+        description: 'Polls per board (1 or 2)'
+        required: false
+        default: '1'
+      dry:
+        description: 'Print them instead of posting them'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Post the polls
+        env:
+          # Per-board channels if they exist; otherwise everything lands wherever the weekly
+          # recap goes, so this works before the channels do.
+          WEBHOOK_POLL_BOARD1: ${{ secrets.WEBHOOK_POLL_BOARD1 }}
+          WEBHOOK_POLL_BOARD2: ${{ secrets.WEBHOOK_POLL_BOARD2 }}
+          WEBHOOK_POLL_BOARD3: ${{ secrets.WEBHOOK_POLL_BOARD3 }}
+          WEBHOOK_WEEKLY: ${{ secrets.WEBHOOK_WEEKLY }}
+        run: |
+          node tools/poll-post.mjs \
+            --per ${{ github.event.inputs.per || '1' }} \
+            ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }} \
+            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}

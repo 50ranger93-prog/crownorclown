@@ -98,7 +98,8 @@ async function postIt(){
  try{
   const node=document.getElementById("shot");
   const png=await htmlToImage.toPng(node,{pixelRatio:2});
-  const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT()})});
+  const names=S.cmd=="block"?S.players.filter(p=>p.name.trim()).map(p=>p.name.trim()):[];
+  const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT(),names})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||"Posting failed. Try again.");
   S.sending=false;S.step=S.cmd=="intro"?7:5;draw();window.scrollTo({top:0});
