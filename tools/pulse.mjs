@@ -303,24 +303,22 @@ async function dget(path) {
 async function handles() {
   if (!DISCORD_TOKEN) return null;
   const chans = await dget(`/guilds/${DISCORD_GUILD}/channels`);
-  if (DRY) console.log(`(channels seen: ${chans.map(c => `${c.name}[t${c.type}]`).join(", ") || "none"})`);
   const ch = chans.find(c => /meet.*crew|introduc/i.test(c.name || "")) || chans.find(c => /\bintro\b/i.test(c.name || ""));
   if (!ch) return null;
-  if (DRY) console.log(`(intro channel: ${ch.name} [t${ch.type}] id ${ch.id})`);
   const map = new Map();
-  // <@id> ... **Team** — the id and the team name the bot itself wrote onto the card.
+  // <@id> ... **Team** — the id and the team name the bot itself wrote onto the card. Reading the
+  // card text needs the Message Content Intent; without it Discord returns empty content and this
+  // stays empty, so the fights fall back to plain team names.
   const scan = (msgs) => { for (const msg of msgs || []) { const x = /<@!?(\d+)>[^*]*\*\*(.+?)\*\*/.exec(msg.content || ""); if (x) map.set(norm(x[2]), x[1]); } };
   if (ch.type === 15) {   // forum: each card is a thread, starter message shares the thread id
     const active = await dget(`/guilds/${DISCORD_GUILD}/threads/active`).catch(() => ({ threads: [] }));
     const arch = await dget(`/channels/${ch.id}/threads/archived/public?limit=100`).catch(() => ({ threads: [] }));
     const threads = [...(active.threads || []).filter(t => t.parent_id === ch.id), ...(arch.threads || [])].slice(0, 100);
-    if (DRY) console.log(`(forum threads: ${threads.length})`);
     for (const t of threads) { const m = await dget(`/channels/${t.id}/messages/${t.id}`).catch(() => null); if (m) scan([m]); }
   } else {
     let before = "";
     for (let p = 0; p < 3; p++) {
       const msgs = await dget(`/channels/${ch.id}/messages?limit=100${before ? `&before=${before}` : ""}`);
-      if (DRY) for (const m of msgs.slice(0, 4)) console.log(`(msg by ${m.author && m.author.username}: content=${JSON.stringify(String(m.content || "").slice(0, 80))} mentions=[${(m.mentions || []).map(u => u.id).join(",")}] embeds=${JSON.stringify((m.embeds || []).map(e => [e.author && e.author.name, e.title, e.description].filter(Boolean)))} files=[${(m.attachments || []).map(a => a.filename).join(",")}])`);
       scan(msgs); if (!msgs.length || msgs.length < 100) break; before = msgs[msgs.length - 1].id;
     }
   }
