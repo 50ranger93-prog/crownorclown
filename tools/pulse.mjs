@@ -306,6 +306,7 @@ async function handles() {
   if (DRY) console.log(`(channels seen: ${chans.map(c => `${c.name}[t${c.type}]`).join(", ") || "none"})`);
   const ch = chans.find(c => /meet.*crew|introduc/i.test(c.name || "")) || chans.find(c => /\bintro\b/i.test(c.name || ""));
   if (!ch) return null;
+  if (DRY) console.log(`(intro channel: ${ch.name} [t${ch.type}] id ${ch.id})`);
   const map = new Map();
   // <@id> ... **Team** — the id and the team name the bot itself wrote onto the card.
   const scan = (msgs) => { for (const msg of msgs || []) { const x = /<@!?(\d+)>[^*]*\*\*(.+?)\*\*/.exec(msg.content || ""); if (x) map.set(norm(x[2]), x[1]); } };
@@ -313,10 +314,15 @@ async function handles() {
     const active = await dget(`/guilds/${DISCORD_GUILD}/threads/active`).catch(() => ({ threads: [] }));
     const arch = await dget(`/channels/${ch.id}/threads/archived/public?limit=100`).catch(() => ({ threads: [] }));
     const threads = [...(active.threads || []).filter(t => t.parent_id === ch.id), ...(arch.threads || [])].slice(0, 100);
+    if (DRY) console.log(`(forum threads: ${threads.length})`);
     for (const t of threads) { const m = await dget(`/channels/${t.id}/messages/${t.id}`).catch(() => null); if (m) scan([m]); }
   } else {
     let before = "";
-    for (let p = 0; p < 3; p++) { const msgs = await dget(`/channels/${ch.id}/messages?limit=100${before ? `&before=${before}` : ""}`); scan(msgs); if (!msgs.length || msgs.length < 100) break; before = msgs[msgs.length - 1].id; }
+    for (let p = 0; p < 3; p++) {
+      const msgs = await dget(`/channels/${ch.id}/messages?limit=100${before ? `&before=${before}` : ""}`);
+      if (DRY) console.log(`(read ${msgs.length} msg(s); samples: ${msgs.slice(0, 3).map(m => JSON.stringify(String(m.content || "").slice(0, 90))).join(" | ")})`);
+      scan(msgs); if (!msgs.length || msgs.length < 100) break; before = msgs[msgs.length - 1].id;
+    }
   }
   return map.size ? map : null;
 }
