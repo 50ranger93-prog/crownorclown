@@ -367,6 +367,49 @@ async function matchups() {
   return text;
 }
 
+// The everyday needle. One short line, pulled live, that pokes exactly one team about exactly one
+// true thing — a skid, a heater, the vest bubble, a record that doesn't match the points. This is
+// what the heartbeat fires most, so it has to stay fresh: a random league, a random true angle, a
+// deduped line. Nothing arguable-but-made-up; a manager can always look it up and see it's real.
+const JAB = {
+  skid:    [`**{t}** has lost {n} straight. Somebody put them out of their misery.`, `{n} losses in a row for **{t}**. Rock bottom, or is there a basement?`, `**{t}** is on a {n}-game slide. This is fine. Everything's fine.`],
+  heater:  [`**{t}** has won {n} in a row. Anybody in here man enough to end it?`, `{n} straight for **{t}**. Beatable, or are we playing for second?`, `**{t}** is riding a {n}-game heater. Feels cheap. Prove it isn't, {t}.`],
+  vest:    [`**{t}** is scoring the least in {L}. The vest is trying on names.`, `Fewest points in {L}: **{t}**. 🤡 season's calling.`, `**{t}** is dead last in points in {L}. Wake up before it's a costume.`],
+  crown:   [`**{t}** is putting up the most points in {L}. Scared yet?`, `Most points in {L} belongs to **{t}**. Somebody knock 'em off.`, `**{t}** leads {L} in scoring. Loud about it too, probably.`],
+  undef:   [`**{t}** still hasn't lost. That's an invitation, not a stat.`, `**{t}** is undefeated. Feels like a problem somebody should fix.`, `Nobody's beaten **{t}** yet. Volunteers?`],
+  winless: [`**{t}** is still hunting win number one. It's getting late early.`, `**{t}** hasn't won a game. Somebody let 'em have one — no, don't.`, `Still 0-fer: **{t}**. The vest fits, just saying.`],
+  fraud:   [`**{t}** is {r} on {p} points. Fraud, or getting robbed? Discuss.`, `**{t}** put up {p} points and has a {r} record to show for it. Explain that.`, `{p} points, {r} record: **{t}** is the argument this week. Pick a side.`],
+};
+async function jab() {
+  const facts = [];
+  for (const l of LEAGUES) {
+    const j = await safe(() => get(fantasy(l.id, "view=mMatchupScore&view=mTeam")));
+    if (!j) continue;
+    const T = (j.teams || []).map(t => {
+      const r = (t.record && t.record.overall) || {};
+      return { name: teamName(t), w: r.wins || 0, ls: r.losses || 0, pf: r.pointsFor || 0, st: r.streakType, sl: r.streakLength || 0 };
+    }).filter(t => t.w || t.ls);
+    if (T.length < 2) continue;
+    const byPf = [...T].sort((a, b) => b.pf - a.pf);
+    const byRec = [...T].sort((a, b) => (b.w - b.ls) - (a.w - a.ls) || b.pf - a.pf);
+    const skids = T.filter(t => t.st === "LOSS" && t.sl >= 2).sort((a, b) => b.sl - a.sl);
+    const heats = T.filter(t => t.st === "WIN" && t.sl >= 2).sort((a, b) => b.sl - a.sl);
+    const undef = T.filter(t => t.ls === 0 && t.w >= 2);
+    const winless = T.filter(t => t.w === 0 && t.ls >= 2);
+    const add = (angle, m) => facts.push({ angle, m: { L: l.name, ...m } });
+    if (skids[0])   add("skid",    { t: skids[0].name, n: skids[0].sl });
+    if (heats[0])   add("heater",  { t: heats[0].name, n: heats[0].sl });
+    if (undef[0])   add("undef",   { t: pick(undef).name });
+    if (winless[0]) add("winless", { t: pick(winless).name });
+    add("vest",  { t: byPf[byPf.length - 1].name });
+    add("crown", { t: byPf[0].name });
+    if (byPf[0].name !== byRec[0].name) add("fraud", { t: byPf[0].name, r: `${byPf[0].w}-${byPf[0].ls}`, p: byPf[0].pf.toFixed(0) });
+  }
+  if (!facts.length) return null;
+  const f = pick(facts);
+  return fill(pick(JAB[f.angle]), f.m);
+}
+
 // ── wiring ───────────────────────────────────────────────────────────────────
 
 // The two bots the server already knows by name. A webhook can borrow a name and face per
@@ -387,6 +430,7 @@ const BEATS = {
   inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true },
+  jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
   crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
   faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
   hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
@@ -412,9 +456,34 @@ async function post(hookEnv, text, as, ping) {
   console.log(r.ok ? `  posted as ${as.username}` : `  post failed: HTTP ${r.status}`);
 }
 
+// The always-on heartbeat. Runs every half hour, all week, but does NOT post every time — it rolls
+// the dice, so something lands at a time nobody can predict instead of on a visible clock. That's
+// what makes a channel feel alive rather than automated. Guardrails that keep "alive" from turning
+// into "muted": quiet hours (no 3am pings — managers span time zones, one's in Sweden), and a fire
+// rate you can crank. jab is the light everyday needle and gets fired most; the heavier beats drop
+// in now and then. Turn the whole thing up or down with PULSE_FIRE_RATE (0..1).
+async function heartbeat() {
+  const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
+  if (mtHour < 8 || mtHour >= 23) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
+  const rate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.35)));
+  if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (fire rate ${rate}).`); return; }
+  const weights = { jab: 6, hottake: 2, injuries: 1, slate: 1 };
+  const bag = [];
+  for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
+  const name = bag[Math.floor(Math.random() * bag.length)];
+  const beat = BEATS[name];
+  console.log(`\n=== heartbeat → ${name} ===`);
+  const text = await safe(beat.fn);
+  if (!text) { console.log("  nothing to say — quiet tick"); return; }
+  console.log(`(as ${beat.as.username})\n${text}`);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping);
+}
+
 // Feb–Jul there are no games and nothing truthful to say.
 const month = new Date().getUTCMonth();
 if (month > 0 && month < 7) { console.log("Off-season — pulse is quiet."); process.exit(0); }
+
+if (arg("heartbeat")) { await heartbeat(); process.exit(0); }
 
 const which = arg("all") ? Object.keys(BEATS) : [arg("beat")].filter(Boolean);
 if (!which.length) { console.error("Need --beat <name> or --all. Beats: " + Object.keys(BEATS).join(", ")); process.exit(1); }

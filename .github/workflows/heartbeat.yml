@@ -1,0 +1,49 @@
+name: Channel heartbeat
+
+# The always-on pulse. Wakes every half hour, every day, but does NOT post every time — the script
+# rolls the dice (PULSE_FIRE_RATE) and honors quiet hours, so something lands at an unpredictable
+# time instead of on a visible clock. That's what makes the channel feel alive instead of automated.
+# The scheduled beats (pulse.yml) are the anchored, know-what-you're-getting posts; this is the
+# ambient chatter between them. Turn it up or down with the PULSE_FIRE_RATE repo variable.
+#
+# GitHub can't fire faster than every few minutes and throttles crons under load anyway, so "every
+# 10 seconds" isn't a thing this platform does — but every 30 min × a fire rate lands several posts
+# a day at times nobody can predict, which is the part that actually keeps people coming back.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes, all week — the script decides whether to speak
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Print without posting'
+        type: boolean
+        required: false
+        default: true
+
+# Two ticks can overlap if one runs long; let the newer one wait rather than double-post.
+concurrency:
+  group: heartbeat
+  cancel-in-progress: false
+
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Heartbeat
+        env:
+          PULSE_WEBHOOK_GENERAL:   ${{ secrets.PULSE_WEBHOOK_GENERAL }}
+          PULSE_WEBHOOK_HOTTAKE:   ${{ secrets.PULSE_WEBHOOK_HOTTAKE }}
+          DISCORD_BOT_TOKEN:       ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID:        ${{ secrets.DISCORD_GUILD_ID }}
+          # Dial: 0 = silent, 1 = fires every waking tick. Default 0.35 ≈ a handful of posts a day.
+          PULSE_FIRE_RATE:         ${{ vars.PULSE_FIRE_RATE }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: |
+          FLAG=""
+          if [ "$DRY" = "true" ]; then FLAG="--dry"; fi
+          node tools/pulse.mjs --heartbeat $FLAG

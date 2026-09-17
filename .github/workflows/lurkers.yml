@@ -7,12 +7,14 @@ name: Lurker instigator
 # Idle until DISCORD_BOT_TOKEN is added as a repo secret AND Server Members Intent is toggled on
 # in the Discord developer portal; until then every run exits quietly having posted nothing.
 #
-# Twice a week, at off-:00 minutes (GitHub throttles top-of-hour crons). Mountain is UTC-6 in season.
+# Every day, at an off-:00 minute (GitHub throttles top-of-hour crons), plus a random slide so it
+# lands at a different time each day instead of on a visible clock. Mountain is UTC-6 in season; the
+# tool itself holds during quiet hours (before 8am / after 10pm MT) so nobody gets poked overnight.
 
 on:
   schedule:
-    - cron: '33 18 * * 2'  # Tue 12:33 MT — midweek, when people are around but nothing's on
-    - cron: '11 19 * * 6'  # Sat 13:11 MT — weekend, heading into the games
+    - cron: '41 18 * * *'  # daily ~12:41 MT + jitter — midday, people around, nothing else on
+    - cron: '7 1 * * *'    # daily ~19:07 MT + jitter — evening, off work and on their phones
   workflow_dispatch:
     inputs:
       dry:
@@ -29,6 +31,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      # Slide the daily run by a random 0-75 min so it doesn't land at the same minute every day.
+      - name: Organic jitter
+        if: github.event_name == 'schedule'
+        run: sleep $(( (RANDOM % 76) * 60 ))
       - name: Run the instigator
         env:
           DISCORD_BOT_TOKEN:     ${{ secrets.DISCORD_BOT_TOKEN }}

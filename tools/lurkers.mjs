@@ -141,6 +141,10 @@ const mentions = (people) => people.map(p => `<@${p.id}>`).join(" ");
 
 async function main() {
   if (!TOKEN) { console.log("No DISCORD_BOT_TOKEN set — instigator is idle. Add it as an Actions secret to turn this on."); return; }
+  // Never poke anyone in the middle of the night — these managers span time zones and one's in
+  // Sweden. Post only 8am–10pm MT.
+  const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
+  if (!DRY && (mtHour < 8 || mtHour >= 22)) { console.log(`Quiet hours (${mtHour}:00 MT) — instigator holds.`); return; }
 
   const chans = await dget(`/guilds/${GUILD}/channels`);
   const find = (rx) => chans.find(c => rx.test(c.name || ""));
