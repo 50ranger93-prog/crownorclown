@@ -8,7 +8,11 @@
 //
 //   node tools/weekly-post.mjs --dry            print what it would post
 //   node tools/weekly-post.mjs --week 2         force a week
-//   node tools/weekly-post.mjs                  post it (needs WEBHOOK_WEEKLY)
+//   node tools/weekly-post.mjs --force          post even if that week already went out
+//   node tools/weekly-post.mjs                  post it (needs WEBHOOK_CROWN)
+//
+// The week is claimed by key before anything is sent, so a cron landing three hours late can't
+// repeat a week that already went out by hand. See tools/posted-state.mjs.
 
 const LEAGUES = [
   ["Board 1", "951407474", 0xFFC62F],
@@ -16,8 +20,11 @@ const LEAGUES = [
   ["Board 3", "976183547", 0x1D9E75]
 ];
 const SEASON = 2026;
+import { has, claim, release, enabled as stateEnabled } from "./posted-state.mjs";
+
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const DRY = process.argv.includes("--dry");
+const FORCE = process.argv.includes("--force");
 const pts = n => (Math.round(n * 10) / 10).toFixed(1);
 
 async function board(id) {
@@ -145,11 +152,28 @@ if (DRY) {
   process.exit(0);
 }
 if (!CROWN) { console.error("WEBHOOK_CROWN isn't set."); process.exit(1); }
-for (const [hook, content, embeds] of posts) {
-  const res = await fetch(hook, {
-    method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username: "Crown or Clown", content, embeds, allowed_mentions: { parse: [] } })
-  });
-  if (!res.ok) { console.error(`Discord said no (${res.status}): ${await res.text()}`); process.exit(1); }
+if (!stateEnabled()) console.warn("No GITHUB_TOKEN — posting without the repeat guard.");
+
+const key = `week:${SEASON}:w${week}`;
+if (!FORCE && await has(key)) { console.log(`Week ${week} already went out. Skipping.`); process.exit(0); }
+if (!FORCE && !await claim(key)) { console.log(`Another run just claimed week ${week}. Skipping.`); process.exit(0); }
+
+let sent = 0;
+try {
+  for (const [hook, content, embeds] of posts) {
+    const res = await fetch(hook, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "Crown or Clown", content, embeds, allowed_mentions: { parse: [] } })
+    });
+    if (!res.ok) throw new Error(`Discord said no (${res.status}): ${await res.text()}`);
+    sent++;
+  }
+} catch (e) {
+  // Only hand the key back if nothing went out. Half a week posted is annoying; a retry that
+  // posts the crowns a second time is worse, so a partial send stays claimed and gets fixed
+  // with --force.
+  if (!FORCE && sent === 0) await release(key);
+  console.error(e.message + (sent ? ` (${sent} of ${posts.length} already sent — re-run with --force once fixed)` : ""));
+  process.exit(1);
 }
 console.log(`Posted week ${week} to ${posts.length} channel${posts.length > 1 ? "s" : ""}.`);

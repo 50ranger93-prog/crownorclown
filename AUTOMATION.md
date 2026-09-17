@@ -40,6 +40,23 @@ top-of-the-hour schedules hard.
 > Every pulse beat posts only if its webhook secret is set, which is the on/off switch — no code
 > change needed to silence or revive one.
 
+### Late crons and the repeat guard
+
+GitHub's free scheduler is best-effort, and this repo gets hit hard: observed delays of **1–3
+hours** are normal (Wed injuries scheduled 10:00 ran 13:18; the 09:07 archive ran 10:57). Moving
+the cron minute does not help — the delay is queue-wide, not minute-specific. Treat every
+scheduled time in this file as "some time after".
+
+Because of that, *Post the week* and *Post the polls* claim each post by key before sending, in
+`posted.json` on the **board-data** branch (`tools/posted-state.mjs`, same Contents API the
+leaderboard uses — no new service, no new secret, and that branch never deploys). Keys look like
+`week:2026:w1` and `poll:2026:w2:Board 1:0`.
+
+So a late scheduled run that arrives after someone fired the job by hand sees the key and posts
+nothing. Both workflows need `permissions: contents: write` and `GITHUB_TOKEN` in the step env
+for this to work; without a token they warn and post unguarded. `--force` (or the **force** box
+on a manual run) ignores the key when you genuinely want to send again.
+
 ---
 
 ## Live endpoints (Vercel)

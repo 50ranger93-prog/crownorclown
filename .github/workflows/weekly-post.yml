@@ -19,6 +19,14 @@ on:
         type: boolean
         required: false
         default: false
+      force:
+        description: 'Post again even if this week already went out'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write   # writes posted.json on the board-data branch so a late run can't repeat itself
 
 jobs:
   post:
@@ -30,6 +38,7 @@ jobs:
           node-version: '20'
       - name: Post the week
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Crowns to #crown-and-vest, clowns to #hall-of-shame. Without the second one the
           # clowns ride along with the crowns rather than disappearing.
           WEBHOOK_CROWN: ${{ secrets.WEBHOOK_CROWN }}
@@ -37,4 +46,5 @@ jobs:
         run: |
           node tools/weekly-post.mjs \
             ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }} \
-            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}
+            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }} \
+            ${{ github.event.inputs.force == 'true' && '--force' || '' }}

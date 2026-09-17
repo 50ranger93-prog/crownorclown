@@ -24,6 +24,14 @@ on:
         type: boolean
         required: false
         default: false
+      force:
+        description: 'Post again even if this week already went out'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write   # writes posted.json on the board-data branch so a late run can't repeat itself
 
 jobs:
   poll:
@@ -35,6 +43,7 @@ jobs:
           node-version: '20'
       - name: Post the polls
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Each board's poll goes in that board's own room.
           WEBHOOK_LEAGUE1: ${{ secrets.WEBHOOK_LEAGUE1 }}
           WEBHOOK_LEAGUE2: ${{ secrets.WEBHOOK_LEAGUE2 }}
@@ -48,4 +57,5 @@ jobs:
           node tools/poll-post.mjs \
             --per ${{ github.event.inputs.per || '1' }} \
             ${{ github.event.inputs.week && format('--week {0}', github.event.inputs.week) || '' }} \
-            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}
+            ${{ github.event.inputs.dry == 'true' && '--dry' || '' }} \
+            ${{ github.event.inputs.force == 'true' && '--force' || '' }}

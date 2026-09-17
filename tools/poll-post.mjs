@@ -8,7 +8,11 @@
 //   node tools/poll-post.mjs --dry           print what each board would get
 //   node tools/poll-post.mjs --week 3        force the week
 //   node tools/poll-post.mjs --per 2         two polls a board instead of one
+//   node tools/poll-post.mjs --force         post even if this week's already went out
 //   node tools/poll-post.mjs                 post them
+//
+// Each poll is claimed by key before it is sent, so a cron landing three hours late cannot
+// repeat one that already went out by hand. See tools/posted-state.mjs.
 
 // Each board's poll goes in that board's own room. A Board 2 question in front of Board 1 is
 // twelve names nobody recognises, which is how a poll gets scrolled past.
@@ -21,11 +25,14 @@ const LEAGUES = [
 // A second poll a board goes somewhere everyone can see it instead of doubling up in the same
 // room, rotating so it isn't always the same channel. Only used with --per 2.
 const SHARED = ["WEBHOOK_TRASH", "WEBHOOK_WAIVERS", "WEBHOOK_GENERAL"];
+import { has, claim, release, enabled as stateEnabled } from "./posted-state.mjs";
+
 const SEASON = 2026;
 const HOURS = 72;               // opens Thursday, closes Sunday
 const A_MAX = 55;               // Discord's cap on answer text
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const DRY = process.argv.includes("--dry");
+const FORCE = process.argv.includes("--force");
 const PER = Math.min(2, Math.max(1, Number(arg("per") || 1)));
 
 const clean = s => String(s || "").replace(/[*_`~|]/g, "").trim();
@@ -124,6 +131,7 @@ async function send(hook, poll) {
 
 const ROOM_LABEL = { WEBHOOK_LEAGUE1: "#expansion-league", WEBHOOK_LEAGUE2: "#expansion-league-2", WEBHOOK_LEAGUE3: "#expansion-league-3", WEBHOOK_TRASH: "#trash-talk", WEBHOOK_WAIVERS: "#waivers-and-lineups", WEBHOOK_GENERAL: "#general", WEBHOOK_CROWN: "#crown-and-vest" };
 const shared = SHARED.filter(v => process.env[v]);
+if (!DRY && !stateEnabled()) console.warn("No GITHUB_TOKEN — posting without the repeat guard.");
 
 for (const [i, [label, id, own]] of LEAGUES.entries()) {
   const L = await league(id);
@@ -139,6 +147,15 @@ for (const [i, [label, id, own]] of LEAGUES.entries()) {
       continue;
     }
     if (!room) { console.error(`${label}: no poll webhook configured.`); process.exitCode = 1; continue; }
-    console.log(`${label} → ${room}: posted as ${await send(process.env[room], poll)}.`);
+
+    const key = `poll:${SEASON}:w${L.week}:${label}:${n}`;
+    if (!FORCE && await has(key)) { console.log(`${label}: week ${L.week} poll ${n + 1} already went out. Skipping.`); continue; }
+    if (!FORCE && !await claim(key)) { console.log(`${label}: another run just claimed week ${L.week} poll ${n + 1}. Skipping.`); continue; }
+    try {
+      console.log(`${label} → ${ROOM_LABEL[room] || room}: posted as ${await send(process.env[room], poll)}.`);
+    } catch (e) {
+      if (!FORCE) await release(key);   // never leave a post that didn't happen marked as done
+      throw e;
+    }
   }
 }
