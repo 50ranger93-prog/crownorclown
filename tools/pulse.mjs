@@ -444,14 +444,14 @@ const CHIP  = { username: "Chip",  avatar_url: `${AVATARS}/chip.png` };
 const DUECE = { username: "Duece", avatar_url: `${AVATARS}/duece.png` };
 
 const BEATS = {
-  slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
-  inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
-  injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
-  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true },
+  slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Today's slate",         cooldownH: 10 },
+  inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Starter's not playing", cooldownH: 6 },
+  injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Injury tags this week", cooldownH: 18 },
+  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true, sig: "This week's fights", cooldownH: 18 },
   jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
-  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"] },
-  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"] },
-  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"] },
+  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"], sig: "The crown and the vest", cooldownH: 18 },
+  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"], sig: "FAAB check", cooldownH: 18 },
+  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"], sig: "Hot take of the week", cooldownH: 4 },
 };
 
 // ── Discord bot fallback ─────────────────────────────────────────────────────
@@ -489,39 +489,47 @@ async function findChannel(candidates) {
   return null;
 }
 
-// Hard no-double-post guard: has the bot already put this exact text in the given channel recently?
-// This is what stops the same message landing twice no matter how it was triggered — a double
-// dispatch, an overlapping schedule + manual run, or the same beat rolled twice. Reads the channel's
-// recent history via the bot token; if it can't read (no token / API error) it fails OPEN (returns
-// false and the post proceeds), i.e. never worse than before this guard.
-async function alreadyPosted(channelId, text) {
-  if (!BOT_TOKEN || !channelId) return false;
-  const want = text.slice(0, 1900).trim();
+// The bot's recent messages in a channel, with timestamps, for the double-post + cooldown guards.
+// Reads via the bot token; returns [] if it can't (the guards then fail OPEN — never worse than
+// before them).
+async function recentBotMessages(channelId, limit = 50) {
+  if (!BOT_TOKEN || !channelId) return [];
   try {
-    const r = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=20`, { headers: BOT_HEADERS });
-    if (!r.ok) return false;
-    for (const m of await r.json()) {
-      if (m && m.author && m.author.bot && String(m.content || "").trim() === want) return true;
-    }
-  } catch { /* fail open */ }
-  return false;
+    const r = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=${limit}`, { headers: BOT_HEADERS });
+    if (!r.ok) return [];
+    return (await r.json())
+      .filter(m => m && m.author && m.author.bot)
+      .map(m => ({ content: String(m.content || "").trim(), ts: Date.parse(m.timestamp) || 0 }));
+  } catch { return []; }
 }
 
-async function post(hookEnv, text, as, ping, chan) {
+async function post(hookEnv, text, as, ping, chan, sig, cooldownH) {
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
   const users = ping ? [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map(x => x[1]))] : [];
   const url = process.env[hookEnv];
 
-  // Figure out which channel this post lands in so we can check it for an identical recent message:
-  // the general webhook posts to #general; a webhook-less beat resolves its channel by name.
+  // Which channel does this land in? The general webhook posts to #general; a webhook-less beat
+  // resolves its channel by name. We read that channel's recent history to guard against repeats.
   const targetChan = url ? await findChannel(["general"]) : (BOT_TOKEN && chan && chan.length ? await findChannel(chan) : null);
+  const history = targetChan ? await recentBotMessages(targetChan.id) : [];
 
-  // HARD guard: never post the same message twice into the same channel.
-  if (targetChan && await alreadyPosted(targetChan.id, text)) {
+  // Guard 1 — exact: never post the same message text twice.
+  const want = text.slice(0, 1900).trim();
+  if (history.some(m => m.content === want)) {
     console.log(`  skip: identical message already in #${targetChan.name} — not double-posting`);
     return;
+  }
+  // Guard 2 — type cooldown: a "report" beat (the fights, crown/vest, FAAB…) reposts the same thing
+  // with different wording, so exact-match won't catch it. If this beat's signature line is already
+  // in the channel within its cooldown window, skip regardless of wording.
+  if (sig && cooldownH && targetChan) {
+    const cutoff = Date.now() - cooldownH * 3600 * 1000;
+    if (history.some(m => m.ts >= cutoff && m.content.includes(sig))) {
+      console.log(`  skip: "${sig}" already posted in #${targetChan.name} within ${cooldownH}h — not reposting`);
+      return;
+    }
   }
 
   if (!url) {
@@ -644,8 +652,10 @@ async function heartbeat() {
   // Spread the ambient chatter across channels instead of piling every post in #general: the
   // channel-routed beats (hottake→#hot-take, crownvest→#crown-and-vest, faab→#trade-block) carry
   // real weight, so different rooms light up. jab stays the #general needle but no longer dominates.
+  // matchups (the fights) is deliberately NOT here — it's an instigator that fires from its own
+  // afternoon slot with jitter, so it feels spontaneous and never gets duplicated by ambient ticks.
   const weights = hot
-    ? { jab: 3, hottake: 4, crownvest: 2, matchups: 2, faab: 1, injuries: 1 }
+    ? { jab: 4, hottake: 4, crownvest: 2, faab: 1, injuries: 1 }
     : { jab: 3, hottake: 3, crownvest: 3, faab: 2, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
@@ -669,7 +679,7 @@ async function heartbeat() {
   // Route each beat to its own channel (bot-token fallback covers any without a webhook), so the
   // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
   // instead of every ambient post stacking in one place.
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
 }
 
 // A one-off announcement: post an arbitrary line to a channel by name (default #general). Runs
@@ -702,5 +712,5 @@ for (const name of which) {
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say"); continue; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
 }
