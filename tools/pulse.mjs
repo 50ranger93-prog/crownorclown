@@ -544,7 +544,7 @@ async function recentBotMessages(channelId, limit = 50) {
 // EMERGENCY KILL-SWITCH: while true, NOTHING posts to Discord through any path (heartbeat,
 // scheduled beats, announce). Flip to false to resume posting. This exists so posting can be halted
 // instantly without disabling every workflow.
-const POSTING_PAUSED = true;
+const POSTING_PAUSED = false;
 
 async function post(hookEnv, text, as, ping, chan, sig, cooldownH) {
   if (POSTING_PAUSED) { console.log("  POSTING_PAUSED — nothing sent"); return; }
