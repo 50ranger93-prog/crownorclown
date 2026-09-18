@@ -489,25 +489,51 @@ async function findChannel(candidates) {
   return null;
 }
 
+// Hard no-double-post guard: has the bot already put this exact text in the given channel recently?
+// This is what stops the same message landing twice no matter how it was triggered — a double
+// dispatch, an overlapping schedule + manual run, or the same beat rolled twice. Reads the channel's
+// recent history via the bot token; if it can't read (no token / API error) it fails OPEN (returns
+// false and the post proceeds), i.e. never worse than before this guard.
+async function alreadyPosted(channelId, text) {
+  if (!BOT_TOKEN || !channelId) return false;
+  const want = text.slice(0, 1900).trim();
+  try {
+    const r = await fetch(`${DISCORD_API}/channels/${channelId}/messages?limit=20`, { headers: BOT_HEADERS });
+    if (!r.ok) return false;
+    for (const m of await r.json()) {
+      if (m && m.author && m.author.bot && String(m.content || "").trim() === want) return true;
+    }
+  } catch { /* fail open */ }
+  return false;
+}
+
 async function post(hookEnv, text, as, ping, chan) {
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
   const users = ping ? [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map(x => x[1]))] : [];
   const url = process.env[hookEnv];
+
+  // Figure out which channel this post lands in so we can check it for an identical recent message:
+  // the general webhook posts to #general; a webhook-less beat resolves its channel by name.
+  const targetChan = url ? await findChannel(["general"]) : (BOT_TOKEN && chan && chan.length ? await findChannel(chan) : null);
+
+  // HARD guard: never post the same message twice into the same channel.
+  if (targetChan && await alreadyPosted(targetChan.id, text)) {
+    console.log(`  skip: identical message already in #${targetChan.name} — not double-posting`);
+    return;
+  }
+
   if (!url) {
     // No webhook for this channel — fall back to the bot token if we have one and know the channel.
-    if (BOT_TOKEN && chan && chan.length) {
-      const ch = await findChannel(chan);
-      if (ch) {
-        const r = await fetch(`${DISCORD_API}/channels/${ch.id}/messages`, {
-          method: "POST",
-          headers: { ...BOT_HEADERS, "content-type": "application/json" },
-          body: JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [], users } }),
-        });
-        console.log(r.ok ? `  posted to #${ch.name} as bot (no ${hookEnv})` : `  bot post to #${ch.name} failed: HTTP ${r.status}`);
-        return;
-      }
+    if (targetChan) {
+      const r = await fetch(`${DISCORD_API}/channels/${targetChan.id}/messages`, {
+        method: "POST",
+        headers: { ...BOT_HEADERS, "content-type": "application/json" },
+        body: JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [], users } }),
+      });
+      console.log(r.ok ? `  posted to #${targetChan.name} as bot (no ${hookEnv})` : `  bot post to #${targetChan.name} failed: HTTP ${r.status}`);
+      return;
     }
     console.log(`  (no ${hookEnv} set${BOT_TOKEN ? ", bot fallback found no channel" : ""} — not posted)`);
     return;
@@ -644,6 +670,20 @@ async function heartbeat() {
   // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
   // instead of every ambient post stacking in one place.
   if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
+}
+
+// A one-off announcement: post an arbitrary line to a channel by name (default #general). Runs
+// year-round (before the off-season guard) since announcements aren't tied to the slate. Posts via
+// the general webhook when targeting #general, otherwise via the bot-token fallback to the named
+// channel. Usage: node tools/pulse.mjs --say "text" [--to channel] [--dry]
+const sayText = arg("say");
+if (typeof sayText === "string") {
+  const to = arg("to");
+  const toName = typeof to === "string" ? to : "general";
+  const hookEnv = /general/i.test(toName) ? "PULSE_WEBHOOK_GENERAL" : "PULSE_WEBHOOK_UNUSED";
+  console.log(`\n=== announce → #${toName} ===\n${sayText}`);
+  if (!DRY) await post(hookEnv, sayText, CHIP, false, [toName]);
+  process.exit(0);
 }
 
 // Feb–Jul there are no games and nothing truthful to say.

@@ -1,0 +1,42 @@
+name: Announce
+
+# A manual one-off post. Type a message, pick a channel, and it lands as Chip. Posts via the
+# #general webhook when targeting general, otherwise via the bot token to the named channel.
+# Leave "dry" on to preview it in the run log before it goes out.
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'The message to post (Discord markdown OK)'
+        required: true
+      channel:
+        description: 'Channel name to post in'
+        required: false
+        default: 'general'
+      dry:
+        description: 'Print without posting'
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  say:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Announce
+        env:
+          PULSE_WEBHOOK_GENERAL: ${{ secrets.PULSE_WEBHOOK_GENERAL }}
+          DISCORD_BOT_TOKEN:     ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID:      ${{ secrets.DISCORD_GUILD_ID }}
+          MSG: ${{ github.event.inputs.message }}
+          CH:  ${{ github.event.inputs.channel }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: |
+          FLAG=""
+          if [ "$DRY" = "true" ]; then FLAG="--dry"; fi
+          node tools/pulse.mjs --say "$MSG" --to "$CH" $FLAG
