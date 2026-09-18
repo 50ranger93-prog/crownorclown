@@ -33,8 +33,10 @@ on:
 
 # Don't let two pulse runs overlap (a manual dispatch racing a scheduled one) and post on top of
 # each other; let the newer one wait. The post() dedup is the real guard, this is belt-and-suspenders.
+# Shared global lock with heartbeat.yml and announce.yml — no two Discord-posting runs ever overlap,
+# so the read-history-then-post guards can't be raced into a double-post.
 concurrency:
-  group: pulse
+  group: crownorclown-discord-post
   cancel-in-progress: false
 
 jobs:
