@@ -208,9 +208,19 @@ async function hottake() {
     const topScorer = byPf[0], topRecord = byRec[0];
 
     if (topScorer.name !== topRecord.name) {
-      takes.push(`__${l.name}__ — **${topScorer.name}** has scored the most points (${topScorer.pf.toFixed(0)}) and still isn't first. **${topRecord.name}** is ${topRecord.w}-${topRecord.losses}. One of them is getting robbed. Which?`);
+      const split = [
+        `__${l.name}__ — **${topScorer.name}** has scored the most points (${topScorer.pf.toFixed(0)}) and still isn't first. **${topRecord.name}** is ${topRecord.w}-${topRecord.losses}. One of them is getting robbed. Which?`,
+        `__${l.name}__ — most points in the league belongs to **${topScorer.name}**, but the top record is **${topRecord.name}** (${topRecord.w}-${topRecord.losses}). Luckiest team or best team — pick a side.`,
+        `__${l.name}__ — **${topRecord.name}** is winning games; **${topScorer.name}** is winning the scoreboard (${topScorer.pf.toFixed(0)}). Who'd you rather be right now?`,
+      ];
+      takes.push(pick(split));
     } else {
-      takes.push(`__${l.name}__ — **${topRecord.name}** leads in record *and* points (${topRecord.pf.toFixed(0)}). Anybody actually beating them, or are we playing for second?`);
+      const lead = [
+        `__${l.name}__ — **${topRecord.name}** leads in record *and* points (${topRecord.pf.toFixed(0)}). Anybody actually beating them, or are we playing for second?`,
+        `__${l.name}__ — nobody has an argument in ${l.name}: **${topRecord.name}** tops record and scoring (${topRecord.pf.toFixed(0)}). Change my mind.`,
+        `__${l.name}__ — **${topRecord.name}** is the whole story so far — best record, most points (${topRecord.pf.toFixed(0)}). Who's got the guts to catch them?`,
+      ];
+      takes.push(pick(lead));
     }
   }
   if (!takes.length) return null;
@@ -515,6 +525,35 @@ async function post(hookEnv, text, as, ping, chan) {
   console.log(r.ok ? `  posted as ${as.username}` : `  post failed: HTTP ${r.status}`);
 }
 
+// What the bot has talked about lately: the set of bolded subjects (team names) in its most recent
+// posts across the active channels. Each heartbeat is a fresh process with no memory, so the only
+// way to avoid calling out the same team twice in a row is to read it back off the channels. Header
+// lines like "Hot take of the week" are filtered out. Fails safe to an empty set (posts normally).
+async function recentSubjects() {
+  const names = new Set();
+  if (!BOT_TOKEN) return names;
+  const want = ["general", "hot-take", "crown-and-vest", "trade-block", "trash", "waiver"];
+  const chans = (await guildChannels()).filter(c => c.type === 0 && want.some(w => (c.name || "").toLowerCase().includes(w)));
+  for (const c of chans.slice(0, 6)) {
+    try {
+      const r = await fetch(`${DISCORD_API}/channels/${c.id}/messages?limit=3`, { headers: BOT_HEADERS });
+      if (!r.ok) continue;
+      for (const m of await r.json()) {
+        if (!(m.author && m.author.bot)) continue;
+        for (const mt of String(m.content || "").matchAll(/\*\*(.+?)\*\*/g)) names.add(mt[1].trim().toLowerCase());
+      }
+    } catch { /* a read failure just means no dedup this tick */ }
+  }
+  return names;
+}
+
+// The bolded team subjects a candidate post is about (headers filtered out).
+function subjectsOf(text) {
+  return [...String(text).matchAll(/\*\*(.+?)\*\*/g)]
+    .map(m => m[1].trim().toLowerCase())
+    .filter(s => s && !/^(hot take|the crown|today's slate)/i.test(s));
+}
+
 // The always-on heartbeat. Runs every half hour, all week, but does NOT post every time — it rolls
 // the dice, so something lands at a time nobody can predict instead of on a visible clock. That's
 // what makes a channel feel alive rather than automated. Guardrails that keep "alive" from turning
@@ -584,11 +623,22 @@ async function heartbeat() {
     : { jab: 3, hottake: 3, crownvest: 3, faab: 2, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
-  const name = bag[Math.floor(Math.random() * bag.length)];
-  const beat = BEATS[name];
-  console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
-  const text = await safe(beat.fn);
+  // Don't call out a team the bot just talked about. Try a few beats and take the first whose
+  // subject isn't already on the channel's recent posts, so it never reads as the same needle twice.
+  const recent = await recentSubjects();
+  let name, beat, text = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    name = bag[Math.floor(Math.random() * bag.length)];
+    beat = BEATS[name];
+    const cand = await safe(beat.fn);
+    if (!cand) continue;
+    const dupes = subjectsOf(cand).filter(s => recent.has(s));
+    if (!dupes.length) { text = cand; break; }
+    console.log(`  reroll: ${name} repeats a recent subject (${dupes.join(", ")})`);
+    text = cand;   // keep the last candidate as a fallback if every try collides
+  }
   if (!text) { console.log("  nothing to say — quiet tick"); return; }
+  console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
   console.log(`(as ${beat.as.username})\n${text}`);
   // Route each beat to its own channel (bot-token fallback covers any without a webhook), so the
   // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
