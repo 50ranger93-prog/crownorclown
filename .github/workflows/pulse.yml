@@ -31,6 +31,12 @@ on:
         required: false
         default: true
 
+# Don't let two pulse runs overlap (a manual dispatch racing a scheduled one) and post on top of
+# each other; let the newer one wait. The post() dedup is the real guard, this is belt-and-suspenders.
+concurrency:
+  group: pulse
+  cancel-in-progress: false
+
 jobs:
   pulse:
     runs-on: ubuntu-latest
