@@ -439,18 +439,69 @@ const BEATS = {
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP  },
   matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true },
   jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
-  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE },
-  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE },
-  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE },
+  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"] },
+  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"] },
+  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"] },
 };
 
-async function post(hookEnv, text, as, ping) {
-  const url = process.env[hookEnv];
-  if (!url) { console.log(`  (no ${hookEnv} set — not posted)`); return; }
+// ── Discord bot fallback ─────────────────────────────────────────────────────
+// A webhook targets exactly one channel, so a beat whose webhook secret isn't set has nowhere to
+// go and drops silently. But the bot token (already used by the instigator) can post to ANY channel
+// it can see. So when a beat has no webhook, we resolve its channel by name off the live guild list
+// and post as the bot — no per-channel webhook to create. Content is identical; only the poster
+// identity differs (the bot's name, since only webhooks can override username/avatar per message).
+const DISCORD_API = "https://discord.com/api/v10";
+const GUILD_ID = process.env.DISCORD_GUILD_ID || "1543364312028946432";
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+const BOT_HEADERS = { Authorization: `Bot ${BOT_TOKEN}`, "user-agent": "CrownOrClownBot (crownorclown.com, 1.0)" };
+
+let _channelCache = null;
+async function guildChannels() {
+  if (_channelCache) return _channelCache;
+  try {
+    const r = await fetch(`${DISCORD_API}/guilds/${GUILD_ID}/channels`, { headers: BOT_HEADERS });
+    if (!r.ok) { console.log(`  bot channel lookup failed: HTTP ${r.status}`); return (_channelCache = []); }
+    return (_channelCache = await r.json());
+  } catch (e) { console.log(`  bot channel lookup errored: ${e.message || e}`); return (_channelCache = []); }
+}
+
+// Match a text channel (type 0) by trying each name candidate as a case-insensitive substring,
+// most-specific first. Logs the available channel names when nothing matches, so a missed name is
+// obvious rather than silent.
+async function findChannel(candidates) {
+  const chans = (await guildChannels()).filter(c => c.type === 0);
+  for (const want of candidates) {
+    const w = want.toLowerCase();
+    const hit = chans.find(c => (c.name || "").toLowerCase().includes(w));
+    if (hit) return hit;
+  }
+  if (chans.length) console.log(`  no channel matched [${candidates.join(", ")}] — available: ${chans.map(c => "#" + c.name).join(", ")}`);
+  return null;
+}
+
+async function post(hookEnv, text, as, ping, chan) {
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
   const users = ping ? [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map(x => x[1]))] : [];
+  const url = process.env[hookEnv];
+  if (!url) {
+    // No webhook for this channel — fall back to the bot token if we have one and know the channel.
+    if (BOT_TOKEN && chan && chan.length) {
+      const ch = await findChannel(chan);
+      if (ch) {
+        const r = await fetch(`${DISCORD_API}/channels/${ch.id}/messages`, {
+          method: "POST",
+          headers: { ...BOT_HEADERS, "content-type": "application/json" },
+          body: JSON.stringify({ content: text.slice(0, 1900), allowed_mentions: { parse: [], users } }),
+        });
+        console.log(r.ok ? `  posted to #${ch.name} as bot (no ${hookEnv})` : `  bot post to #${ch.name} failed: HTTP ${r.status}`);
+        return;
+      }
+    }
+    console.log(`  (no ${hookEnv} set${BOT_TOKEN ? ", bot fallback found no channel" : ""} — not posted)`);
+    return;
+  }
   const r = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -470,24 +521,79 @@ async function post(hookEnv, text, as, ping) {
 // into "muted": quiet hours (no 3am pings — managers span time zones, one's in Sweden), and a fire
 // rate you can crank. jab is the light everyday needle and gets fired most; the heavier beats drop
 // in now and then. Turn the whole thing up or down with PULSE_FIRE_RATE (0..1).
+// The reliable gametime signal: the NFL's fixed weekly brackets (times UTC; ET = UTC-4 in season).
+// These mirror the gametime cron windows in heartbeat.yml and need no network call, so they work
+// even though ESPN's public scoreboard 403s GitHub's runners. This is what actually drives the
+// "dial up around gametime" behavior; gameWindow() below only refines it when reachable.
+function inGameBracket(d = new Date()) {
+  const day = d.getUTCDay();   // 0 Sun … 6 Sat
+  const h = d.getUTCHours();
+  if (day === 0 && h >= 16) return true;   // Sun 10:00 MT onward — early + afternoon slate
+  if (day === 1 && h <= 4)  return true;   // → Sunday Night Football (UTC Mon early)
+  if (day === 4 && h === 23) return true;  // Thu pregame lead-in
+  if (day === 5 && h <= 4)  return true;   // → Thursday Night Football (UTC Fri early)
+  if (day === 1 && h === 23) return true;  // Mon pregame lead-in
+  if (day === 2 && h <= 4)  return true;   // → Monday Night Football (UTC Tue early)
+  return false;
+}
+
+// A bonus refinement: when we're NOT already in a bracket, try the live NFL scoreboard for an
+// off-schedule game (international window, flex, playoffs). Returns true if a game is live or kicks
+// off within the hour. ESPN's public scoreboard currently 403s datacenter IPs, so this often just
+// returns false — that's fine, the brackets above carry the feature on their own. Fails safe.
+async function gameWindow() {
+  try {
+    const j = await get("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard");
+    const now = Date.now();
+    for (const e of j.events || []) {
+      const state = e.status && e.status.type && e.status.type.state;   // 'pre' | 'in' | 'post'
+      if (state === "in") return true;                                  // a game is live right now
+      if (state === "pre") {
+        const mins = (new Date(e.date).getTime() - now) / 60000;
+        if (mins <= 60 && mins > -20) return true;                      // within the hour before kickoff
+      }
+    }
+  } catch (e) { console.log(`  gameWindow check failed: ${String(e.message || e)}`); }
+  return false;
+}
+
 async function heartbeat() {
   const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
-  if (mtHour < 8 || mtHour >= 23) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
-  const rate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.9)));
-  if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (fire rate ${rate}).`); return; }
-  const weights = { jab: 6, hottake: 2, injuries: 1, slate: 1 };
+  // Gametime = we're in a known NFL bracket (reliable, no network), OR — only when we're not —
+  // the live scoreboard catches an off-schedule game. Skipping the call inside brackets keeps the
+  // common path fast and quiet instead of logging a 403 every gametime tick.
+  let hot = inGameBracket();
+  if (!hot) hot = await gameWindow();
+  // Quiet hours keep 3am pings away — but a live game overrides them, since night games (SNF/MNF)
+  // run past 11pm MT and that's exactly when the room is talking.
+  if ((mtHour < 8 || mtHour >= 23) && !hot) { console.log(`Heartbeat: quiet hours (${mtHour}:00 MT) — holding.`); return; }
+  // Around gametime the channel should feel busy; the rest of the day it's an occasional needle.
+  // Two dials so you can tune each independently from repo variables without touching code.
+  const baseRate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE || 0.9)));
+  const gameRate = Math.max(0, Math.min(1, Number(process.env.PULSE_FIRE_RATE_GAME || 1)));
+  const rate = hot ? gameRate : baseRate;
+  if (Math.random() > rate) { console.log(`Heartbeat: quiet this tick (${hot ? "gametime" : "normal"} rate ${rate}).`); return; }
+  // During games the room wants takes and callouts (the stuff that makes people reply); off-hours
+  // stay lighter so it never reads as spam. matchups pings the named managers — kept modest so a
+  // busy game day is a few callouts, not a firehose of notifications.
+  // Spread the ambient chatter across channels instead of piling every post in #general: the
+  // channel-routed beats (hottake→#hot-take, crownvest→#crown-and-vest, faab→#trade-block) carry
+  // real weight, so different rooms light up. jab stays the #general needle but no longer dominates.
+  const weights = hot
+    ? { jab: 3, hottake: 4, crownvest: 2, matchups: 2, faab: 1, injuries: 1 }
+    : { jab: 3, hottake: 3, crownvest: 3, faab: 2, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
   const name = bag[Math.floor(Math.random() * bag.length)];
   const beat = BEATS[name];
-  console.log(`\n=== heartbeat → ${name} ===`);
+  console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say — quiet tick"); return; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  // The heartbeat is ambient chatter for the main channel — always post it there, regardless of
-  // the beat's own default channel, so a beat like hottake (whose dedicated webhook may be unset)
-  // still lands instead of silently going nowhere.
-  if (!DRY) await post("PULSE_WEBHOOK_GENERAL", text, beat.as, beat.ping);
+  // Route each beat to its own channel (bot-token fallback covers any without a webhook), so the
+  // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
+  // instead of every ambient post stacking in one place.
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
 }
 
 // Feb–Jul there are no games and nothing truthful to say.
@@ -506,5 +612,5 @@ for (const name of which) {
   const text = await safe(beat.fn);
   if (!text) { console.log("  nothing to say"); continue; }
   console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping);
+  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan);
 }
