@@ -541,7 +541,13 @@ async function recentBotMessages(channelId, limit = 50) {
   } catch { return []; }
 }
 
+// EMERGENCY KILL-SWITCH: while true, NOTHING posts to Discord through any path (heartbeat,
+// scheduled beats, announce). Flip to false to resume posting. This exists so posting can be halted
+// instantly without disabling every workflow.
+const POSTING_PAUSED = true;
+
 async function post(hookEnv, text, as, ping, chan, sig, cooldownH) {
+  if (POSTING_PAUSED) { console.log("  POSTING_PAUSED — nothing sent"); return; }
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
