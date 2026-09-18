@@ -654,9 +654,13 @@ async function heartbeat() {
   // real weight, so different rooms light up. jab stays the #general needle but no longer dominates.
   // matchups (the fights) is deliberately NOT here — it's an instigator that fires from its own
   // afternoon slot with jitter, so it feels spontaneous and never gets duplicated by ambient ticks.
+  // jab dominates on purpose: it's the fresh, rotating, no-cooldown needle, so leaning on it keeps
+  // ticks from going quiet and spreads posts across all channels. The report beats (crownvest/faab/
+  // injuries/slate) have near-static weekly content that exact-dedup blocks on repeat, so they're
+  // occasional flavor, not the workhorse.
   const weights = hot
-    ? { jab: 4, hottake: 4, crownvest: 2, faab: 1, injuries: 1 }
-    : { jab: 3, hottake: 3, crownvest: 3, faab: 2, injuries: 1, slate: 1 };
+    ? { jab: 8, hottake: 3, crownvest: 1, faab: 1, injuries: 1 }
+    : { jab: 7, hottake: 3, crownvest: 1, faab: 1, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
   // Don't call out a team the bot just talked about. Try a few beats and take the first whose
