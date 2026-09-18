@@ -576,9 +576,12 @@ async function heartbeat() {
   // During games the room wants takes and callouts (the stuff that makes people reply); off-hours
   // stay lighter so it never reads as spam. matchups pings the named managers — kept modest so a
   // busy game day is a few callouts, not a firehose of notifications.
+  // Spread the ambient chatter across channels instead of piling every post in #general: the
+  // channel-routed beats (hottake→#hot-take, crownvest→#crown-and-vest, faab→#trade-block) carry
+  // real weight, so different rooms light up. jab stays the #general needle but no longer dominates.
   const weights = hot
-    ? { jab: 5, hottake: 4, matchups: 2, injuries: 1 }
-    : { jab: 6, hottake: 2, injuries: 1, slate: 1 };
+    ? { jab: 3, hottake: 4, crownvest: 2, matchups: 2, faab: 1, injuries: 1 }
+    : { jab: 3, hottake: 3, crownvest: 3, faab: 2, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
   const name = bag[Math.floor(Math.random() * bag.length)];
