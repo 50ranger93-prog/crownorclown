@@ -42,8 +42,11 @@ on:
         default: true
 
 # Two ticks can overlap if one runs long; let the newer one wait rather than double-post.
+# One global lock across EVERY workflow that posts to Discord (heartbeat, pulse, announce). No two
+# posting runs ever overlap, so each run always sees the prior run's posts in channel history and the
+# dedup / fresh-selection guards actually hold. This is what makes double-posting impossible.
 concurrency:
-  group: heartbeat
+  group: crownorclown-discord-post
   cancel-in-progress: false
 
 jobs:

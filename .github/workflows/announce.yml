@@ -20,6 +20,11 @@ on:
         required: false
         default: true
 
+# Shared global lock with heartbeat.yml and pulse.yml — no two Discord-posting runs ever overlap.
+concurrency:
+  group: crownorclown-discord-post
+  cancel-in-progress: false
+
 jobs:
   say:
     runs-on: ubuntu-latest
