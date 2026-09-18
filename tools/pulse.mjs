@@ -449,9 +449,9 @@ const BEATS = {
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Injury tags this week", cooldownH: 18 },
   matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true, sig: "This week's fights", cooldownH: 18 },
   jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
-  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"], sig: "The crown and the vest", cooldownH: 18 },
-  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"], sig: "FAAB check", cooldownH: 18 },
-  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"], sig: "Hot take of the week", cooldownH: 4 },
+  crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"] },
+  faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"] },
+  hottake:   { fn: hottake,   hook: "PULSE_WEBHOOK_HOTTAKE",   as: DUECE, chan: ["hot-take", "hottake", "hot", "debate", "trash-talk", "trash"] },
 };
 
 // ── Discord bot fallback ─────────────────────────────────────────────────────
@@ -676,10 +676,22 @@ async function heartbeat() {
   if (!text) { console.log("  nothing to say — quiet tick"); return; }
   console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
   console.log(`(as ${beat.as.username})\n${text}`);
-  // Route each beat to its own channel (bot-token fallback covers any without a webhook), so the
-  // channel that lights up varies with the beat — hottake in #hot-take, the rest in #general —
-  // instead of every ambient post stacking in one place.
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
+  // Where it lands: the channel-routed beats keep their own room (hottake→#hot-take/#trash-talk,
+  // crownvest→#crown-and-vest, faab→#trade-block). jab is the frequent needle and fits any room, so
+  // ROTATE it across channels — that's what keeps the whole server active instead of every ambient
+  // post stacking in #general. A bot-token target (unset hook) posts to the picked channel by name.
+  let hook = beat.hook, chan = beat.chan;
+  if (name === "jab") {
+    const rooms = [
+      { hook: "PULSE_WEBHOOK_GENERAL", chan: ["general"] },
+      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trash-talk", "trash", "smack"] },
+      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trade-block", "trade", "waiver"] },
+      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["crown-and-vest", "crown", "vest"] },
+    ];
+    const room = rooms[Math.floor(Math.random() * rooms.length)];
+    hook = room.hook; chan = room.chan;
+  }
+  if (!DRY) await post(hook, text, beat.as, beat.ping, chan, beat.sig, beat.cooldownH);
 }
 
 // A one-off announcement: post an arbitrary line to a channel by name (default #general). Runs
