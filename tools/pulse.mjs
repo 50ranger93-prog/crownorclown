@@ -398,7 +398,44 @@ const JAB = {
   winless: [`**{t}** is still hunting win number one. It's getting late early.`, `**{t}** hasn't won a game. Somebody let 'em have one — no, don't.`, `Still 0-fer: **{t}**. The vest fits, just saying.`],
   fraud:   [`**{t}** is {r} on {p} points. Fraud, or getting robbed? Discuss.`, `**{t}** put up {p} points and has a {r} record to show for it. Explain that.`, `{p} points, {r} record: **{t}** is the argument this week. Pick a side.`],
 };
-async function jab() {
+// ── jab selection (pure, unit-tested in tools/pulse.test.mjs) ─────────────────
+// Every jab the data supports, as {subject, text}: each fact rendered through each of its templates.
+// Building the FULL set (instead of picking one at random) is what lets us guarantee a fresh player
+// and a fresh line, rather than hoping a random pick doesn't repeat.
+export function jabCandidates(facts) {
+  const out = [];
+  for (const f of facts || []) {
+    for (const tpl of (JAB[f.angle] || [])) {
+      out.push({ subject: String(f.m && f.m.t || "").toLowerCase(), text: fill(tpl, f.m) });
+    }
+  }
+  return out;
+}
+
+// Pick a candidate the channels haven't seen: first one whose player AND line are both unused
+// recently; then any with an unused line; then anything. Guarantees no repeated comment, and a
+// fresh player whenever the pool still has one. rng is injectable for deterministic tests.
+export function chooseFresh(cands, avoidSubjects, avoidTexts, rng = Math.random) {
+  if (!cands || !cands.length) return null;
+  const subs = avoidSubjects instanceof Set ? avoidSubjects : new Set(avoidSubjects || []);
+  const txts = avoidTexts instanceof Set ? avoidTexts : new Set(avoidTexts || []);
+  const norm = (s) => String(s).slice(0, 1900).trim();
+  let pool = cands.filter(c => !subs.has(c.subject) && !txts.has(norm(c.text)));
+  if (!pool.length) pool = cands.filter(c => !txts.has(norm(c.text)));
+  if (!pool.length) pool = cands;
+  return pool[Math.floor(rng() * pool.length)];
+}
+
+// Of the candidate rooms, the index of the one whose most recent bot post is oldest — the channel
+// quiet the longest. Routing jabs there spreads them across ALL channels instead of clustering.
+// lastTs[i] is room i's newest post time (0 = never posted).
+export function pickQuietestRoom(rooms, lastTs) {
+  let best = 0;
+  for (let i = 1; i < rooms.length; i++) if ((lastTs[i] || 0) < (lastTs[best] || 0)) best = i;
+  return best;
+}
+
+async function jab(recent) {
   const facts = [];
   for (const l of LEAGUES) {
     const j = await safe(() => get(fantasy(l.id, "view=mMatchupScore&view=mTeam")));
@@ -424,8 +461,9 @@ async function jab() {
     if (byPf[0].name !== byRec[0].name) add("fraud", { t: byPf[0].name, r: `${byPf[0].w}-${byPf[0].ls}`, p: byPf[0].pf.toFixed(0) });
   }
   if (!facts.length) return null;
-  const f = pick(facts);
-  return fill(pick(JAB[f.angle]), f.m);
+  // Pick a player + line the channels haven't seen recently — deterministic freshness, not a hope.
+  const choice = chooseFresh(jabCandidates(facts), recent && recent.subjects, recent && recent.texts);
+  return choice ? choice.text : null;
 }
 
 // ── wiring ───────────────────────────────────────────────────────────────────
@@ -630,6 +668,33 @@ async function gameWindow() {
   return false;
 }
 
+// The chatter rooms jab rotates through. Broad name candidates so findChannel() matches whatever
+// exists; an unset hook means "post via the bot token to this channel by name".
+const ROOMS = [
+  { hook: "PULSE_WEBHOOK_GENERAL", chan: ["general"] },
+  { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trash-talk", "trash", "smack"] },
+  { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trade-block", "trade", "waiver"] },
+  { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["crown-and-vest", "crown", "vest"] },
+];
+
+// Read the chatter rooms once: the bolded subjects and exact texts the bot recently posted (for
+// fresh-player/fresh-line selection) and each room's newest post time (for quietest-room routing).
+// Fails safe to empty (everything looks fresh) when reads fail.
+async function recentActivity() {
+  const subjects = new Set(), texts = new Set();
+  const lastTs = ROOMS.map(() => 0);
+  for (let i = 0; i < ROOMS.length; i++) {
+    const ch = await findChannel(ROOMS[i].chan);
+    if (!ch) continue;
+    for (const m of await recentBotMessages(ch.id)) {
+      lastTs[i] = Math.max(lastTs[i], m.ts);
+      texts.add(m.content);
+      for (const mt of m.content.matchAll(/\*\*(.+?)\*\*/g)) subjects.add(mt[1].trim().toLowerCase());
+    }
+  }
+  return { subjects, texts, lastTs };
+}
+
 async function heartbeat() {
   const mtHour = (new Date().getUTCHours() + 18) % 24;   // MDT = UTC-6 in season
   // Gametime = we're in a known NFL bracket (reliable, no network), OR — only when we're not —
@@ -663,37 +728,25 @@ async function heartbeat() {
     : { jab: 7, hottake: 3, crownvest: 1, faab: 1, injuries: 1, slate: 1 };
   const bag = [];
   for (const [n, w] of Object.entries(weights)) for (let i = 0; i < w; i++) bag.push(n);
-  // Don't call out a team the bot just talked about. Try a few beats and take the first whose
-  // subject isn't already on the channel's recent posts, so it never reads as the same needle twice.
-  const recent = await recentSubjects();
-  let name, beat, text = null;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    name = bag[Math.floor(Math.random() * bag.length)];
-    beat = BEATS[name];
-    const cand = await safe(beat.fn);
-    if (!cand) continue;
-    const dupes = subjectsOf(cand).filter(s => recent.has(s));
-    if (!dupes.length) { text = cand; break; }
-    console.log(`  reroll: ${name} repeats a recent subject (${dupes.join(", ")})`);
-    text = cand;   // keep the last candidate as a fallback if every try collides
-  }
-  if (!text) { console.log("  nothing to say — quiet tick"); return; }
+  const name = bag[Math.floor(Math.random() * bag.length)];
+  const beat = BEATS[name];
+
+  // Read recent activity once: jab uses it to pick a fresh player + line; we use its per-room
+  // timestamps to route jab to the quietest channel. Other beats ignore the arg.
+  const recent = await recentActivity();
+  const text = await safe(() => beat.fn(recent));
+  if (!text) { console.log(`  ${name}: nothing fresh to say — quiet tick`); return; }
+  // Belt-and-suspenders (post() also guards): never repeat an exact line already out there.
+  if (recent.texts.has(text.slice(0, 1900).trim())) { console.log(`  ${name}: line already posted — skip`); return; }
+
   console.log(`\n=== heartbeat${hot ? " (gametime)" : ""} → ${name} ===`);
   console.log(`(as ${beat.as.username})\n${text}`);
-  // Where it lands: the channel-routed beats keep their own room (hottake→#hot-take/#trash-talk,
-  // crownvest→#crown-and-vest, faab→#trade-block). jab is the frequent needle and fits any room, so
-  // ROTATE it across channels — that's what keeps the whole server active instead of every ambient
-  // post stacking in #general. A bot-token target (unset hook) posts to the picked channel by name.
+  // jab fits any room, so send it to whichever channel has been quiet longest — that fans jabs out
+  // across every channel instead of clustering. The channel-routed beats keep their own room.
   let hook = beat.hook, chan = beat.chan;
   if (name === "jab") {
-    const rooms = [
-      { hook: "PULSE_WEBHOOK_GENERAL", chan: ["general"] },
-      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trash-talk", "trash", "smack"] },
-      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["trade-block", "trade", "waiver"] },
-      { hook: "PULSE_WEBHOOK_UNUSED",  chan: ["crown-and-vest", "crown", "vest"] },
-    ];
-    const room = rooms[Math.floor(Math.random() * rooms.length)];
-    hook = room.hook; chan = room.chan;
+    const i = pickQuietestRoom(ROOMS, recent.lastTs);
+    hook = ROOMS[i].hook; chan = ROOMS[i].chan;
   }
   if (!DRY) await post(hook, text, beat.as, beat.ping, chan, beat.sig, beat.cooldownH);
 }
@@ -702,31 +755,41 @@ async function heartbeat() {
 // year-round (before the off-season guard) since announcements aren't tied to the slate. Posts via
 // the general webhook when targeting #general, otherwise via the bot-token fallback to the named
 // channel. Usage: node tools/pulse.mjs --say "text" [--to channel] [--dry]
-const sayText = arg("say");
-if (typeof sayText === "string") {
-  const to = arg("to");
-  const toName = typeof to === "string" ? to : "general";
-  const hookEnv = /general/i.test(toName) ? "PULSE_WEBHOOK_GENERAL" : "PULSE_WEBHOOK_UNUSED";
-  console.log(`\n=== announce → #${toName} ===\n${sayText}`);
-  if (!DRY) await post(hookEnv, sayText, CHIP, false, [toName]);
-  process.exit(0);
+import { pathToFileURL } from "node:url";
+
+// CLI entry point. Wrapped in a function and gated on being the entry module so this file can be
+// imported by tests (tools/pulse.test.mjs) WITHOUT running the dispatch — and thus without posting.
+async function runCli() {
+  const sayText = arg("say");
+  if (typeof sayText === "string") {
+    const to = arg("to");
+    const toName = typeof to === "string" ? to : "general";
+    const hookEnv = /general/i.test(toName) ? "PULSE_WEBHOOK_GENERAL" : "PULSE_WEBHOOK_UNUSED";
+    console.log(`\n=== announce → #${toName} ===\n${sayText}`);
+    if (!DRY) await post(hookEnv, sayText, CHIP, false, [toName]);
+    return;
+  }
+
+  // Feb–Jul there are no games and nothing truthful to say.
+  const month = new Date().getUTCMonth();
+  if (month > 0 && month < 7) { console.log("Off-season — pulse is quiet."); return; }
+
+  if (arg("heartbeat")) { await heartbeat(); return; }
+
+  const which = arg("all") ? Object.keys(BEATS) : [arg("beat")].filter(Boolean);
+  if (!which.length) { console.error("Need --beat <name> or --all. Beats: " + Object.keys(BEATS).join(", ")); process.exitCode = 1; return; }
+
+  for (const name of which) {
+    const beat = BEATS[name];
+    if (!beat) { console.error(`unknown beat: ${name}`); continue; }
+    console.log(`\n=== ${name} ===`);
+    const text = await safe(beat.fn);
+    if (!text) { console.log("  nothing to say"); continue; }
+    console.log(`(as ${beat.as.username})\n${text}`);
+    if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
+  }
 }
 
-// Feb–Jul there are no games and nothing truthful to say.
-const month = new Date().getUTCMonth();
-if (month > 0 && month < 7) { console.log("Off-season — pulse is quiet."); process.exit(0); }
-
-if (arg("heartbeat")) { await heartbeat(); process.exit(0); }
-
-const which = arg("all") ? Object.keys(BEATS) : [arg("beat")].filter(Boolean);
-if (!which.length) { console.error("Need --beat <name> or --all. Beats: " + Object.keys(BEATS).join(", ")); process.exit(1); }
-
-for (const name of which) {
-  const beat = BEATS[name];
-  if (!beat) { console.error(`unknown beat: ${name}`); continue; }
-  console.log(`\n=== ${name} ===`);
-  const text = await safe(beat.fn);
-  if (!text) { console.log("  nothing to say"); continue; }
-  console.log(`(as ${beat.as.username})\n${text}`);
-  if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCli();
 }
