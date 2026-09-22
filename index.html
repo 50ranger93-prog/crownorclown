@@ -721,6 +721,22 @@
   .watch-team{font-family:var(--disp);text-transform:uppercase;font-size:26px;line-height:1.05;margin:10px 0 5px;color:var(--bone)}
   .watch-team.open{color:var(--bone-dim)}
   .watch-meta{font-family:var(--mono);font-size:11.5px;color:var(--bone-dim)}
+  .watch-field{list-style:none;margin:16px 0 0;padding:14px 0 0;border-top:1px solid var(--line)}
+  .watch-field li{
+    display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:11px;
+    color:var(--bone-dim);padding:3px 0;
+  }
+  .watch-field li span{flex:none;width:74px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .watch-field li b{font-weight:400;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .watch-field li i{font-style:normal;flex:none}
+  .watch-field li.on{color:var(--bone)}
+  .watch-field li.on b{font-weight:700}
+  .watch-card.crown .watch-field li.on i{color:var(--gold)}
+  .watch-card.vest .watch-field li.on i{color:var(--clown)}
+  .watch-miss{
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:#F0A79C;margin-top:10px;
+  }
 
   @media(max-width:900px){
     .lg-grid,.res-grid{grid-template-columns:1fr}
@@ -2120,8 +2136,14 @@
     }
     function load(l){
       if(!l.espnId) return Promise.resolve({league:l,teams:null,reason:'nolink'});
-      return fetch(API+l.espnId+'?view=mTeam&view=mStandings',{credentials:'omit'})
-        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      var url=API+l.espnId+'?view=mTeam&view=mStandings';
+      function pull(){
+        return fetch(url,{credentials:'omit'})
+          .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
+      }
+      // ESPN drops a call now and then. One board going missing silently hands the crown or the
+      // vest to the wrong team, so try twice before giving up on it.
+      return pull().catch(function(){ return pull(); })
         .then(function(j){
           var teams=((j&&j.teams)||[]).map(function(t){
             var o=(t.record&&t.record.overall)||{};
@@ -2173,28 +2195,42 @@
     // field wears nothing, and a last-place team doesn't have to be its own league's low scorer
     // to be in the running — it only has to be lower than the other two boards' cellars.
     function claims(sets){
-      var leaders=[], cellar=[];
+      var leaders=[], cellar=[], missing=[];
       sets.forEach(function(s){
         var ts=s.teams;
-        if(!ts||ts.length<2) return;
         // A board is only eligible once it has actually played. Going by the record, not by
         // points, keeps an unplayed board's 0.0 out of it without trusting a score to be there.
-        if(!ts.every(function(t){ return (t.w+t.l+t.t)>0; })) return;
+        var played = ts && ts.length>1 && ts.every(function(t){ return (t.w+t.l+t.t)>0; });
+        if(!played){
+          if(s.league.espnId) missing.push({lg:s.league.name, why:(ts&&ts.length)?'not played yet':'standings didn\u2019t load'});
+          return;
+        }
         var first=ts[0], last=ts[ts.length-1];
         leaders.push({n:first.name,pf:first.pf,lg:s.league.name});
         cellar.push({n:last.name,pf:last.pf,lg:s.league.name});
       });
       leaders.sort(function(a,b){ return b.pf-a.pf; });
       cellar.sort(function(a,b){ return a.pf-b.pf; });
-      return {crown:leaders[0]||null, vest:cellar[0]||null};
+      return {crown:leaders[0]||null, vest:cellar[0]||null, leaders:leaders, cellar:cellar, missing:missing};
     }
 
-    function watchCard(kind,label,pick,rank,none){
+    // Showing only the verdict makes a wrong one impossible to argue with. The full field of
+    // contenders goes on the card, so the standing that qualified each team and the number that
+    // beat them are both right there, and a board that didn't make it in says so.
+    function watchCard(kind,label,pick,rank,rows,missing){
+      var field = rows.map(function(r){
+        return '<li'+(r===pick?' class="on"':'')+'><span>'+esc(r.lg)+'</span>'+
+          '<b>'+esc(r.n)+'</b><i>'+r.pf.toFixed(1)+'</i></li>';
+      }).join('');
+      var gaps = missing.map(function(m){
+        return '<div class="watch-miss">'+esc(m.lg)+' not counted &middot; '+m.why+'</div>';
+      }).join('');
       return '<div class="watch-card '+kind+'"><div class="watch-k">'+label+'</div>'+
         (pick
           ? '<div class="watch-team">'+esc(pick.n)+'</div>'+
             '<div class="watch-meta">'+pick.pf.toFixed(1)+' PF &middot; '+rank+' in '+esc(pick.lg)+'</div>'
-          : '<div class="watch-team open">Nobody yet</div><div class="watch-meta">'+none+'</div>')+
+          : '<div class="watch-team open">Nobody yet</div><div class="watch-meta">No board has played yet</div>')+
+        (field?'<ul class="watch-field">'+field+'</ul>':'')+gaps+
         '</div>';
     }
 
@@ -2205,9 +2241,9 @@
       if(!c.crown&&!c.vest){ el.innerHTML=''; return; }
       el.innerHTML=
         watchCard('crown','Crown watch &middot; most points of the league leaders',
-          c.crown,'1st','No board has played yet')+
+          c.crown,'1st',c.leaders,c.missing)+
         watchCard('vest','Vest watch &middot; fewest points of the last-place teams',
-          c.vest,'last','No board has played yet');
+          c.vest,'last',c.cellar,c.missing);
     }
 
     Promise.all(LEAGUES.map(load)).then(function(sets){
