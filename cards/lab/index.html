@@ -67,6 +67,8 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
 .grain{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.42;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E")}
 
+.capshade{position:absolute;top:0;left:0;right:0;height:23%;z-index:7;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,var(--tops,.22)),transparent)}
 .head{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:8}
 .ed{font-size:8px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:4px 9px;border-radius:3px;color:#130d02;
   background:linear-gradient(135deg,var(--f1),var(--f2) 55%,var(--f1));box-shadow:0 1px 3px rgba(0,0,0,.7)}
@@ -115,6 +117,7 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
   <fieldset><legend>Artwork</legend>
     <div class="drop" id="drop" tabindex="0" role="button">Drop your logo file<br><span style="font-size:10.5px;opacity:.7">the real one, uncropped</span></div>
     <input type="file" id="file" accept="image/*" hidden>
+    <label class="ck"><input type="checkbox" id="auto" checked> Read the artwork and set these for me</label>
     <div class="chips" id="fit"></div>
     <label for="arth">Art panel height</label><input type="range" id="arth" min="45" max="82" value="73">
     <label for="posy">Framing <span style="text-transform:none;letter-spacing:0">(fill only)</span></label><input type="range" id="posy" min="0" max="100" value="45">
@@ -171,7 +174,7 @@ Day job | HVAC</textarea>
   <div>
     <div class="tilt"><div class="card" id="cardF"><div class="face" id="faceF">
       <div class="artwrap contain" id="artwrap"><div class="back-blur" id="blur"></div><div class="art" id="art"></div><div class="tint"></div><div class="hem"></div></div>
-      <div class="grain"></div><div class="holo" id="holoF"></div><div class="glare" id="glareF"></div>
+      <div class="capshade"></div><div class="grain"></div><div class="holo" id="holoF"></div><div class="glare" id="glareF"></div>
       <div class="head"><span class="ed" id="edF">COMMISSIONER</span><span class="ser" id="serF">#012 / 36</span></div>
       <div class="foot">
         <div class="rule"></div>
@@ -234,7 +237,7 @@ chips($("fit"), ["Whole logo", "Fill the box"], () => S.fit, v => S.fit = v);
 function takeFile(f) {
   if (!f || !f.type.startsWith("image/")) return;
   const r = new FileReader();
-  r.onload = e => { S.art = e.target.result; paint(); };
+  r.onload = e => { S.art = e.target.result; readArt(); };
   r.readAsDataURL(f);
 }
 $("drop").onclick = () => $("file").click();
@@ -262,6 +265,99 @@ wire("faceF","cardF","holoF"); wire("faceB","cardB","holoB");
 
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
 
+/* ── read the artwork ───────────────────────────────────────────────────────
+   Thirty-six people upload thirty-six unpredictable images. Rather than make
+   everyone tune the card by hand, the card reads the picture: what colour it
+   actually is, how bright it is where the type sits, and whether it is a
+   portrait (fill the frame) or a logo (show all of it). Same frame every time,
+   a different card every time, because the artwork decides.                  */
+const hex = (r,g,b) => "#" + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+
+function analyse(src) {
+  return new Promise(done => {
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    im.onerror = () => done(null);
+    im.onload = () => {
+      const N = 72, c = document.createElement("canvas");
+      c.width = c.height = N;
+      const g = c.getContext("2d", { willReadFrequently: true });
+      g.drawImage(im, 0, 0, N, N);
+      let d;
+      // A cross-origin image taints the canvas and readback throws. That is not
+      // an error worth surfacing — the card just keeps the manual settings.
+      try { d = g.getImageData(0, 0, N, N).data; } catch (e) { return done(null); }
+
+      const bins = new Map();
+      let topSum = 0, topN = 0;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const i = (y*N + x) * 4, r = d[i], gg = d[i+1], b = d[i+2];
+        if (d[i+3] < 128) continue;
+        const lum = (0.2126*r + 0.7152*gg + 0.0722*b) / 255;
+        if (y < N * 0.2) { topSum += lum; topN++; }
+        const mx = Math.max(r,gg,b), mn = Math.min(r,gg,b);
+        const sat = mx === 0 ? 0 : (mx - mn) / mx;
+        // Skip the near-black, the near-white and the grey: none of them is the
+        // colour of the picture, they are just its lighting.
+        if (lum < .12 || lum > .93 || sat < .28) continue;
+        const key = (r >> 5 << 10) | (gg >> 5 << 5) | (b >> 5);
+        const cur = bins.get(key) || { n:0, r:0, g:0, b:0, w:0 };
+        cur.n++; cur.r += r; cur.g += gg; cur.b += b;
+        cur.w += sat * (1 - Math.abs(lum - .5));
+        bins.set(key, cur);
+      }
+      let best = null;
+      for (const v of bins.values()) if (!best || v.w > best.w) best = v;
+      // Logo or photograph? Aspect ratio can't tell them apart — plenty of logos
+      // are wide and plenty of photos are tall. What separates them is the
+      // corners: a logo sits on a flat background or a transparent one, a
+      // photograph almost never has four matching corners. Logos get shown
+      // whole; photographs fill the frame.
+      const corner = (cx, cy) => {
+        let r = 0, g2 = 0, b = 0, a = 0, n = 0;
+        for (let y = cy; y < cy + 6; y++) for (let x = cx; x < cx + 6; x++) {
+          const i = (y*N + x) * 4;
+          r += d[i]; g2 += d[i+1]; b += d[i+2]; a += d[i+3]; n++;
+        }
+        return [r/n, g2/n, b/n, a/n];
+      };
+      const cs = [corner(0,0), corner(N-6,0), corner(0,N-6), corner(N-6,N-6)];
+      let spread = 0;
+      for (const p of cs) for (const q of cs)
+        spread = Math.max(spread, Math.abs(p[0]-q[0]) + Math.abs(p[1]-q[1]) + Math.abs(p[2]-q[2]));
+      const seeThrough = cs.some(c => c[3] < 250);
+
+      done({
+        accent: best ? hex(best.r/best.n, best.g/best.n, best.b/best.n) : null,
+        topLum: topN ? topSum / topN : .3,
+        graphic: seeThrough || spread < 46,
+      });
+    };
+    im.src = src;
+  });
+}
+
+// A second colour that belongs with the first rather than fighting it: same
+// hue, lifted and desaturated, so it reads as the light version of the accent.
+function lift(h) {
+  const m = /^#([0-9a-f]{6})$/i.exec(h); if (!m) return "#dfe6ee";
+  const n = parseInt(m[1], 16), r = n>>16, g = (n>>8)&255, b = n&255;
+  return hex(r + (255-r)*.62, g + (255-g)*.62, b + (255-b)*.62);
+}
+
+async function readArt() {
+  const a = await analyse(S.art);
+  if (!a) return;
+  S.topLum = a.topLum;
+  if ($("auto").checked) {
+    if (a.accent) { $("accent").value = a.accent; $("second").value = lift(a.accent); }
+    S.fit = a.graphic ? "Whole logo" : "Fill the box";
+    chips($("fit"), ["Whole logo", "Fill the box"], () => S.fit, v => S.fit = v);
+  }
+  paint();
+}
+$("auto").addEventListener("change", readArt);
+
 function paint() {
   const f = FINISH[S.finish], url = `url(${JSON.stringify(S.art)})`;
   for (const id of ["cardF","cardB"]) {
@@ -273,6 +369,11 @@ function paint() {
   const strength = ($("holo").value/100) * f.holo;
   for (const id of ["holoF","holoB"]) $(id).style.opacity = strength;
   for (const id of ["glareF","glareB"]) $(id).style.opacity = Math.min(.85, strength + .22);
+
+  // The brighter the top of the picture, the heavier the shade behind the
+  // edition mark and the serial. Dark art gets almost none.
+  for (const id of ["cardF","cardB"])
+    $(id).style.setProperty("--tops", (0.14 + (S.topLum ?? .3) * 0.62).toFixed(3));
 
   $("artwrap").className = "artwrap " + (S.fit === "Whole logo" ? "contain" : "cover");
   $("artwrap").style.setProperty("--arth", $("arth").value + "%");
@@ -340,5 +441,6 @@ $("dlF").onclick = () => grab("cardF", "front").catch(e => alert(e.message));
 $("dlB").onclick = () => grab("cardB", "back").catch(e => alert(e.message));
 
 paint();
+readArt();
 </script>
 </body></html>
