@@ -58,10 +58,17 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
   background:linear-gradient(200deg,var(--accent) 0%,transparent 48%,var(--second) 100%)}
 
 .holo{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:6;
-  background:repeating-linear-gradient(105deg,rgba(255,80,120,.55) 0%,rgba(255,220,90,.55) 7%,rgba(90,255,180,.55) 14%,rgba(90,190,255,.55) 21%,rgba(190,120,255,.55) 28%,rgba(255,80,120,.55) 35%);
   background-size:260% 260%;mix-blend-mode:color-dodge;filter:saturate(1.5);
   -webkit-mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%);
   mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%)}
+/* each foil is a different stamped pattern, the way real card stock is */
+.holo.p-linear{background-image:repeating-linear-gradient(105deg,rgba(255,80,120,.55) 0%,rgba(255,220,90,.55) 7%,rgba(90,255,180,.55) 14%,rgba(90,190,255,.55) 21%,rgba(190,120,255,.55) 28%,rgba(255,80,120,.55) 35%)}
+.holo.p-burst{background-image:repeating-conic-gradient(from 0deg at 50% 38%,rgba(255,90,130,.6) 0deg,rgba(255,225,95,.6) 7deg,rgba(95,255,185,.6) 14deg,rgba(95,195,255,.6) 21deg,rgba(195,125,255,.6) 28deg,rgba(255,90,130,.6) 35deg);background-size:100% 100%}
+.holo.p-hatch{background-image:
+  repeating-linear-gradient(62deg,rgba(255,90,130,.42) 0%,rgba(95,255,185,.42) 9%,rgba(95,195,255,.42) 18%,rgba(255,90,130,.42) 27%),
+  repeating-linear-gradient(-62deg,rgba(255,225,95,.42) 0%,rgba(195,125,255,.42) 9%,rgba(255,225,95,.42) 18%)}
+.holo.p-shard{background-image:conic-gradient(from 210deg at 42% 30%,rgba(255,90,130,.62),rgba(255,225,95,.62) 12%,rgba(95,255,185,.62) 26%,rgba(95,195,255,.62) 38%,rgba(195,125,255,.62) 52%,rgba(255,225,95,.62) 68%,rgba(95,195,255,.62) 84%,rgba(255,90,130,.62));background-size:150% 150%}
+.holo.p-ripple{background-image:repeating-radial-gradient(circle at 50% 34%,rgba(255,90,130,.5) 0,rgba(255,225,95,.5) 14px,rgba(95,255,185,.5) 28px,rgba(95,195,255,.5) 42px,rgba(195,125,255,.5) 56px,rgba(255,90,130,.5) 70px);background-size:140% 140%}
 .glare{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:7;mix-blend-mode:overlay;
   background:radial-gradient(42% 36% at var(--mx,50%) var(--my,28%),rgba(255,255,255,.8),transparent 68%)}
 .grain{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.42;mix-blend-mode:overlay;
@@ -119,14 +126,20 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
     <input type="file" id="file" accept="image/*" hidden>
     <label class="ck"><input type="checkbox" id="auto" checked> Read the artwork and set these for me</label>
     <div class="chips" id="fit"></div>
+    <label>Treatment</label>
+    <div class="chips" id="treat"></div>
+    <p class="mini" id="treatNote" style="margin:0 0 10px"></p>
     <label for="arth">Art panel height</label><input type="range" id="arth" min="45" max="82" value="73">
     <label for="posy">Framing <span style="text-transform:none;letter-spacing:0">(fill only)</span></label><input type="range" id="posy" min="0" max="100" value="45">
   </fieldset>
 
   <fieldset><legend>Finish</legend>
     <div class="chips" id="finish"></div>
+    <label>Foil pattern</label>
+    <div class="chips" id="pattern"></div>
     <label for="holo">Holographic</label><input type="range" id="holo" min="0" max="100" value="55">
     <label class="ck"><input type="checkbox" id="tiltOn" checked> Tilt with the pointer</label>
+    <button class="btn ghost" id="gyro" style="margin-top:2px">Tilt with the phone</button>
   </fieldset>
 
   <fieldset><legend>Front</legend>
@@ -207,6 +220,7 @@ Day job | HVAC</textarea>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script src="treat.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const FINISH = {
@@ -217,8 +231,9 @@ const FINISH = {
   "Rose gold":   { f1:"#ffe3d6", f2:"#d79176", f3:"#8a4b33", plate:"#100b0b", holo:.6 },
   "Matte":       { f1:"#4a4f58", f2:"#2c3037", f3:"#15181c", plate:"#0d0f13", holo:0 },
 };
+const PATTERNS = { Linear:"p-linear", Starburst:"p-burst", "Cross-hatch":"p-hatch", Shattered:"p-shard", Ripple:"p-ripple" };
 const MARKS = ["👑","🤡","🏈","⭐","🔥","—"];
-const S = { finish:"Gold foil", mark:"👑", fit:"Whole logo", art:"sample-logo.png" };
+const S = { finish:"Gold foil", mark:"👑", fit:"Whole logo", art:"sample-logo.png", raw:"sample-logo.png", treat:"Original", pattern:"Linear" };
 
 function chips(host, items, get, set) {
   host.textContent = "";
@@ -233,11 +248,31 @@ function chips(host, items, get, set) {
 chips($("finish"), Object.keys(FINISH), () => S.finish, v => S.finish = v);
 chips($("marks"), MARKS, () => S.mark, v => S.mark = v);
 chips($("fit"), ["Whole logo", "Fill the box"], () => S.fit, v => S.fit = v);
+chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
+
+/* Treatments run on the pixels of the original upload every time, never on an
+   already-treated image — stacking them turns anything to mud. */
+let treating = false;
+async function retreat() {
+  if (treating) return;
+  treating = true;
+  $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
+  try {
+    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+  } catch (e) {
+    S.art = S.raw;
+    $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
+  }
+  treating = false;
+  if ($("treatNote").textContent === "Working\u2026") $("treatNote").textContent = "";
+  await readArt();
+}
+chips($("treat"), TREAT.KINDS, () => S.treat, v => { S.treat = v; retreat(); });
 
 function takeFile(f) {
   if (!f || !f.type.startsWith("image/")) return;
   const r = new FileReader();
-  r.onload = e => { S.art = e.target.result; readArt(); };
+  r.onload = e => { S.raw = e.target.result; retreat(); };
   r.readAsDataURL(f);
 }
 $("drop").onclick = () => $("file").click();
@@ -353,6 +388,26 @@ async function readArt() {
     if (a.accent) { $("accent").value = a.accent; $("second").value = lift(a.accent); }
     S.fit = a.graphic ? "Whole logo" : "Fill the box";
     chips($("fit"), ["Whole logo", "Fill the box"], () => S.fit, v => S.fit = v);
+chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
+
+/* Treatments run on the pixels of the original upload every time, never on an
+   already-treated image — stacking them turns anything to mud. */
+let treating = false;
+async function retreat() {
+  if (treating) return;
+  treating = true;
+  $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
+  try {
+    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+  } catch (e) {
+    S.art = S.raw;
+    $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
+  }
+  treating = false;
+  if ($("treatNote").textContent === "Working\u2026") $("treatNote").textContent = "";
+  await readArt();
+}
+chips($("treat"), TREAT.KINDS, () => S.treat, v => { S.treat = v; retreat(); });
   }
   paint();
 }
@@ -374,6 +429,8 @@ function paint() {
   // edition mark and the serial. Dark art gets almost none.
   for (const id of ["cardF","cardB"])
     $(id).style.setProperty("--tops", (0.14 + (S.topLum ?? .3) * 0.62).toFixed(3));
+
+  for (const id of ["holoF","holoB"]) $(id).className = "holo " + PATTERNS[S.pattern];
 
   $("artwrap").className = "artwrap " + (S.fit === "Whole logo" ? "contain" : "cover");
   $("artwrap").style.setProperty("--arth", $("arth").value + "%");
@@ -429,6 +486,33 @@ for (const id of ["name","nick","team","ser","ed","s1v","s1k","s2v","s2k","s3v",
   $(id).addEventListener("input", paint);
 $("ed").addEventListener("change", paint);
 
+/* A foil card only makes sense when you turn it, and on a phone the pointer is
+   a finger sitting still on the glass. The gyroscope is the real thing. iOS
+   requires the ask to come from a tap, which is why this is a button. */
+$("gyro").onclick = async () => {
+  const DOE = window.DeviceOrientationEvent;
+  if (!DOE) { $("gyro").textContent = "This device has no gyroscope"; return; }
+  try {
+    if (typeof DOE.requestPermission === "function") {
+      const ok = await DOE.requestPermission();
+      if (ok !== "granted") { $("gyro").textContent = "Motion access declined"; return; }
+    }
+  } catch (e) { $("gyro").textContent = "Motion access unavailable"; return; }
+  $("gyro").textContent = "Tilting with the phone";
+  $("gyro").disabled = true;
+  $("tiltOn").checked = false; tilt = false;
+  addEventListener("deviceorientation", e => {
+    const x = Math.max(0, Math.min(1, ((e.gamma ?? 0) + 34) / 68));
+    const y = Math.max(0, Math.min(1, ((e.beta ?? 45) - 12) / 68));
+    for (const [cardId, faceId, holoId] of [["cardF","faceF","holoF"], ["cardB","faceB","holoB"]]) {
+      $(faceId).style.setProperty("--mx", (x*100).toFixed(1) + "%");
+      $(faceId).style.setProperty("--my", (y*100).toFixed(1) + "%");
+      $(holoId).style.backgroundPosition = (x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
+      $(cardId).style.transform = `rotateY(${(x-.5)*22}deg) rotateX(${(.5-y)*22}deg)`;
+    }
+  });
+};
+
 async function grab(id, suffix) {
   $(id).style.transform = "";
   const url = await htmlToImage.toPng($(id), { pixelRatio: 3, cacheBust: true });
@@ -441,6 +525,6 @@ $("dlF").onclick = () => grab("cardF", "front").catch(e => alert(e.message));
 $("dlB").onclick = () => grab("cardB", "back").catch(e => alert(e.message));
 
 paint();
-readArt();
+retreat();
 </script>
 </body></html>
