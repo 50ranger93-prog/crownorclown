@@ -1,0 +1,344 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Card lab</title><meta name="robots" content="noindex">
+<style>
+:root{--page:#0a0b0e;--panel:#14161b;--edge:#252932;--ink:#eef0f4;--sub:#868d99;--hot:#5865F2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Inter","gg sans","Helvetica Neue",Helvetica,Arial,sans-serif}
+.shell{display:grid;grid-template-columns:320px minmax(0,1fr)}
+.rail{background:var(--panel);border-right:1px solid var(--edge);padding:17px 15px 50px;overflow-y:auto;height:100vh;position:sticky;top:0}
+.stage{padding:36px 24px;display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start;justify-content:center;
+  background:radial-gradient(1000px 640px at 50% 12%,#1a1e26 0%,#0a0b0e 72%);min-height:100vh}
+h1{font-size:15px;margin:0 0 3px}
+.tag{color:var(--sub);font-size:11.5px;margin:0 0 16px;line-height:1.5}
+fieldset{border:0;border-top:1px solid var(--edge);margin:0 0 13px;padding:13px 0 0}
+legend{color:var(--sub);font-size:9.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding-right:8px}
+label{display:block;color:var(--sub);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 5px}
+input[type=text],textarea,select{width:100%;background:#0b0d11;border:1px solid var(--edge);color:var(--ink);border-radius:7px;padding:8px 10px;font:inherit;font-size:12.5px;margin-bottom:9px}
+textarea{resize:vertical;line-height:1.45}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--hot);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.chip{border:1px solid var(--edge);background:#0b0d11;color:var(--sub);border-radius:20px;padding:5px 11px;font:inherit;font-size:11.5px;cursor:pointer}
+.chip[aria-pressed=true]{border-color:var(--hot);background:var(--hot);color:#fff;font-weight:600}
+.drop{border:2px dashed var(--edge);border-radius:10px;padding:15px;text-align:center;color:var(--sub);font-size:12px;cursor:pointer;margin-bottom:9px}
+.drop.on{border-color:var(--hot);color:var(--ink)}
+input[type=range]{width:100%;margin:0 0 9px;accent-color:var(--hot)}
+input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);border-radius:6px;background:none;cursor:pointer}
+.ck{display:flex;align-items:center;gap:7px;color:var(--sub);font-size:12px;margin-bottom:9px;text-transform:none;letter-spacing:0;font-weight:400}
+.ck input{width:auto;margin:0}
+.btn{width:100%;background:var(--hot);color:#fff;border:0;border-radius:8px;padding:11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:7px}
+.btn.ghost{background:#272b33}
+.mini{color:var(--sub);font-size:11px;line-height:1.55;margin:8px 0 0}
+.cap{color:var(--sub);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;margin:11px 0 0}
+
+/* ══ THE CARD ══════════════════════════════════════════════════════════════
+   Front and back, same stock. Every premium cue here is a real print effect —
+   a metal edge that catches light, a foil plate, a holographic layer that moves
+   when the card tilts. None of it is drawn. It is all light and type. */
+.tilt{perspective:2000px}
+.card{--w:400px;width:var(--w);aspect-ratio:2.5/3.5;position:relative;border-radius:19px;padding:8px;
+  transform-style:preserve-3d;transition:transform .18s cubic-bezier(.2,.7,.3,1);
+  background:linear-gradient(140deg,var(--f1) 0%,var(--f2) 21%,#fffdf4 37%,var(--f3) 51%,var(--f2) 66%,#fffaea 80%,var(--f3) 100%);
+  box-shadow:0 2px 5px rgba(0,0,0,.6),0 30px 64px -20px rgba(0,0,0,.9),inset 0 0 0 1px rgba(255,255,255,.34)}
+.face{position:relative;height:100%;border-radius:12px;overflow:hidden;background:var(--plate);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.7)}
+
+/* The art. `contain` shows the whole logo and fills the gap with a blown-up,
+   blurred copy of itself — which is how you put a square logo in a tall box
+   without cutting the bottom line off it. */
+.artwrap{position:absolute;left:0;right:0;top:0;height:var(--arth,73%);overflow:hidden;background:#000}
+.back-blur{position:absolute;inset:-14%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.5) brightness(.62);transform:scale(1.1)}
+.art{position:absolute;inset:0;background-repeat:no-repeat}
+.artwrap.cover .art{background-size:cover;background-position:center var(--posy,50%)}
+.artwrap.cover .back-blur{display:none}
+.artwrap.contain .art{background-size:contain;background-position:center center}
+.hem{position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--plate) 80%,transparent) 55%,var(--plate))}
+.tint{position:absolute;inset:0;mix-blend-mode:soft-light;opacity:.42;
+  background:linear-gradient(200deg,var(--accent) 0%,transparent 48%,var(--second) 100%)}
+
+.holo{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:6;
+  background:repeating-linear-gradient(105deg,rgba(255,80,120,.55) 0%,rgba(255,220,90,.55) 7%,rgba(90,255,180,.55) 14%,rgba(90,190,255,.55) 21%,rgba(190,120,255,.55) 28%,rgba(255,80,120,.55) 35%);
+  background-size:260% 260%;mix-blend-mode:color-dodge;filter:saturate(1.5);
+  -webkit-mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%);
+  mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%)}
+.glare{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:7;mix-blend-mode:overlay;
+  background:radial-gradient(42% 36% at var(--mx,50%) var(--my,28%),rgba(255,255,255,.8),transparent 68%)}
+.grain{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.42;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E")}
+
+.head{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:8}
+.ed{font-size:8px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:4px 9px;border-radius:3px;color:#130d02;
+  background:linear-gradient(135deg,var(--f1),var(--f2) 55%,var(--f1));box-shadow:0 1px 3px rgba(0,0,0,.7)}
+.ser{font-size:9px;letter-spacing:.13em;color:rgba(255,255,255,.66);font-variant-numeric:tabular-nums;text-shadow:0 1px 4px #000}
+.foot{position:absolute;left:0;right:0;bottom:0;padding:0 16px 16px;z-index:8}
+.rule{height:2px;margin-bottom:10px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--second) 60%,transparent)}
+.team{font-size:9px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--second);margin:0 0 3px;text-shadow:0 1px 5px #000}
+.name{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:.95;margin:0;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+.name.s2{font-size:26px}.name.s3{font-size:21px}
+.nick{font-size:12px;font-style:italic;color:rgba(255,255,255,.62);margin:4px 0 0;text-shadow:0 1px 4px #000}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;border-top:1px solid rgba(255,255,255,.15);margin-top:11px;padding-top:9px}
+.stat b{display:block;font-size:15px;font-weight:800;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{display:block;font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:2px}
+.mark{position:absolute;right:13px;bottom:14px;z-index:9;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:18px;
+  background:linear-gradient(140deg,var(--f1),var(--f2) 52%,var(--f3));box-shadow:0 2px 8px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.45)}
+
+.wmk{position:absolute;right:-16%;bottom:2%;width:78%;aspect-ratio:1;z-index:2;opacity:.07;
+  background-size:contain;background-position:center;background-repeat:no-repeat;pointer-events:none}
+/* ── the back ── */
+.bk{position:absolute;inset:0;padding:15px 16px;display:flex;flex-direction:column;z-index:8;overflow:hidden}
+.bkhead{display:flex;align-items:center;gap:9px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.14)}
+.bklogo{width:38px;height:38px;border-radius:8px;background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#000;flex-shrink:0;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.bkname{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.bkteam{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--second);margin-top:2px}
+.meta{font-size:8.5px;line-height:1.55;color:rgba(255,255,255,.52);margin:8px 0 0}
+.pills{display:flex;flex-wrap:wrap;gap:3px;margin:8px 0 0}
+.pill{font-size:7.5px;font-weight:600;letter-spacing:.03em;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.72);border-radius:9px;padding:2px 6px;white-space:nowrap}
+.pill.gold{border-color:var(--f2);color:var(--f1);background:rgba(255,215,120,.09)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 11px;margin:9px 0 0;min-height:0;flex:1;align-content:start;overflow:hidden}
+.fi dt{font-size:7px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 2px}
+.fi dd{margin:0;font-size:9px;line-height:1.42;color:rgba(255,255,255,.86);white-space:pre-line}
+.take{margin-top:8px;border-left:2px solid var(--accent);padding:6px 0 6px 9px;background:linear-gradient(90deg,rgba(255,255,255,.05),transparent)}
+.take dt{font-size:7px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--second);margin-bottom:3px}
+.take dd{margin:0;font-size:9px;line-height:1.45;color:rgba(255,255,255,.88);font-style:italic}
+.bkfoot{display:flex;justify-content:space-between;align-items:center;font-size:7px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(255,255,255,.38);border-top:1px solid rgba(255,255,255,.12);padding-top:8px;margin-top:8px}
+@media (max-width:900px){.shell{grid-template-columns:1fr}.rail{height:auto;position:static;border-right:0;border-bottom:1px solid var(--edge)}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style></head><body>
+<div class="shell">
+<div class="rail">
+  <h1>Card lab</h1>
+  <p class="tag">Sandbox. Doesn't touch the Discord builder or the bot. Loaded with your card so you can see the difference.</p>
+
+  <fieldset><legend>Artwork</legend>
+    <div class="drop" id="drop" tabindex="0" role="button">Drop your logo file<br><span style="font-size:10.5px;opacity:.7">the real one, uncropped</span></div>
+    <input type="file" id="file" accept="image/*" hidden>
+    <div class="chips" id="fit"></div>
+    <label for="arth">Art panel height</label><input type="range" id="arth" min="45" max="82" value="73">
+    <label for="posy">Framing <span style="text-transform:none;letter-spacing:0">(fill only)</span></label><input type="range" id="posy" min="0" max="100" value="45">
+  </fieldset>
+
+  <fieldset><legend>Finish</legend>
+    <div class="chips" id="finish"></div>
+    <label for="holo">Holographic</label><input type="range" id="holo" min="0" max="100" value="55">
+    <label class="ck"><input type="checkbox" id="tiltOn" checked> Tilt with the pointer</label>
+  </fieldset>
+
+  <fieldset><legend>Front</legend>
+    <label for="name">Name</label><input type="text" id="name" value="John" maxlength="28">
+    <label for="nick">Nickname</label><input type="text" id="nick" value="Jug_Head" maxlength="28">
+    <label for="team">Team</label><input type="text" id="team" value="TumbleWEED Tactics" maxlength="34">
+    <div class="row">
+      <div><label for="ed">Edition</label><select id="ed"><option>Rookie</option><option>Veteran</option><option selected>Commissioner</option><option>Crown</option><option>Clown</option></select></div>
+      <div><label for="ser">Serial</label><input type="text" id="ser" value="012 / 36" maxlength="12"></div>
+    </div>
+    <div class="row"><div><label for="s1v">Stat</label><input type="text" id="s1v" value="141.2" maxlength="7"></div><div><label for="s1k">Label</label><input type="text" id="s1k" value="Best week" maxlength="12"></div></div>
+    <div class="row"><div><label for="s2v">Stat</label><input type="text" id="s2v" value="2-0" maxlength="7"></div><div><label for="s2k">Label</label><input type="text" id="s2k" value="Record" maxlength="12"></div></div>
+    <div class="row"><div><label for="s3v">Stat</label><input type="text" id="s3v" value="2019" maxlength="7"></div><div><label for="s3k">Label</label><input type="text" id="s3k" value="Since" maxlength="12"></div></div>
+  </fieldset>
+
+  <fieldset><legend>Back</legend>
+    <label for="meta">Meta line</label><textarea id="meta" rows="2" maxlength="160">Dallas Cowboys · Boards 1, 2 &amp; 3 · Orem, UT · Made in Texas · Playing since 2019</textarea>
+    <label for="badges">Badges <span style="text-transform:none;letter-spacing:0">(comma separated)</span></label>
+    <textarea id="badges" rows="3" maxlength="400">Commissioner, Shark, DFS grinder, Long-timer, Sleeper hunter, Stats nerd, Trash talker, Grinder, Risk taker, Night owl, SuperDad</textarea>
+    <label for="flair">Fields <span style="text-transform:none;letter-spacing:0">(one per line — LABEL | value)</span></label>
+    <textarea id="flair" rows="9" maxlength="1200">Perfect lineup | Allen · Gibbs · Montgomery · Jefferson · Chase · Puka · Bowers · Henry · Aubrey · Texans
+Worst pick ever | Any Brown
+Ride or die | Josh Allen
+Walk-up song | "Nobody in His Right Mind Would Have Left Her" — George Strait
+Gameday snack | Wings
+This year's goal | Avoid the vest. Finish top three.
+Favorite player ever | Troy Aikman
+Day job | HVAC</textarea>
+    <label for="take">The take</label>
+    <textarea id="take" rows="4" maxlength="320">It's all the same old BS. Nobody won their draft. To win a league it's roster management and getting lucky in weeks 15 and 16. Do you feel lucky, punk?</textarea>
+  </fieldset>
+
+  <fieldset><legend>Colour</legend>
+    <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px"><input type="color" id="accent" value="#2f8fd8"><span style="color:var(--sub);font-size:11.5px">accent</span></div>
+    <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px"><input type="color" id="second" value="#dfe6ee"><span style="color:var(--sub);font-size:11.5px">secondary</span></div>
+    <div class="chips" id="marks"></div>
+  </fieldset>
+
+  <button class="btn" id="dlF">Download front</button>
+  <button class="btn ghost" id="dlB">Download back</button>
+  <p class="mini">Tell me what's wrong and I'll change it. The frame is code — it's cheap to redo.</p>
+</div>
+
+<div class="stage">
+  <div>
+    <div class="tilt"><div class="card" id="cardF"><div class="face" id="faceF">
+      <div class="artwrap contain" id="artwrap"><div class="back-blur" id="blur"></div><div class="art" id="art"></div><div class="tint"></div><div class="hem"></div></div>
+      <div class="grain"></div><div class="holo" id="holoF"></div><div class="glare" id="glareF"></div>
+      <div class="head"><span class="ed" id="edF">COMMISSIONER</span><span class="ser" id="serF">#012 / 36</span></div>
+      <div class="foot">
+        <div class="rule"></div>
+        <p class="team" id="teamF">TumbleWEED Tactics</p>
+        <p class="name" id="nameF">John</p>
+        <p class="nick" id="nickF">"Jug_Head"</p>
+        <div class="stats" id="statsF"></div>
+      </div>
+      <div class="mark" id="markF">👑</div>
+    </div></div></div>
+    <p class="cap">Front</p>
+  </div>
+  <div>
+    <div class="tilt"><div class="card" id="cardB"><div class="face" id="faceB">
+      <div class="grain"></div><div class="holo" id="holoB"></div><div class="glare" id="glareB"></div>
+      <div class="wmk" id="wmkB"></div>
+      <div class="bk">
+        <div class="bkhead"><div class="bklogo" id="bklogo"></div>
+          <div><div class="bkname" id="bknameB">John "Jug_Head"</div><div class="bkteam" id="bkteamB">TumbleWEED Tactics</div></div></div>
+        <p class="meta" id="metaB"></p>
+        <div class="pills" id="pillsB"></div>
+        <dl class="grid" id="gridB"></dl>
+        <dl class="take" id="takeB"></dl>
+        <div class="bkfoot"><span>Expansion League · 2026</span><span id="serB">#012 / 36</span></div>
+      </div>
+    </div></div></div>
+    <p class="cap">Back</p>
+  </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const FINISH = {
+  "Gold foil":   { f1:"#fff6cf", f2:"#c8a04a", f3:"#7e5f18", plate:"#0c0e12", holo:.55 },
+  "Chrome":      { f1:"#ffffff", f2:"#9aa3b0", f3:"#3d434d", plate:"#0a0c10", holo:.8 },
+  "Black label": { f1:"#8d8d92", f2:"#2b2b30", f3:"#0a0a0c", plate:"#050507", holo:.3 },
+  "Prismatic":   { f1:"#ffe9fb", f2:"#9ad7ff", f3:"#6b4fd8", plate:"#070914", holo:1 },
+  "Rose gold":   { f1:"#ffe3d6", f2:"#d79176", f3:"#8a4b33", plate:"#100b0b", holo:.6 },
+  "Matte":       { f1:"#4a4f58", f2:"#2c3037", f3:"#15181c", plate:"#0d0f13", holo:0 },
+};
+const MARKS = ["👑","🤡","🏈","⭐","🔥","—"];
+const S = { finish:"Gold foil", mark:"👑", fit:"Whole logo", art:"sample-logo.png" };
+
+function chips(host, items, get, set) {
+  host.textContent = "";
+  for (const it of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = it;
+    b.setAttribute("aria-pressed", String(get() === it));
+    b.onclick = () => { set(it); chips(host, items, get, set); paint(); };
+    host.append(b);
+  }
+}
+chips($("finish"), Object.keys(FINISH), () => S.finish, v => S.finish = v);
+chips($("marks"), MARKS, () => S.mark, v => S.mark = v);
+chips($("fit"), ["Whole logo", "Fill the box"], () => S.fit, v => S.fit = v);
+
+function takeFile(f) {
+  if (!f || !f.type.startsWith("image/")) return;
+  const r = new FileReader();
+  r.onload = e => { S.art = e.target.result; paint(); };
+  r.readAsDataURL(f);
+}
+$("drop").onclick = () => $("file").click();
+$("drop").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+$("file").onchange = e => takeFile(e.target.files[0]);
+for (const ev of ["dragenter","dragover"]) $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.add("on"); });
+for (const ev of ["dragleave","drop"]) $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.remove("on"); });
+$("drop").addEventListener("drop", e => takeFile(e.dataTransfer.files[0]));
+
+let tilt = true;
+$("tiltOn").onchange = e => { tilt = e.target.checked; if (!tilt) for (const c of ["cardF","cardB"]) $(c).style.transform = ""; };
+function wire(faceId, cardId, holoId) {
+  const face = $(faceId), card = $(cardId);
+  face.addEventListener("pointermove", e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    face.style.setProperty("--mx", (x*100).toFixed(1) + "%");
+    face.style.setProperty("--my", (y*100).toFixed(1) + "%");
+    $(holoId).style.backgroundPosition = (x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
+    if (tilt) card.style.transform = `rotateY(${(x-.5)*16}deg) rotateX(${(.5-y)*16}deg)`;
+  });
+  face.addEventListener("pointerleave", () => { card.style.transform = ""; face.style.setProperty("--mx","50%"); face.style.setProperty("--my","30%"); });
+}
+wire("faceF","cardF","holoF"); wire("faceB","cardB","holoB");
+
+const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
+
+function paint() {
+  const f = FINISH[S.finish], url = `url(${JSON.stringify(S.art)})`;
+  for (const id of ["cardF","cardB"]) {
+    const s = $(id).style;
+    s.setProperty("--f1",f.f1); s.setProperty("--f2",f.f2); s.setProperty("--f3",f.f3);
+    s.setProperty("--plate",f.plate);
+    s.setProperty("--accent",$("accent").value); s.setProperty("--second",$("second").value);
+  }
+  const strength = ($("holo").value/100) * f.holo;
+  for (const id of ["holoF","holoB"]) $(id).style.opacity = strength;
+  for (const id of ["glareF","glareB"]) $(id).style.opacity = Math.min(.85, strength + .22);
+
+  $("artwrap").className = "artwrap " + (S.fit === "Whole logo" ? "contain" : "cover");
+  $("artwrap").style.setProperty("--arth", $("arth").value + "%");
+  $("artwrap").style.setProperty("--posy", $("posy").value + "%");
+  $("art").style.backgroundImage = url;
+  $("blur").style.backgroundImage = url;
+  $("bklogo").style.backgroundImage = url;
+  $("wmkB").style.backgroundImage = url;
+
+  const nm = $("name").value || "Name";
+  const n = $("nameF"); n.textContent = nm;
+  n.className = "name" + (nm.length > 18 ? " s3" : nm.length > 11 ? " s2" : "");
+  $("teamF").textContent = $("team").value;
+  $("nickF").textContent = $("nick").value ? `"${$("nick").value}"` : "";
+  $("edF").textContent = ($("ed").value || "").toUpperCase() + " EDITION";
+  $("serF").textContent = "#" + $("ser").value;
+  $("serB").textContent = "#" + $("ser").value;
+  $("markF").textContent = S.mark === "—" ? "" : S.mark;
+  $("markF").style.display = S.mark === "—" ? "none" : "grid";
+
+  $("statsF").textContent = "";
+  for (const i of [1,2,3]) {
+    const v = $("s"+i+"v").value, k = $("s"+i+"k").value;
+    if (!v && !k) continue;
+    const d = el("div", null, "stat");
+    d.append(el("b", v || "—"), el("span", k || ""));
+    $("statsF").append(d);
+  }
+
+  $("bknameB").textContent = nm + ($("nick").value ? ` "${$("nick").value}"` : "");
+  $("bkteamB").textContent = $("team").value;
+  $("metaB").textContent = $("meta").value;
+
+  $("pillsB").textContent = "";
+  for (const b of $("badges").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, 14))
+    $("pillsB").append(el("span", b, "pill" + (/commissioner|crown/i.test(b) ? " gold" : "")));
+
+  $("gridB").textContent = "";
+  for (const line of $("flair").value.split("\n").map(s => s.trim()).filter(Boolean).slice(0, 10)) {
+    const [k, ...rest] = line.split("|");
+    const v = rest.join("|").trim();
+    if (!v) continue;
+    const d = el("div", null, "fi");
+    d.append(el("dt", k.trim()), el("dd", v));
+    $("gridB").append(d);
+  }
+
+  $("takeB").textContent = "";
+  if ($("take").value.trim()) $("takeB").append(el("dt", "The take"), el("dd", $("take").value.trim()));
+}
+
+for (const id of ["name","nick","team","ser","ed","s1v","s1k","s2v","s2k","s3v","s3k","accent","second","arth","posy","holo","meta","badges","flair","take"])
+  $(id).addEventListener("input", paint);
+$("ed").addEventListener("change", paint);
+
+async function grab(id, suffix) {
+  $(id).style.transform = "";
+  const url = await htmlToImage.toPng($(id), { pixelRatio: 3, cacheBust: true });
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = ($("name").value || "card").replace(/\W+/g, "-").toLowerCase() + "-" + suffix + ".png";
+  a.click();
+}
+$("dlF").onclick = () => grab("cardF", "front").catch(e => alert(e.message));
+$("dlB").onclick = () => grab("cardB", "back").catch(e => alert(e.message));
+
+paint();
+</script>
+</body></html>
