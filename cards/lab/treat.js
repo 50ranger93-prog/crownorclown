@@ -167,6 +167,70 @@ window.TREAT = (() => {
       blur(px, w, h, 1, 1);
     },
 
+
+    /* Holographic vinyl. Thin-film iridescence is a hue that rotates with
+       thickness; here thickness is the picture's own luminance plus where the
+       pixel sits, so the rainbow follows the shape of the subject instead of
+       being a rainbow laid on top of it. The cosine palette is the cheap,
+       correct way to walk a hue wheel without a hue conversion per pixel. */
+    "Holo": (px, w, h) => {
+      const TAU = Math.PI * 2;
+      for (let y = 0, p = 0; y < h; y++) for (let x = 0; x < w; x++, p += 4) {
+        const l = L(px[p], px[p+1], px[p+2]) / 255;
+        const phase = l * 2.6 + (x / w) * 0.9 + (y / h) * 0.45;
+        const shade = 0.22 + 0.88 * l;              // keep the darks dark
+        px[p]   = clamp((128 + 127 * Math.cos(TAU * (phase       ))) * shade);
+        px[p+1] = clamp((128 + 127 * Math.cos(TAU * (phase + 0.33))) * shade);
+        px[p+2] = clamp((128 + 127 * Math.cos(TAU * (phase + 0.67))) * shade);
+      }
+    },
+
+    /* Cartoon first, then holo — flat bands take a rainbow far better than a
+       photograph does, because each band shifts as one colour. This is the one
+       that looks like a foil card. */
+    "Holo cartoon": (px, w, h) => {
+      blur(px, w, h, 3, 2);
+      const e = edges(px, w, h);
+      posterize(px, 6, 1.2);
+      const TAU = Math.PI * 2;
+      for (let y = 0, p = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, p += 4, i++) {
+        const l = L(px[p], px[p+1], px[p+2]) / 255;
+        const phase = l * 2.2 + (x / w) * 0.75 + (y / h) * 0.38;
+        const shade = 0.26 + 0.84 * l;
+        let r = (128 + 127 * Math.cos(TAU * (phase       ))) * shade;
+        let g = (128 + 127 * Math.cos(TAU * (phase + 0.33))) * shade;
+        let b = (128 + 127 * Math.cos(TAU * (phase + 0.67))) * shade;
+        if (e[i] > 40) { const k = Math.min(1, (e[i]-40)/64) * 0.93; r *= 1-k; g *= 1-k; b *= 1-k; }
+        px[p] = clamp(r); px[p+1] = clamp(g); px[p+2] = clamp(b);
+      }
+    },
+
+    /* Refraction: the channels come apart the way they do through a prism, and
+       they come apart hardest at the edges, which is where a real lens does it. */
+    "Prism": (px, w, h) => {
+      const src = px.slice();
+      const e = edges(src, w, h);
+      let mx = 1; for (let i = 0; i < e.length; i++) if (e[i] > mx) mx = e[i];
+      const base = Math.max(5, Math.round(w / 64));
+      for (let y = 0, p = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, p += 4, i++) {
+        const d = Math.round(base * (0.7 + 3.4 * (e[i] / mx)));
+        const xr = Math.min(w-1, Math.max(0, x - d)), xb = Math.min(w-1, Math.max(0, x + d));
+        px[p]   = src[(y*w + xr) * 4];
+        px[p+1] = src[p + 1];
+        px[p+2] = src[(y*w + xb) * 4 + 2];
+        // light up where the channels disagree — that gap IS the refraction,
+        // and leaving it unlit is what made this look like the original photo
+        const spread = Math.abs(px[p] - px[p+2]);
+        if (spread > 18) {
+          const k = Math.min(1, (spread - 18) / 90);
+          px[p]   = clamp(px[p]   + k * 78);
+          px[p+2] = clamp(px[p+2] + k * 96);
+          px[p+1] = clamp(px[p+1] + k * 26);
+        }
+      }
+      posterize(px, 40, 1.6);
+    },
+
     "Ink": (px, w, h) => {
       const gray = new Uint8ClampedArray(px.length);
       for (let p = 0; p < px.length; p += 4) {
@@ -204,5 +268,33 @@ window.TREAT = (() => {
     return cv.toDataURL("image/png");
   }
 
-  return { KINDS: Object.keys(KINDS), apply };
+  /* The mask that lets a moving rainbow sit ON the subject rather than in a
+     rectangle over the whole card: the picture's own luminance, contrast-pushed
+     so the bright parts take the most foil. */
+  async function mask(src) {
+    const im = await new Promise((res, rej) => {
+      const i = new Image(); i.crossOrigin = "anonymous";
+      i.onload = () => res(i); i.onerror = rej; i.src = src;
+    });
+    const scale = Math.min(1, 700 / Math.max(im.naturalWidth, im.naturalHeight));
+    const w = Math.max(1, Math.round(im.naturalWidth * scale));
+    const h = Math.max(1, Math.round(im.naturalHeight * scale));
+    const cv = document.createElement("canvas");
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(im, 0, 0, w, h);
+    let d;
+    try { d = ctx.getImageData(0, 0, w, h); } catch (e) { return null; }
+    const px = d.data;
+    for (let p = 0; p < px.length; p += 4) {
+      const l = L(px[p], px[p+1], px[p+2]) / 255;
+      const a = clamp(255 * Math.min(1, Math.pow(l, 0.72) * 1.18)) * (px[p+3] / 255);
+      px[p] = px[p+1] = px[p+2] = 255;
+      px[p+3] = a;
+    }
+    ctx.putImageData(d, 0, 0);
+    return cv.toDataURL("image/png");
+  }
+
+  return { KINDS: Object.keys(KINDS), apply, mask };
 })();

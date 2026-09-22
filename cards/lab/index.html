@@ -52,6 +52,17 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
 .artwrap.cover .art{background-size:cover;background-position:center var(--posy,50%)}
 .artwrap.cover .back-blur{display:none}
 .artwrap.contain .art{background-size:contain;background-position:center center}
+.artholo{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:var(--ah,0);
+  mix-blend-mode:color-dodge;filter:saturate(1.65);
+  background-image:repeating-linear-gradient(102deg,
+    rgba(255,70,120,.92) 0%, rgba(255,215,80,.92) 6%, rgba(80,255,175,.92) 12%,
+    rgba(80,185,255,.92) 18%, rgba(185,110,255,.92) 24%, rgba(255,70,120,.92) 30%);
+  background-size:230% 230%;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center}
+.artwrap.contain .artholo{-webkit-mask-size:contain;mask-size:contain}
+.artwrap.cover .artholo{-webkit-mask-size:cover;mask-size:cover;
+  -webkit-mask-position:center var(--posy,50%);mask-position:center var(--posy,50%)}
 .hem{position:absolute;left:0;right:0;bottom:0;height:46%;
   background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--plate) 80%,transparent) 55%,var(--plate))}
 .tint{position:absolute;inset:0;mix-blend-mode:soft-light;opacity:.42;
@@ -135,6 +146,8 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
 
   <fieldset><legend>Finish</legend>
     <div class="chips" id="finish"></div>
+    <label for="artholo-amt">Hologram on the picture</label>
+    <input type="range" id="artholo-amt" min="0" max="100" value="0">
     <label>Foil pattern</label>
     <div class="chips" id="pattern"></div>
     <label for="holo">Holographic</label><input type="range" id="holo" min="0" max="100" value="55">
@@ -186,7 +199,7 @@ Day job | HVAC</textarea>
 <div class="stage">
   <div>
     <div class="tilt"><div class="card" id="cardF"><div class="face" id="faceF">
-      <div class="artwrap contain" id="artwrap"><div class="back-blur" id="blur"></div><div class="art" id="art"></div><div class="tint"></div><div class="hem"></div></div>
+      <div class="artwrap contain" id="artwrap"><div class="back-blur" id="blur"></div><div class="art" id="art"></div><div class="artholo" id="artholo"></div><div class="tint"></div><div class="hem"></div></div>
       <div class="capshade"></div><div class="grain"></div><div class="holo" id="holoF"></div><div class="glare" id="glareF"></div>
       <div class="head"><span class="ed" id="edF">COMMISSIONER</span><span class="ser" id="serF">#012 / 36</span></div>
       <div class="foot">
@@ -292,6 +305,7 @@ function wire(faceId, cardId, holoId) {
     face.style.setProperty("--mx", (x*100).toFixed(1) + "%");
     face.style.setProperty("--my", (y*100).toFixed(1) + "%");
     $(holoId).style.backgroundPosition = (x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
+    if (faceId === "faceF") $("artholo").style.backgroundPosition = (100 - x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
     if (tilt) card.style.transform = `rotateY(${(x-.5)*16}deg) rotateX(${(.5-y)*16}deg)`;
   });
   face.addEventListener("pointerleave", () => { card.style.transform = ""; face.style.setProperty("--mx","50%"); face.style.setProperty("--my","30%"); });
@@ -380,10 +394,20 @@ function lift(h) {
   return hex(r + (255-r)*.62, g + (255-g)*.62, b + (255-b)*.62);
 }
 
+async function buildMask() {
+  try {
+    const m = await TREAT.mask(S.art);
+    const v = m ? `url(${JSON.stringify(m)})` : "none";
+    $("artholo").style.webkitMaskImage = v;
+    $("artholo").style.maskImage = v;
+  } catch (e) { /* a tainted canvas just means no masked foil */ }
+}
+
 async function readArt() {
   const a = await analyse(S.art);
   if (!a) return;
   S.topLum = a.topLum;
+  buildMask();
   if ($("auto").checked) {
     if (a.accent) { $("accent").value = a.accent; $("second").value = lift(a.accent); }
     S.fit = a.graphic ? "Whole logo" : "Fill the box";
@@ -431,6 +455,8 @@ function paint() {
     $(id).style.setProperty("--tops", (0.14 + (S.topLum ?? .3) * 0.62).toFixed(3));
 
   for (const id of ["holoF","holoB"]) $(id).className = "holo " + PATTERNS[S.pattern];
+
+  $("artholo").style.setProperty("--ah", ($("artholo-amt").value / 100).toFixed(2));
 
   $("artwrap").className = "artwrap " + (S.fit === "Whole logo" ? "contain" : "cover");
   $("artwrap").style.setProperty("--arth", $("arth").value + "%");
@@ -482,7 +508,7 @@ function paint() {
   if ($("take").value.trim()) $("takeB").append(el("dt", "The take"), el("dd", $("take").value.trim()));
 }
 
-for (const id of ["name","nick","team","ser","ed","s1v","s1k","s2v","s2k","s3v","s3k","accent","second","arth","posy","holo","meta","badges","flair","take"])
+for (const id of ["name","nick","team","ser","ed","s1v","s1k","s2v","s2k","s3v","s3k","accent","second","arth","posy","holo","artholo-amt","meta","badges","flair","take"])
   $(id).addEventListener("input", paint);
 $("ed").addEventListener("change", paint);
 
@@ -508,6 +534,7 @@ $("gyro").onclick = async () => {
       $(faceId).style.setProperty("--mx", (x*100).toFixed(1) + "%");
       $(faceId).style.setProperty("--my", (y*100).toFixed(1) + "%");
       $(holoId).style.backgroundPosition = (x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
+      $("artholo").style.backgroundPosition = (100 - x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
       $(cardId).style.transform = `rotateY(${(x-.5)*22}deg) rotateX(${(.5-y)*22}deg)`;
     }
   });
