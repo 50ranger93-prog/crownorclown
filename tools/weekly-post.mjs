@@ -25,7 +25,11 @@ import { has, claim, release, enabled as stateEnabled } from "./posted-state.mjs
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const DRY = process.argv.includes("--dry");
 const FORCE = process.argv.includes("--force");
+const EDIT = process.argv.includes("--edit");   // fix an already-posted week in place, no repost
 const pts = n => (Math.round(n * 10) / 10).toFixed(1);
+// Margins carry two decimals. Scores are DraftKings 2-decimal, so a 0.04 game rounded to one
+// decimal reads "by 0.0" — which is exactly the bug this fixes.
+const gp = n => (Math.round(n * 100) / 100).toFixed(2);
 
 async function board(id) {
   const r = await fetch(`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${id}?view=mMatchupScore&view=mTeam`);
@@ -104,7 +108,7 @@ const thumb = t => (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(t.logo || "") ? { url: 
 // losing anyway is bad luck, not a bad team, and it reads as an insult in the wrong room.
 function crownEmbed(label, color, w, r) {
   const f = [{ name: "👑 CROWN", value: `**${nm(r.crown)}** — ${pts(r.crown.pf)}`, inline: false },
-             { name: "Came down to it", value: `${nm(r.close.win)} over ${nm(r.close.lose)} by **${pts(r.close.gap)}**`, inline: false }];
+             { name: "Came down to it", value: `${nm(r.close.win)} over ${nm(r.close.lose)} by **${gp(r.close.gap)}**`, inline: false }];
   if (r.robbed.lose.pf > r.crown.pf * 0.82 && r.robbed.lose !== r.clown)
     f.push({ name: "Robbed", value: `${nm(r.robbed.lose)} scored **${pts(r.robbed.lose.pf)}** and lost`, inline: false });
   return { title: `${label} · Week ${w}`, color, thumbnail: thumb(r.crown), fields: f };
@@ -114,7 +118,7 @@ function shameEmbed(label, color, w, r) {
   return {
     title: `${label} · Week ${w}`, color, thumbnail: thumb(r.clown),
     fields: [{ name: "🤡 CLOWN", value: `**${nm(r.clown)}** — ${pts(r.clown.pf)}`, inline: false },
-             { name: "Run off the field", value: `${nm(r.blow.win)} over ${nm(r.blow.lose)} by **${pts(r.blow.gap)}**`, inline: false }]
+             { name: "Run off the field", value: `${nm(r.blow.win)} over ${nm(r.blow.lose)} by **${gp(r.blow.gap)}**`, inline: false }]
   };
 }
 
@@ -152,6 +156,37 @@ if (DRY) {
   process.exit(0);
 }
 if (!CROWN) { console.error("WEBHOOK_CROWN isn't set."); process.exit(1); }
+
+// --edit: correct a week that already went out, in place, without posting anything new. A webhook
+// message can only be edited through its own webhook token, and the id was never stored (the POST
+// didn't use ?wait), so: read the webhook to learn its channel, have the bot find this week's
+// message in that channel, then PATCH it. If the message can't be found, say so and stop — never
+// fall back to posting a duplicate.
+if (EDIT) {
+  const BOT = process.env.DISCORD_BOT_TOKEN;
+  if (!BOT) { console.error("DISCORD_BOT_TOKEN isn't set — can't locate the message to edit."); process.exit(1); }
+  const API = "https://discord.com/api/v10";
+  let edited = 0, missing = 0;
+  for (const [hook, content, embeds] of posts) {
+    if (!hook) { console.log("  a channel's webhook isn't set — skipping it."); continue; }
+    const wh = await fetch(hook).then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!wh || !wh.channel_id) { console.error("  couldn't read a webhook to find its channel — skipping."); missing++; continue; }
+    const msgs = await fetch(`${API}/channels/${wh.channel_id}/messages?limit=30`, { headers: { Authorization: `Bot ${BOT}` } })
+      .then(r => r.ok ? r.json() : []).catch(() => []);
+    const target = msgs.find(m => (m.content || "") === content)
+                || msgs.find(m => (m.embeds || []).some(e => (e.title || "").includes(`Week ${week}`)));
+    if (!target) { console.error(`  no existing "Week ${week}" message in channel ${wh.channel_id} — NOT posting a new one.`); missing++; continue; }
+    const res = await fetch(`${hook}/messages/${target.id}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content, embeds, allowed_mentions: { parse: [] } })
+    });
+    if (!res.ok) { console.error(`  edit failed on ${target.id} (${res.status}): ${await res.text()}`); missing++; continue; }
+    console.log(`  edited message ${target.id} in channel ${wh.channel_id}`);
+    edited++;
+  }
+  console.log(`Edited ${edited} message${edited === 1 ? "" : "s"} in place${missing ? `, ${missing} could not be edited` : ""} — nothing reposted.`);
+  process.exit(missing ? 1 : 0);
+}
 if (!stateEnabled()) console.warn("No GITHUB_TOKEN — posting without the repeat guard.");
 
 const key = `week:${SEASON}:w${week}`;
