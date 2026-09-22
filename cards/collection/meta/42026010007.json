@@ -1,0 +1,61 @@
+{
+ "name": "NO at DET — 2026 Week 1",
+ "description": "NO 30 — 31 DET. Shootout — 61 combined. Played at Ford Field, Detroit, MI.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026010007.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026010007",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Home",
+   "value": "DET"
+  },
+  {
+   "trait_type": "Away",
+   "value": "NO"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "DET"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Shootout — 61 combined"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "Ford Field"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "Yes"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 61,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}

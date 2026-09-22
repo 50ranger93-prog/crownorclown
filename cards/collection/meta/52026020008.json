@@ -1,0 +1,49 @@
+{
+ "name": "Jonathan Taylor — 2026 Week 2",
+ "description": "Jonathan Taylor (RB, IND) put up 29.2 DraftKings points in Week 2: 24 car, 92 rush, 2 TD · 4/4 for 40.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020008.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020008",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "RB"
+  },
+  {
+   "trait_type": "Team",
+   "value": "IND"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "24 car, 92 rush, 2 TD · 4/4 for 40"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 29.2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 9,
+   "display_type": "number"
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+{
+ "name": "Ja'Marr Chase — 2026 Week 2",
+ "description": "Ja'Marr Chase (WR, CIN) put up 26.5 DraftKings points in Week 2: 7/9 for 75, 2 TD.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020013.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020013",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "WR"
+  },
+  {
+   "trait_type": "Team",
+   "value": "CIN"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "7/9 for 75, 2 TD"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 26.5,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 14,
+   "display_type": "number"
+  }
+ ]
+}

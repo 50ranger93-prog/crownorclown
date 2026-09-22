@@ -1,0 +1,49 @@
+{
+ "name": "Jaylen Waddle — 2026 Week 2",
+ "description": "Jaylen Waddle (WR, DEN) put up 24.8 DraftKings points in Week 2: 8/10 for 138.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020016.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020016",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "WR"
+  },
+  {
+   "trait_type": "Team",
+   "value": "DEN"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "8/10 for 138"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 24.8,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 17,
+   "display_type": "number"
+  }
+ ]
+}

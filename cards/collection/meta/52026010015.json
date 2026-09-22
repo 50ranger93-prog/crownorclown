@@ -1,0 +1,49 @@
+{
+ "name": "Lamar Jackson — 2026 Week 1",
+ "description": "Lamar Jackson (QB, BAL) put up 29.0 DraftKings points in Week 1: 17/25 324 pass, 1 TD · 7 car, 40 rush, 1 TD · 1 fum lost.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026010015.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026010015",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "QB"
+  },
+  {
+   "trait_type": "Team",
+   "value": "BAL"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "17/25 324 pass, 1 TD · 7 car, 40 rush, 1 TD · 1 fum lost"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 29,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 16,
+   "display_type": "number"
+  }
+ ]
+}

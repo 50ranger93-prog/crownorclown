@@ -1,0 +1,61 @@
+{
+ "name": "BAL at IND — 2026 Week 1",
+ "description": "BAL 41 — 23 IND. Shootout — 64 combined. Played at Lucas Oil Stadium, Indianapolis, IN.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026010003.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026010003",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Home",
+   "value": "IND"
+  },
+  {
+   "trait_type": "Away",
+   "value": "BAL"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "BAL"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Shootout — 64 combined"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "Lucas Oil Stadium"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "Yes"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 64,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 18,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}

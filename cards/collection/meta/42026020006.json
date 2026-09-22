@@ -1,0 +1,61 @@
+{
+ "name": "NO at BAL — 2026 Week 2",
+ "description": "NO 24 — 17 BAL. Upset — 9-point dog won. Played at M&T Bank Stadium, Baltimore, MD.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026020006.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026020006",
+ "background_color": "0A0F1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Rare"
+  },
+  {
+   "trait_type": "Home",
+   "value": "BAL"
+  },
+  {
+   "trait_type": "Away",
+   "value": "NO"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "NO"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Upset — 9-point dog won"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "M&T Bank Stadium"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "No"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 41,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 7,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}

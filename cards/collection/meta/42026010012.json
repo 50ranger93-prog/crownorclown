@@ -1,0 +1,61 @@
+{
+ "name": "MIA at LV — 2026 Week 1",
+ "description": "MIA 13 — 27 LV. Regulation. Played at Allegiant Stadium, Las Vegas, NV.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026010012.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026010012",
+ "background_color": "0E1016",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Common"
+  },
+  {
+   "trait_type": "Home",
+   "value": "LV"
+  },
+  {
+   "trait_type": "Away",
+   "value": "MIA"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "LV"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Regulation"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "Allegiant Stadium"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "Yes"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 40,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 14,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}

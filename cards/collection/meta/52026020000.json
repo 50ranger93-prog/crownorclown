@@ -1,0 +1,49 @@
+{
+ "name": "Jaxon Smith-Njigba — 2026 Week 2",
+ "description": "Jaxon Smith-Njigba (WR, SEA) put up 45.5 DraftKings points in Week 2: 9/11 for 155, 3 TD.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020000.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020000",
+ "background_color": "190D04",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Legendary"
+  },
+  {
+   "trait_type": "Position",
+   "value": "WR"
+  },
+  {
+   "trait_type": "Team",
+   "value": "SEA"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "9/11 for 155, 3 TD"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 45.5,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 1,
+   "display_type": "number"
+  }
+ ]
+}

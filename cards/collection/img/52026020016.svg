@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 1050" width="750" height="1050" role="img" aria-label="Jaylen Waddle">
+  <title>Jaylen Waddle — 2026 Week 2</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#452073"/><stop offset="55%" stop-color="#120c1c"/><stop offset="100%" stop-color="#120c1c"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="26%" r="46%">
+      <stop offset="0%" stop-color="#b78cf7" stop-opacity=".26"/><stop offset="100%" stop-color="#b78cf7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g font-family="'Helvetica Neue',Helvetica,Arial,sans-serif">
+    <rect width="750" height="1050" rx="34" fill="#120c1c"/>
+    <rect width="750" height="1050" rx="34" fill="url(#bg)"/>
+    <rect width="750" height="1050" rx="34" fill="url(#halo)"/>
+    <rect x="16" y="16" width="718" height="1018" rx="24" fill="none" stroke="#b78cf7" stroke-width="3" opacity=".85"/>
+    <rect x="27" y="27" width="696" height="996" rx="17" fill="none" stroke="#b78cf7" stroke-width="1" opacity=".3"/>
+
+    <text x="56" y="82" font-size="23" font-weight="700" letter-spacing="3.4" fill="#b78cf7">WEEK 2</text>
+    <text x="694" y="82" text-anchor="end" font-size="20" letter-spacing="2.2" fill="#9aa3b2">EPIC</text>
+
+    <rect x="56" y="112" width="638" height="330" rx="18" fill="#000000" opacity=".26"/>
+    <rect x="56" y="112" width="638" height="330" rx="18" fill="none" stroke="#b78cf7" stroke-width="1" opacity=".25"/>
+    <text x="375" y="300" text-anchor="middle" font-size="150" font-weight="700" fill="#ffffff">24.8</text>
+     <text x="375" y="352" text-anchor="middle" font-size="22" letter-spacing="3.2" fill="#b78cf7">DRAFTKINGS POINTS</text>
+     <text x="375" y="176" text-anchor="middle" font-size="24" letter-spacing="2.4" fill="#6d7688">WR DEN</text>
+
+    <text x="375" y="512" text-anchor="middle" font-size="56" font-weight="700" fill="#ffffff">Jaylen Waddle</text>
+    <text x="375" y="556" text-anchor="middle" font-size="24" letter-spacing="1.2" fill="#b78cf7">2026 · Week 2</text>
+
+    <line x1="70" y1="606" x2="680" y2="606" stroke="#ffffff" stroke-width="1" opacity=".08"/>
+    <text x="70" y="640" font-size="22" letter-spacing="1.5" fill="#9aa3b2">POSITION</text>
+    <text x="680" y="640" text-anchor="end" font-size="27" font-weight="700" fill="#f2f4f8">WR</text>
+    <line x1="70" y1="668" x2="680" y2="668" stroke="#ffffff" stroke-width="1" opacity=".08"/>
+    <text x="70" y="702" font-size="22" letter-spacing="1.5" fill="#9aa3b2">TEAM</text>
+    <text x="680" y="702" text-anchor="end" font-size="27" font-weight="700" fill="#f2f4f8">DEN</text>
+    <line x1="70" y1="730" x2="680" y2="730" stroke="#ffffff" stroke-width="1" opacity=".08"/>
+    <text x="70" y="764" font-size="22" letter-spacing="1.5" fill="#9aa3b2">OPPONENT</text>
+    <text x="680" y="764" text-anchor="end" font-size="27" font-weight="700" fill="#f2f4f8">vs JAX</text>
+    <line x1="70" y1="792" x2="680" y2="792" stroke="#ffffff" stroke-width="1" opacity=".08"/>
+    <text x="70" y="826" font-size="22" letter-spacing="1.5" fill="#9aa3b2">WEEK RANK</text>
+    <text x="680" y="826" text-anchor="end" font-size="27" font-weight="700" fill="#f2f4f8">17th of 24</text>
+    <line x1="70" y1="854" x2="680" y2="854" stroke="#ffffff" stroke-width="1" opacity=".08"/>
+    <text x="375" y="900" text-anchor="middle" font-size="21" fill="#7f8899">8/10 for 138</text>
+
+    <text x="56" y="994" font-size="19" font-weight="700" letter-spacing="2.6" fill="#6c7484">CROWN OR CLOWN</text>
+    <text x="694" y="994" text-anchor="end" font-size="19" letter-spacing="1.4" fill="#6c7484">#52026020016</text>
+  </g>
+</svg>

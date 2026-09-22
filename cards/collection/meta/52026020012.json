@@ -1,0 +1,49 @@
+{
+ "name": "Kenneth Walker III — 2026 Week 2",
+ "description": "Kenneth Walker III (RB, KC) put up 26.8 DraftKings points in Week 2: 24 car, 117 rush · 6/10 for 61.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020012.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020012",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "RB"
+  },
+  {
+   "trait_type": "Team",
+   "value": "KC"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "24 car, 117 rush · 6/10 for 61"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 26.8,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 13,
+   "display_type": "number"
+  }
+ ]
+}

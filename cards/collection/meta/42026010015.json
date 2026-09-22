@@ -1,0 +1,61 @@
+{
+ "name": "DEN at KC — 2026 Week 1",
+ "description": "DEN 10 — 31 KC. Regulation. Played at Arrowhead Stadium, Kansas City, MO.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026010015.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026010015",
+ "background_color": "0E1016",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Common"
+  },
+  {
+   "trait_type": "Home",
+   "value": "KC"
+  },
+  {
+   "trait_type": "Away",
+   "value": "DEN"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "KC"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Regulation"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "Arrowhead Stadium"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "No"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 41,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 21,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}

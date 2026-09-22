@@ -1,0 +1,49 @@
+{
+ "name": "Dalton Schultz — 2026 Week 2",
+ "description": "Dalton Schultz (TE, HOU) put up 29.0 DraftKings points in Week 2: 12/14 for 140.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026020009.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026020009",
+ "background_color": "120C1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Epic"
+  },
+  {
+   "trait_type": "Position",
+   "value": "TE"
+  },
+  {
+   "trait_type": "Team",
+   "value": "HOU"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "12/14 for 140"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 29,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 2,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 10,
+   "display_type": "number"
+  }
+ ]
+}

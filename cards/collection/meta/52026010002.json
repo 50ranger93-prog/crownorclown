@@ -1,0 +1,49 @@
+{
+ "name": "Jahmyr Gibbs — 2026 Week 1",
+ "description": "Jahmyr Gibbs (RB, DET) put up 37.6 DraftKings points in Week 1: 29 car, 156 rush, 2 TD · 5/5 for 30 · 1 fum lost.",
+ "image": "https://www.crownorclown.com/cards/collection/img/52026010002.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#52026010002",
+ "background_color": "190D04",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Player"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Legendary"
+  },
+  {
+   "trait_type": "Position",
+   "value": "RB"
+  },
+  {
+   "trait_type": "Team",
+   "value": "DET"
+  },
+  {
+   "trait_type": "Stat line",
+   "value": "29 car, 156 rush, 2 TD · 5/5 for 30 · 1 fum lost"
+  },
+  {
+   "trait_type": "DK points",
+   "value": 37.6,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week rank",
+   "value": 3,
+   "display_type": "number"
+  }
+ ]
+}

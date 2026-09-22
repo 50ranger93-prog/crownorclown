@@ -1,0 +1,61 @@
+{
+ "name": "SF at LAR — 2026 Week 1",
+ "description": "SF 27 — 7 LAR. Upset — 4-point dog won. Played at Melbourne Cricket Ground, Melbourne, VIC.",
+ "image": "https://www.crownorclown.com/cards/collection/img/42026010001.svg",
+ "external_url": "https://www.crownorclown.com/cards/collection/#42026010001",
+ "background_color": "0A0F1C",
+ "attributes": [
+  {
+   "trait_type": "Card type",
+   "value": "Moment"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Rare"
+  },
+  {
+   "trait_type": "Home",
+   "value": "LAR"
+  },
+  {
+   "trait_type": "Away",
+   "value": "SF"
+  },
+  {
+   "trait_type": "Winner",
+   "value": "SF"
+  },
+  {
+   "trait_type": "Storyline",
+   "value": "Upset — 4-point dog won"
+  },
+  {
+   "trait_type": "Venue",
+   "value": "Melbourne Cricket Ground"
+  },
+  {
+   "trait_type": "Indoors",
+   "value": "No"
+  },
+  {
+   "trait_type": "Combined points",
+   "value": 34,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Margin",
+   "value": 20,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Week",
+   "value": 1,
+   "display_type": "number"
+  },
+  {
+   "trait_type": "Season",
+   "value": 2026,
+   "display_type": "number"
+  }
+ ]
+}
