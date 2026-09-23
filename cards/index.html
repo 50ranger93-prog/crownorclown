@@ -102,8 +102,7 @@ const tm=()=>T.find(t=>t[0]==S.nfl);
 const HELMSRC=c=>IMG("https://raw.githubusercontent.com/spatto12/NFL/main/"+(c=="LAR"?"LA":c)+".png");
 const helm=(c,sz,op)=>`<img alt="" src="${HELMSRC(c)}" style="width:${sz}px;height:${sz}px;object-fit:contain;opacity:${op||1};display:block">`;
 // ESPN spells Washington WSH; everything else matches the table above.
-const NFLSRC=c=>IMG("https://a.espncdn.com/i/teamlogos/nfl/500/"+(c=="WAS"?"wsh":c).toLowerCase()+".png");
-const nflLogo=(c,sz,op)=>`<img alt="" src="${NFLSRC(c)}" onerror="this.onerror=null;this.src='${HELMSRC(c)}'" style="width:${sz}px;height:${sz}px;object-fit:contain;opacity:${op||1};display:block">`;
+const nflLogo=helm;   // the proven source; the mark is the mark, helmet or not
 const selB=()=>BN.filter(b=>S.sel.includes(b));
 const mainB=()=>selB().find(b=>S.teams[b]);
 const mainT=()=>{const b=mainB();return b?S.teams[b]:""};
