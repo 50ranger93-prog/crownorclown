@@ -265,13 +265,22 @@ chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
 
 /* Treatments run on the pixels of the original upload every time, never on an
    already-treated image — stacking them turns anything to mud. */
-let treating = false;
+let treating = false, wanted = null;
 async function retreat() {
-  if (treating) return;
+  wanted = S.treat;
+  if (treating) return;          // the run already going will pick `wanted` up
   treating = true;
   $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
   try {
-    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+    // Keep going until the pass we just finished is still the one selected —
+    // dropping the click left the previous filter's pixels under the new label.
+    for (;;) {
+      const target = wanted;
+      const art = await TREAT.apply(S.raw, target, { dark: "#0b1020", light: $("second").value });
+      if (wanted !== target) continue;
+      S.art = art;
+      break;
+    }
   } catch (e) {
     S.art = S.raw;
     $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
@@ -416,13 +425,22 @@ chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
 
 /* Treatments run on the pixels of the original upload every time, never on an
    already-treated image — stacking them turns anything to mud. */
-let treating = false;
+let treating = false, wanted = null;
 async function retreat() {
-  if (treating) return;
+  wanted = S.treat;
+  if (treating) return;          // the run already going will pick `wanted` up
   treating = true;
   $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
   try {
-    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+    // Keep going until the pass we just finished is still the one selected —
+    // dropping the click left the previous filter's pixels under the new label.
+    for (;;) {
+      const target = wanted;
+      const art = await TREAT.apply(S.raw, target, { dark: "#0b1020", light: $("second").value });
+      if (wanted !== target) continue;
+      S.art = art;
+      break;
+    }
   } catch (e) {
     S.art = S.raw;
     $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
