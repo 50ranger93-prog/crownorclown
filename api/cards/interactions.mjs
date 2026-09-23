@@ -34,7 +34,10 @@ export async function POST(request) {
     const name = user.global_name || user.username || "";
     const t = makeToken({ u: user.id, n: name, c: cmd });
     const origin = process.env.PUBLIC_URL || new URL(request.url).origin;
-    const link = `${origin}/cards?cmd=${cmd}&t=${encodeURIComponent(t)}`;
+    // The trailing slash matters. Served at /cards the browser resolves a relative
+    // URL against the site root, so /cards/treat.js was fetched as /treat.js and
+    // 404ed. Absolute srcs fix today's case; the slash fixes the next one too.
+    const link = `${origin}/cards/?cmd=${cmd}&t=${encodeURIComponent(t)}`;
     const label = cmd === "intro" ? "Build your card" : "Build your trade block";
     // Lead with what they get, not with the mechanics. The old copy opened by explaining the
     // privacy of a message they were already reading.
