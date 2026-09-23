@@ -156,33 +156,27 @@ input[type=color]{width:36px;height:30px;padding:0;border:1px solid var(--edge);
   </fieldset>
 
   <fieldset><legend>Front</legend>
-    <label for="name">Name</label><input type="text" id="name" value="John" maxlength="28">
-    <label for="nick">Nickname</label><input type="text" id="nick" value="Jug_Head" maxlength="28">
-    <label for="team">Team</label><input type="text" id="team" value="TumbleWEED Tactics" maxlength="34">
+    <label for="name">Name</label><input type="text" id="name" value="" maxlength="28" placeholder="Your first name">
+    <label for="nick">Nickname</label><input type="text" id="nick" value="" maxlength="28" placeholder="Optional">
+    <label for="team">Team</label><input type="text" id="team" value="" maxlength="34" placeholder="Your team name">
     <div class="row">
-      <div><label for="ed">Edition</label><select id="ed"><option>Rookie</option><option>Veteran</option><option selected>Commissioner</option><option>Crown</option><option>Clown</option></select></div>
-      <div><label for="ser">Serial</label><input type="text" id="ser" value="012 / 36" maxlength="12"></div>
+      <div><label for="ed">Edition</label><select id="ed"><option>Rookie</option><option selected>Veteran</option><option>Commissioner</option><option>Crown</option><option>Clown</option></select></div>
+      <div><label for="ser">Serial</label><input type="text" id="ser" value="" maxlength="12" placeholder="auto"></div>
     </div>
-    <div class="row"><div><label for="s1v">Stat</label><input type="text" id="s1v" value="141.2" maxlength="7"></div><div><label for="s1k">Label</label><input type="text" id="s1k" value="Best week" maxlength="12"></div></div>
-    <div class="row"><div><label for="s2v">Stat</label><input type="text" id="s2v" value="2-0" maxlength="7"></div><div><label for="s2k">Label</label><input type="text" id="s2k" value="Record" maxlength="12"></div></div>
-    <div class="row"><div><label for="s3v">Stat</label><input type="text" id="s3v" value="2019" maxlength="7"></div><div><label for="s3k">Label</label><input type="text" id="s3k" value="Since" maxlength="12"></div></div>
+    <div class="row"><div><label for="s1v">Stat</label><input type="text" id="s1v" value="" maxlength="7" placeholder="—"></div><div><label for="s1k">Label</label><input type="text" id="s1k" value="" maxlength="12" placeholder="label"></div></div>
+    <div class="row"><div><label for="s2v">Stat</label><input type="text" id="s2v" value="" maxlength="7" placeholder="—"></div><div><label for="s2k">Label</label><input type="text" id="s2k" value="" maxlength="12" placeholder="label"></div></div>
+    <div class="row"><div><label for="s3v">Stat</label><input type="text" id="s3v" value="" maxlength="7" placeholder="—"></div><div><label for="s3k">Label</label><input type="text" id="s3k" value="" maxlength="12" placeholder="label"></div></div>
   </fieldset>
 
   <fieldset><legend>Back</legend>
-    <label for="meta">Meta line</label><textarea id="meta" rows="2" maxlength="160">Dallas Cowboys · Boards 1, 2 &amp; 3 · Orem, UT · Made in Texas · Playing since 2019</textarea>
+    <label for="meta">Meta line</label><textarea id="meta" rows="2" maxlength="160" placeholder="NFL team · boards · where you are · playing since"></textarea>
     <label for="badges">Badges <span style="text-transform:none;letter-spacing:0">(comma separated)</span></label>
-    <textarea id="badges" rows="3" maxlength="400">Commissioner, Shark, DFS grinder, Long-timer, Sleeper hunter, Stats nerd, Trash talker, Grinder, Risk taker, Night owl, SuperDad</textarea>
+    <textarea id="badges" rows="3" maxlength="400" placeholder="Shark, Trash talker, Night owl"></textarea>
     <label for="flair">Fields <span style="text-transform:none;letter-spacing:0">(one per line — LABEL | value)</span></label>
-    <textarea id="flair" rows="9" maxlength="1200">Perfect lineup | Allen · Gibbs · Montgomery · Jefferson · Chase · Puka · Bowers · Henry · Aubrey · Texans
-Worst pick ever | Any Brown
-Ride or die | Josh Allen
-Walk-up song | "Nobody in His Right Mind Would Have Left Her" — George Strait
-Gameday snack | Wings
-This year's goal | Avoid the vest. Finish top three.
-Favorite player ever | Troy Aikman
-Day job | HVAC</textarea>
+    <textarea id="flair" rows="9" maxlength="1200" placeholder="Ride or die | Josh Allen
+Worst pick ever | …"></textarea>
     <label for="take">The take</label>
-    <textarea id="take" rows="4" maxlength="320">It's all the same old BS. Nobody won their draft. To win a league it's roster management and getting lucky in weeks 15 and 16. Do you feel lucky, punk?</textarea>
+    <textarea id="take" rows="4" maxlength="320" placeholder="Your hot take"></textarea>
   </fieldset>
 
   <fieldset><legend>Colour</legend>
@@ -201,12 +195,12 @@ Day job | HVAC</textarea>
     <div class="tilt"><div class="card" id="cardF"><div class="face" id="faceF">
       <div class="artwrap contain" id="artwrap"><div class="back-blur" id="blur"></div><div class="art" id="art"></div><div class="artholo" id="artholo"></div><div class="tint"></div><div class="hem"></div></div>
       <div class="capshade"></div><div class="grain"></div><div class="holo" id="holoF"></div><div class="glare" id="glareF"></div>
-      <div class="head"><span class="ed" id="edF">COMMISSIONER</span><span class="ser" id="serF">#012 / 36</span></div>
+      <div class="head"><span class="ed" id="edF"></span><span class="ser" id="serF"></span></div>
       <div class="foot">
         <div class="rule"></div>
-        <p class="team" id="teamF">TumbleWEED Tactics</p>
-        <p class="name" id="nameF">John</p>
-        <p class="nick" id="nickF">"Jug_Head"</p>
+        <p class="team" id="teamF"></p>
+        <p class="name" id="nameF"></p>
+        <p class="nick" id="nickF"></p>
         <div class="stats" id="statsF"></div>
       </div>
       <div class="mark" id="markF">👑</div>
@@ -219,12 +213,12 @@ Day job | HVAC</textarea>
       <div class="wmk" id="wmkB"></div>
       <div class="bk">
         <div class="bkhead"><div class="bklogo" id="bklogo"></div>
-          <div><div class="bkname" id="bknameB">John "Jug_Head"</div><div class="bkteam" id="bkteamB">TumbleWEED Tactics</div></div></div>
+          <div><div class="bkname" id="bknameB"></div><div class="bkteam" id="bkteamB"></div></div></div>
         <p class="meta" id="metaB"></p>
         <div class="pills" id="pillsB"></div>
         <dl class="grid" id="gridB"></dl>
         <dl class="take" id="takeB"></dl>
-        <div class="bkfoot"><span>Expansion League · 2026</span><span id="serB">#012 / 36</span></div>
+        <div class="bkfoot"><span>Expansion League · 2026</span><span id="serB"></span></div>
       </div>
     </div></div></div>
     <p class="cap">Back</p>
@@ -265,19 +259,30 @@ chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
 
 /* Treatments run on the pixels of the original upload every time, never on an
    already-treated image — stacking them turns anything to mud. */
-let treating = false;
+let treating = false, wanted = null;
 async function retreat() {
-  if (treating) return;
+  wanted = S.treat;
+  if (treating) return;          // the run already going will pick `wanted` up
   treating = true;
-  $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
   try {
-    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+    // Keep going until the treatment we just finished is still the one selected.
+    // Dropping the click instead left the card showing the previous filter under
+    // the new label, which is the worst of both.
+    for (;;) {
+      const target = wanted;
+      $("treatNote").textContent = target === "Original" ? "" : "Working\u2026";
+      const art = await TREAT.apply(S.raw, target, { dark: "#0b1020", light: $("second").value });
+      if (wanted !== target) continue;
+      S.art = art;
+      break;
+    }
+    $("treatNote").textContent = "";
   } catch (e) {
     S.art = S.raw;
     $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
+  } finally {
+    treating = false;
   }
-  treating = false;
-  if ($("treatNote").textContent === "Working\u2026") $("treatNote").textContent = "";
   await readArt();
 }
 chips($("treat"), TREAT.KINDS, () => S.treat, v => { S.treat = v; retreat(); });
@@ -416,19 +421,30 @@ chips($("pattern"), Object.keys(PATTERNS), () => S.pattern, v => S.pattern = v);
 
 /* Treatments run on the pixels of the original upload every time, never on an
    already-treated image — stacking them turns anything to mud. */
-let treating = false;
+let treating = false, wanted = null;
 async function retreat() {
-  if (treating) return;
+  wanted = S.treat;
+  if (treating) return;          // the run already going will pick `wanted` up
   treating = true;
-  $("treatNote").textContent = S.treat === "Original" ? "" : "Working\u2026";
   try {
-    S.art = await TREAT.apply(S.raw, S.treat, { dark: "#0b1020", light: $("second").value });
+    // Keep going until the treatment we just finished is still the one selected.
+    // Dropping the click instead left the card showing the previous filter under
+    // the new label, which is the worst of both.
+    for (;;) {
+      const target = wanted;
+      $("treatNote").textContent = target === "Original" ? "" : "Working\u2026";
+      const art = await TREAT.apply(S.raw, target, { dark: "#0b1020", light: $("second").value });
+      if (wanted !== target) continue;
+      S.art = art;
+      break;
+    }
+    $("treatNote").textContent = "";
   } catch (e) {
     S.art = S.raw;
     $("treatNote").textContent = "That one couldn't be processed \u2014 showing the original.";
+  } finally {
+    treating = false;
   }
-  treating = false;
-  if ($("treatNote").textContent === "Working\u2026") $("treatNote").textContent = "";
   await readArt();
 }
 chips($("treat"), TREAT.KINDS, () => S.treat, v => { S.treat = v; retreat(); });
@@ -466,27 +482,33 @@ function paint() {
   $("bklogo").style.backgroundImage = url;
   $("wmkB").style.backgroundImage = url;
 
-  const nm = $("name").value || "Name";
+  const nm = $("name").value.trim();
   const n = $("nameF"); n.textContent = nm;
   n.className = "name" + (nm.length > 18 ? " s3" : nm.length > 11 ? " s2" : "");
+  $("nameF").style.display = nm ? "block" : "none";
   $("teamF").textContent = $("team").value;
   $("nickF").textContent = $("nick").value ? `"${$("nick").value}"` : "";
-  $("edF").textContent = ($("ed").value || "").toUpperCase() + " EDITION";
-  $("serF").textContent = "#" + $("ser").value;
-  $("serB").textContent = "#" + $("ser").value;
+  $("edF").textContent = $("ed").value ? $("ed").value.toUpperCase() + " EDITION" : "";
+  const ser = $("ser").value.trim();
+  $("serF").textContent = ser ? "#" + ser : "";
+  $("serB").textContent = ser ? "#" + ser : "";
   $("markF").textContent = S.mark === "—" ? "" : S.mark;
   $("markF").style.display = S.mark === "—" ? "none" : "grid";
 
+  // A stats strip showing three dashes is worse than no strip at all.
   $("statsF").textContent = "";
+  let anyStat = false;
   for (const i of [1,2,3]) {
-    const v = $("s"+i+"v").value, k = $("s"+i+"k").value;
+    const v = $("s"+i+"v").value.trim(), k = $("s"+i+"k").value.trim();
     if (!v && !k) continue;
+    anyStat = true;
     const d = el("div", null, "stat");
     d.append(el("b", v || "—"), el("span", k || ""));
     $("statsF").append(d);
   }
+  $("statsF").style.display = anyStat ? "grid" : "none";
 
-  $("bknameB").textContent = nm + ($("nick").value ? ` "${$("nick").value}"` : "");
+  $("bknameB").textContent = ($("name").value.trim() || "") + ($("nick").value ? ` "${$("nick").value}"` : "");
   $("bkteamB").textContent = $("team").value;
   $("metaB").textContent = $("meta").value;
 
