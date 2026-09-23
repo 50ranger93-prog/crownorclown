@@ -93,7 +93,7 @@ const PAL=["#E24B4A","#FFC62F","#C0C0C0","#F2F3F5","#00A8FC","#1D9E75","#7F77DD"
 const POS={QB:"#E24B4A",RB:"#1D9E75",WR:"#00A8FC",TE:"#EF9F27",K:"#888780","D/ST":"#7F77DD"};
 const WANTS=["QB","RB","WR","TE","K","D/ST","Depth","Upside","Handcuff","Bye-week fill","Future picks","Anything"];
 const STAT=[["Open to anything","#1D9E75"],["Selling","#E24B4A"],["Buying","#00A8FC"],["Must move","#FF7A00"],["Just listening","#888780"]];
-const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],photo:"",photoT:"",photoFit:"cover",photoZ:100,photoY:50,mint:0,minting:false,treat:"Original",foil:"Gold foil",pattern:"Linear",holoAmt:34,treating:false,
+const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],rarity:null,photo:"",photoT:"",photoFit:"cover",photoZ:100,photoY:50,mint:0,minting:false,treat:"Original",foil:"Gold foil",pattern:"Linear",holoAmt:34,treating:false,
  players:[],wants:[],cw:["","",""],status:"Open to anything",pitch:"",week:"3",bAccent:"#003594"};
 const ROST={},RQ={};
 const $=id=>document.getElementById(id);
@@ -116,11 +116,16 @@ function serial(){return S.mint?"#"+String(S.mint).padStart(3,"0"):(S.minting?"#
 // Asked for once, when the card reaches the preview, so the number is on the card
 // before the image is made. A number that cannot be issued leaves the slot empty
 // rather than printing one that is not really yours.
+function traits(){return{
+ Edition:S.ed, Treatment:S.treat, Finish:S.foil, Pattern:S.pattern,
+ Hologram:S.holoAmt>=70?"Heavy":S.holoAmt>=30?"Medium":S.holoAmt>0?"Light":"None",
+ "NFL team":tm()[1], Boards:String(selB().length), Artwork:S.photo?"Photo":"Logo only", Layout:S.layout};}
 async function getMint(){
  if(S.mint||S.minting)return;
  S.minting=true;R();
- try{const r=await fetch("/api/cards/mint",{method:"POST"});const d=await r.json();
-  if(d&&d.configured&&d.n)S.mint=d.n;}catch(e){}
+ try{const r=await fetch("/api/cards/mint",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(traits())});
+  const d=await r.json();
+  if(d&&d.configured&&d.n){S.mint=d.n;S.rarity=d;}}catch(e){}
  S.minting=false;R();
 }
 const Q=new URLSearchParams(location.search);S.token=Q.get("t")||"";
@@ -173,6 +178,7 @@ r.onerror=()=>{S.err="That photo couldn't be read. Try a different one.";draw()}
 r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL("image/jpeg",0.85);S.photoT="";if(S.treat!="Original")setTreat(S.treat);else draw()};
 im.onerror=()=>{S.err="That file type won't load. Use a JPG or PNG.";draw()};im.src=r.result};r.readAsDataURL(f)}
 function sw(key,list){const cur=S[key];return `<div class="sws">`+list.map(c=>`<button class="sw ${cur==c?'on':''}" style="background:${c}" aria-label="Color ${c}" onclick="S.${key}='${c}';R()"></button>`).join("")+`<input type="color" value="${cur||'#003594'}" onchange="S.${key}=this.value;R()" aria-label="Custom color"></div>`}
+const TIERC={Mythic:"#f0a0ff",Rare:"#5b9cf8",Uncommon:"#5dd39e",Common:"#949ba4"};
 const FOILS={"Gold foil":["#fff6cf","#c8a04a","#7e5f18"],"Chrome":["#ffffff","#9aa3b0","#3d434d"],
  "Black label":["#8d8d92","#2b2b30","#0a0a0c"],"Prismatic":["#ffe9fb","#9ad7ff","#6b4fd8"],
  "Rose gold":["#ffe3d6","#d79176","#8a4b33"],"Matte":["#4a4f58","#2c3037","#15181c"]};
@@ -249,7 +255,15 @@ function card(which){
  // goes stale mid-season, which is the whole reason a week-2 score is not here.
  const facts=[["NFL",tm()[1],true],["BOARD",bshort(selB())],["HOME",S.where],["SINCE",S.since]]
   .filter(f=>f[1]).map(f=>`<div style="min-width:0"><div style="color:#949ba4;font-size:8px;font-weight:700;letter-spacing:.12em">${f[0]}</div><div style="display:flex;align-items:center;gap:6px"><div style="color:#dbdee1;font-size:11px;line-height:1.3;overflow-wrap:anywhere">${esc(f[1])}</div>${f[2]?nflLogo(S.nfl,20):""}</div></div>`).join("");
- const topBar=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1e1f22"><span style="background:${edc};color:${S.ed=='Commissioner'?'#412402':'#fff'};font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px">${S.ed.toUpperCase()} EDITION</span><span style="color:#949ba4;font-size:11px">${serial()}</span></div>`;
+ // Counts come back from the mint; before that the traits still show, just
+ // without the "3 of 19" that only the league as a whole can tell you.
+ const tr=traits();
+ const rows=Object.keys(tr).map(k=>{const b=S.rarity&&S.rarity.breakdown&&S.rarity.breakdown[k];
+  return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #3f4147">
+   <span style="color:#949ba4;font-size:10px;letter-spacing:.04em">${k.toUpperCase()}</span>
+   <span style="color:#dbdee1;font-size:11px;text-align:right">${esc(tr[k])}${b&&b.of?` <span style="color:#6d7484">${b.count} of ${b.of}</span>`:""}</span></div>`}).join("");
+ const sheet=`<div style="margin-bottom:10px"><div style="color:#949ba4;font-size:9px;font-weight:700;letter-spacing:.08em;margin-bottom:3px">TRAITS</div>${rows}</div>`;
+ const topBar=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1e1f22"><span style="background:${edc};color:${S.ed=='Commissioner'?'#412402':'#fff'};font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px">${S.ed.toUpperCase()} EDITION</span><span style="color:#949ba4;font-size:11px">${serial()}${S.rarity&&S.rarity.tier?`  \u00b7  <b style="color:${TIERC[S.rarity.tier]||'#949ba4'}">${S.rarity.tier.toUpperCase()}</b>`:""}</span></div>`;
  const wm=`<div style="position:absolute;right:-24px;bottom:-24px;pointer-events:none">${nflLogo(S.nfl,180,.09)}</div>`;
 
  const front=`<div class="card" style="border:3px solid ${a}">
@@ -270,6 +284,7 @@ function card(which){
  <div style="height:4px;background:${a}"></div>
  <div style="position:relative;padding:12px;overflow:hidden">${wm}<div style="position:relative">
  <div style="margin-bottom:8px">${bd||`<span style="color:#949ba4;font-size:11px">No badges picked</span>`}</div>
+ ${sheet}
  ${fl?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">${fl}</div>`:""}
  ${S.take?`<div style="background:#1e1f22;border-left:3px solid ${S.nameC};padding:8px 10px;margin-bottom:10px"><div style="color:${S.nameC};font-size:11px;font-weight:700;letter-spacing:.04em">🔥 THE TAKE</div><div style="color:#dbdee1;font-size:13px;line-height:1.45;word-wrap:break-word">${esc(S.take)}</div></div>`:""}
  <div style="color:#949ba4;font-size:10px;letter-spacing:.04em">EXPANSION LEAGUE  |  2026 SEASON</div>

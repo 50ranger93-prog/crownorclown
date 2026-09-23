@@ -1,5 +1,5 @@
 /**
- * Mint numbers.
+ * Mint numbers, traits and rarity.
  *
  *   POST /api/cards/mint   ->  { n: 7 }
  *
@@ -15,6 +15,14 @@
  * printed on the card before the image is made. Abandon the preview and that
  * number is spent — which is why the sequence can have gaps, and gaps are fine:
  * a mint number says when you turned up, not how many exist.
+ *
+ * Each mint also records its traits, which is what makes this a collection rather
+ * than a pile of pictures. Rarity is then not a label anybody chose: it is
+ * counted. "Prismatic, 2 of 19" is a fact about what the league actually built.
+ *
+ * Rarity only starts being claimed once there are enough cards for it to mean
+ * something. With four cards in, everything is one-of-four, and calling that
+ * Mythic would be a lie.
  */
 
 const TOKEN  = process.env.GH_TOKEN || process.env.BOARD_TOKEN || "";
@@ -37,7 +45,7 @@ const gh = (path, opts = {}) => fetch(API + path, {
 
 async function read() {
   const r = await gh(`/repos/${OWNER}/${REPO}/contents/${FILE}?ref=${encodeURIComponent(BRANCH)}`);
-  if (r.status === 404) return { next: 1, sha: null };
+  if (r.status === 404) return { next: 1, cards: [], sha: null };
   if (!r.ok) throw new Error("read " + r.status);
   const j = await r.json();
   try {
@@ -46,19 +54,19 @@ async function read() {
     // A corrupt or missing counter must never restart at 1 and hand out a number
     // somebody already has. Refusing is better than duplicating.
     if (!Number.isInteger(n) || n < 1) throw new Error("counter unreadable");
-    return { next: n, sha: j.sha || null };
+    return { next: n, cards: Array.isArray(parsed.cards) ? parsed.cards : [], sha: j.sha || null };
   } catch (e) {
     if (String(e.message) === "counter unreadable") throw e;
     throw new Error("counter unreadable");
   }
 }
 
-async function write(next, sha) {
+async function write(next, cards, sha) {
   const r = await gh(`/repos/${OWNER}/${REPO}/contents/${FILE}`, {
     method: "PUT",
     body: JSON.stringify({
       message: `Mint #${next - 1}`,
-      content: Buffer.from(JSON.stringify({ next, updated: new Date().toISOString() }, null, 1) + "\n", "utf8").toString("base64"),
+      content: Buffer.from(JSON.stringify({ next, cards, updated: new Date().toISOString() }, null, 1) + "\n", "utf8").toString("base64"),
       branch: BRANCH,
       ...(sha ? { sha } : {}),
     }),
@@ -68,17 +76,57 @@ async function write(next, sha) {
   return true;
 }
 
-export async function POST() {
+/* Traits are somebody else's text arriving at a public endpoint, so nothing is
+   trusted: only the keys the card actually has are kept, each clipped to a sane
+   length, and anything else is dropped on the floor. */
+const TRAIT_KEYS = ["Edition", "Treatment", "Finish", "Pattern", "Hologram", "NFL team", "Boards", "Artwork", "Layout"];
+function cleanTraits(t) {
+  const out = {};
+  if (!t || typeof t !== "object") return out;
+  for (const k of TRAIT_KEYS) {
+    const v = t[k];
+    if (typeof v !== "string" && typeof v !== "number") continue;
+    const str = String(v).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 40);
+    if (str) out[k] = str;
+  }
+  return out;
+}
+
+/* Rarity, counted rather than decided. Each trait reports how many cards share
+   its value; the card's tier comes from its rarest one. */
+const TIERS = [[0.05, "Mythic"], [0.14, "Rare"], [0.32, "Uncommon"], [1, "Common"]];
+export function rarityOf(traits, cards) {
+  const total = cards.length;
+  const breakdown = {};
+  let rarest = 1;
+  for (const [k, v] of Object.entries(traits)) {
+    const count = cards.filter(c => c.traits && c.traits[k] === v).length;
+    const share = total ? count / total : 1;
+    breakdown[k] = { value: v, count, of: total };
+    if (share < rarest) rarest = share;
+  }
+  // Below this there are not enough cards for a tier to mean anything, and
+  // calling a one-of-four "Mythic" would be a lie.
+  const tier = total < 8 ? null : (TIERS.find(t => rarest <= t[0]) || TIERS[3])[1];
+  return { total, tier, breakdown };
+}
+
+export async function POST(request) {
   if (!TOKEN || !OWNER || !REPO) {
     // Not configured is not an error the card should die on — it just means no
     // number, and the card says so rather than printing a made-up one.
     return json({ configured: false, note: "Mint storage not configured." });
   }
+  let traits = {};
+  try { traits = cleanTraits(await request.json()); } catch (e) { /* a mint with no traits is still a mint */ }
   try {
     // Two people hitting preview together invalidates one sha; take turns.
     for (let attempt = 0; attempt < 4; attempt++) {
-      const { next, sha } = await read();
-      if (await write(next + 1, sha)) return json({ configured: true, n: next });
+      const { next, cards, sha } = await read();
+      const entry = { n: next, at: new Date().toISOString(), traits };
+      const nextCards = cards.concat(entry);
+      if (await write(next + 1, nextCards, sha))
+        return json({ configured: true, n: next, ...rarityOf(traits, nextCards) });
     }
     return json({ configured: false, note: "Mint busy, try again." }, 503);
   } catch (e) {
