@@ -46,6 +46,25 @@ button{font-family:inherit}
 .split{display:grid;grid-template-columns:1fr;gap:16px}
 @media (min-width:700px){.split{grid-template-columns:minmax(0,1fr) 360px;align-items:start}.split>div:last-child{position:sticky;top:12px}}
 .card{max-width:360px;border-radius:10px;overflow:hidden;background:#2b2d31}
+.faces{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+/* The NFT frame wraps the card rather than replacing it — same card, same two
+   logos, now sitting in foil. */
+.nft{--f1:#fff6cf;--f2:#c8a04a;--f3:#7e5f18;max-width:360px;position:relative;border-radius:16px;padding:7px;
+  background:linear-gradient(140deg,var(--f1) 0%,var(--f2) 21%,#fffdf4 37%,var(--f3) 51%,var(--f2) 66%,#fffaea 80%,var(--f3) 100%);
+  box-shadow:0 2px 5px rgba(0,0,0,.55),0 22px 48px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(255,255,255,.32)}
+.nft .card{max-width:none;border-radius:10px}
+/* The foil sits on the artwork panel, not over the whole card: that is where
+   light catches a real foil card, and it keeps the flair and the take readable.
+   Deliberately not a mask — html-to-image drops mask-image, so a masked fade
+   looks right in the browser and exports as flat rainbow across the writing. */
+.nftholo{position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;filter:saturate(1.5);
+  background-size:230% 230%;background-position:38% 30%}
+.p-linear{background-image:repeating-linear-gradient(105deg,rgba(255,80,120,.55) 0%,rgba(255,220,90,.55) 7%,rgba(90,255,180,.55) 14%,rgba(90,190,255,.55) 21%,rgba(190,120,255,.55) 28%,rgba(255,80,120,.55) 35%)}
+.p-burst{background-image:repeating-conic-gradient(from 0deg at 50% 36%,rgba(255,90,130,.6) 0deg,rgba(255,225,95,.6) 7deg,rgba(95,255,185,.6) 14deg,rgba(95,195,255,.6) 21deg,rgba(195,125,255,.6) 28deg,rgba(255,90,130,.6) 35deg)}
+.p-hatch{background-image:repeating-linear-gradient(62deg,rgba(255,90,130,.42) 0%,rgba(95,255,185,.42) 9%,rgba(95,195,255,.42) 18%,rgba(255,90,130,.42) 27%),repeating-linear-gradient(-62deg,rgba(255,225,95,.42) 0%,rgba(195,125,255,.42) 9%,rgba(255,225,95,.42) 18%)}
+.p-shard{background-image:conic-gradient(from 210deg at 42% 30%,rgba(255,90,130,.62),rgba(255,225,95,.62) 12%,rgba(95,255,185,.62) 26%,rgba(95,195,255,.62) 38%,rgba(195,125,255,.62) 52%,rgba(255,225,95,.62) 68%,rgba(95,195,255,.62) 84%,rgba(255,90,130,.62))}
+.p-ripple{background-image:repeating-radial-gradient(circle at 50% 32%,rgba(255,90,130,.5) 0,rgba(255,225,95,.5) 14px,rgba(95,255,185,.5) 28px,rgba(95,195,255,.5) 42px,rgba(195,125,255,.5) 56px,rgba(255,90,130,.5) 70px)}
+.rng{width:100%;accent-color:#5865F2;margin:2px 0 8px}
 .bcard{width:280px;max-width:100%;border-radius:8px;overflow:hidden;background:#2b2d31}
 .chan{color:#949ba4;font-size:14px;margin-bottom:10px}
 .sug{background:#2b2d31;border-radius:6px;padding:8px;margin-bottom:6px}
@@ -63,6 +82,7 @@ button{font-family:inherit}
 <div id="pv" class="pv" hidden>Preview mode. To post for real, type <b>/intro</b> or <b>/block</b> in the league Discord and tap the button the bot sends you.</div>
 <div id="app" class="dm"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script src="treat.js"></script>
 <script>let BOARDS={};</script>
 <script>const T=[["ARI","Arizona Cardinals","#97233F","#FFB612"],["ATL","Atlanta Falcons","#A71930","#000000"],["BAL","Baltimore Ravens","#241773","#9E7C0C"],["BUF","Buffalo Bills","#00338D","#C60C30"],["CAR","Carolina Panthers","#0085CA","#101820"],["CHI","Chicago Bears","#0B162A","#C83803"],["CIN","Cincinnati Bengals","#FB4F14","#000000"],["CLE","Cleveland Browns","#311D00","#FF3C00"],["DAL","Dallas Cowboys","#003594","#869397"],["DEN","Denver Broncos","#FB4F14","#002244"],["DET","Detroit Lions","#0076B6","#B0B7BC"],["GB","Green Bay Packers","#203731","#FFB612"],["HOU","Houston Texans","#03202F","#A71930"],["IND","Indianapolis Colts","#002C5F","#A2AAAD"],["JAX","Jacksonville Jaguars","#006778","#D7A22A"],["KC","Kansas City Chiefs","#E31837","#FFB81C"],["LV","Las Vegas Raiders","#000000","#A5ACAF"],["LAC","Los Angeles Chargers","#0080C6","#FFC20E"],["LAR","Los Angeles Rams","#003594","#FFA300"],["MIA","Miami Dolphins","#008E97","#FC4C02"],["MIN","Minnesota Vikings","#4F2683","#FFC62F"],["NE","New England Patriots","#002244","#C60C30"],["NO","New Orleans Saints","#101820","#D3BC8D"],["NYG","New York Giants","#0B2265","#A71930"],["NYJ","New York Jets","#125740","#FFFFFF"],["PHI","Philadelphia Eagles","#004C54","#A5ACAF"],["PIT","Pittsburgh Steelers","#101820","#FFB612"],["SF","San Francisco 49ers","#AA0000","#B3995D"],["SEA","Seattle Seahawks","#002244","#69BE28"],["TB","Tampa Bay Buccaneers","#D50A0A","#34302B"],["TEN","Tennessee Titans","#0C2340","#4B92DB"],["WAS","Washington Commanders","#5A1414","#FFB612"]];
 const BN=["Board 1","Board 2","Board 3"];
@@ -73,13 +93,16 @@ const PAL=["#E24B4A","#FFC62F","#C0C0C0","#F2F3F5","#00A8FC","#1D9E75","#7F77DD"
 const POS={QB:"#E24B4A",RB:"#1D9E75",WR:"#00A8FC",TE:"#EF9F27",K:"#888780","D/ST":"#7F77DD"};
 const WANTS=["QB","RB","WR","TE","K","D/ST","Depth","Upside","Handcuff","Bye-week fill","Future picks","Anything"];
 const STAT=[["Open to anything","#1D9E75"],["Selling","#E24B4A"],["Buying","#00A8FC"],["Must move","#FF7A00"],["Just listening","#888780"]];
-const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],photo:"",
+const S={cmd:"",step:0,err:"",name:"",nick:"",since:"",sel:[],teams:{},nfl:"DAL",where:"",take:"",layout:"left",accent:"",nameC:"#E24B4A",teamC:"#00A8FC",ed:"Veteran",flair:{},badges:[],cf:[["",""],["",""],["",""]],cb:["","",""],rarity:null,photo:"",photoT:"",photoFit:"cover",photoZ:100,photoY:50,mint:0,minting:false,treat:"Original",foil:"Gold foil",pattern:"Linear",holoAmt:34,treating:false,
  players:[],wants:[],cw:["","",""],status:"Open to anything",pitch:"",week:"3",bAccent:"#003594"};
 const ROST={},RQ={};
 const $=id=>document.getElementById(id);
 const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const tm=()=>T.find(t=>t[0]==S.nfl);
-const helm=(c,sz,op)=>`<img alt="" src="${IMG("https://raw.githubusercontent.com/spatto12/NFL/main/"+(c=="LAR"?"LA":c)+".png")}" style="width:${sz}px;height:${sz}px;object-fit:contain;opacity:${op||1};display:block">`;
+const HELMSRC=c=>IMG("https://raw.githubusercontent.com/spatto12/NFL/main/"+(c=="LAR"?"LA":c)+".png");
+const helm=(c,sz,op)=>`<img alt="" src="${HELMSRC(c)}" style="width:${sz}px;height:${sz}px;object-fit:contain;opacity:${op||1};display:block">`;
+// ESPN spells Washington WSH; everything else matches the table above.
+const nflLogo=helm;   // the proven source; the mark is the mark, helmet or not
 const selB=()=>BN.filter(b=>S.sel.includes(b));
 const mainB=()=>selB().find(b=>S.teams[b]);
 const mainT=()=>{const b=mainB();return b?S.teams[b]:""};
@@ -87,7 +110,24 @@ const logoOf=(b,n)=>{const r=(BOARDS[b]||[]).find(x=>x[0]==n);return r&&r[1]?IMG
 function lg(b,n,sz){const d=logoOf(b,n);return d?`<img alt="" src="${d}" style="width:${sz}px;height:${sz}px;border-radius:${Math.round(sz/5)}px;background:#fff;object-fit:contain;flex-shrink:0;border:2px solid #fff">`:`<div style="width:${sz}px;height:${sz}px;border-radius:${Math.round(sz/5)}px;background:#4e5058;flex-shrink:0"></div>`}
 const bshort=a=>a.length?"Board"+(a.length>1?"s ":" ")+a.map(b=>b.slice(6)).join(a.length>2?", ":" & ").replace(/, (\d)$/," & $1"):"";
 function R(){draw()}
-function serial(){const m=mainB();if(!m)return "#— / 36";const i=BOARDS[m].findIndex(x=>x[0]==S.teams[m]);return "#"+String(BN.indexOf(m)*12+i+1).padStart(3,"0")+" / 36"}
+// The order it was made in. Not a seat, not out of anything — #1 is whoever
+// built the first card and it keeps counting. Five cards, five numbers.
+function serial(){return S.mint?"#"+String(S.mint).padStart(3,"0"):(S.minting?"#…":"")}
+// Asked for once, when the card reaches the preview, so the number is on the card
+// before the image is made. A number that cannot be issued leaves the slot empty
+// rather than printing one that is not really yours.
+function traits(){return{
+ Edition:S.ed, Treatment:S.treat, Finish:S.foil, Pattern:S.pattern,
+ Hologram:S.holoAmt>=70?"Heavy":S.holoAmt>=30?"Medium":S.holoAmt>0?"Light":"None",
+ "NFL team":tm()[1], Boards:String(selB().length), Artwork:S.photo?"Photo":"Logo only", Layout:S.layout};}
+async function getMint(){
+ if(S.mint||S.minting)return;
+ S.minting=true;R();
+ try{const r=await fetch("/api/cards/mint",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(traits())});
+  const d=await r.json();
+  if(d&&d.configured&&d.n){S.mint=d.n;S.rarity=d;}}catch(e){}
+ S.minting=false;R();
+}
 const Q=new URLSearchParams(location.search);S.token=Q.get("t")||"";
 if(S.token){try{const d=JSON.parse(atob(S.token.split(".")[0].replace(/-/g,"+").replace(/_/g,"/")));if(d.n)S.name=d.n.split(" ")[0];}catch(e){}}
 if(Q.get("cmd")=="intro"||Q.get("cmd")=="block"){S.cmd=Q.get("cmd");S.step=1;}
@@ -102,7 +142,7 @@ async function postIt(){
   const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT(),names})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||"Posting failed. Try again.");
-  S.sending=false;S.step=S.cmd=="intro"?7:5;draw();window.scrollTo({top:0});
+  S.sending=false;S.step=S.cmd=="intro"?9:5;draw();window.scrollTo({top:0});
  }catch(e){S.sending=false;S.err=e.message||"Posting failed. Try again.";draw()}
 }
 function postBar(back){return `${S.err?`<div class="er">${S.err}</div>`:""}<div class="nv"><button class="dg" onclick="go(${back})">Edit</button><button class="db" ${S.sending?"disabled":""} onclick="postIt()">${S.sending?"Posting…":"Post it"}</button></div>`}
@@ -116,6 +156,7 @@ function go(n){
  }
  if(S.cmd=="block"&&S.step==2&&n==3&&!S.players.some(p=>p.name.trim())){S.err="Add at least one player.";return draw()}
  S.step=n;draw();window.scrollTo({top:0});
+ if(S.cmd=="intro"&&n==8)getMint();
 }
 const dropFrom=b=>{S.players=S.players.filter(p=>p.board!==b||p.man)};
 function tgBoard(b){const i=S.sel.indexOf(b);if(i>-1){S.sel.splice(i,1);delete S.teams[b];dropFrom(b)}else S.sel.push(b);S.err="";draw()}
@@ -134,9 +175,40 @@ function tgP(b,pos,name,nfl){const i=picked(b,name);
 function addByHand(){S.players.push({pos:"WR",name:"",nfl:"DAL",note:"",board:mainB()||"",man:1});draw()}
 function photo(e){const f=e.target.files&&e.target.files[0];if(!f)return;S.err="";const r=new FileReader();
 r.onerror=()=>{S.err="That photo couldn't be read. Try a different one.";draw()};
-r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL("image/jpeg",0.85);draw()};
+r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL("image/jpeg",0.85);S.photoT="";if(S.treat!="Original")setTreat(S.treat);else draw()};
 im.onerror=()=>{S.err="That file type won't load. Use a JPG or PNG.";draw()};im.src=r.result};r.readAsDataURL(f)}
 function sw(key,list){const cur=S[key];return `<div class="sws">`+list.map(c=>`<button class="sw ${cur==c?'on':''}" style="background:${c}" aria-label="Color ${c}" onclick="S.${key}='${c}';R()"></button>`).join("")+`<input type="color" value="${cur||'#003594'}" onchange="S.${key}=this.value;R()" aria-label="Custom color"></div>`}
+const TIERC={Mythic:"#f0a0ff",Rare:"#5b9cf8",Uncommon:"#5dd39e",Common:"#949ba4"};
+const FOILS={"Gold foil":["#fff6cf","#c8a04a","#7e5f18"],"Chrome":["#ffffff","#9aa3b0","#3d434d"],
+ "Black label":["#8d8d92","#2b2b30","#0a0a0c"],"Prismatic":["#ffe9fb","#9ad7ff","#6b4fd8"],
+ "Rose gold":["#ffe3d6","#d79176","#8a4b33"],"Matte":["#4a4f58","#2c3037","#15181c"]};
+const PATS={Linear:"p-linear",Starburst:"p-burst","Cross-hatch":"p-hatch",Shattered:"p-shard",Ripple:"p-ripple"};
+// The treated photo when there is one, the original otherwise — so the card never
+// has to know whether a filter has been applied.
+const PHOTO=()=>S.photoT||S.photo;
+const photoBox=()=>`position:absolute;inset:0;background-image:url(${PHOTO()});background-repeat:no-repeat;`
+ +`background-size:${S.photoFit=="contain"?"contain":(S.photoZ<=100?"cover":S.photoZ+"%")};`
+ +`background-position:center ${S.photoY}%;background-color:#111`;
+
+// Treatments always run on the untouched upload. Picking one while another is
+// still working used to strand the previous filter under the new label, so the
+// latest pick wins and re-runs if the choice moved mid-pass.
+let tWanted=null,tBusy=false;
+async function setTreat(t){
+ S.treat=t;tWanted=t;
+ if(!S.photo){S.photoT="";return R()}
+ if(tBusy)return R();
+ tBusy=true;S.treating=true;S.err="";R();
+ try{
+  for(;;){
+   const target=tWanted;
+   const out=target=="Original"?"":await TREAT.apply(S.photo,target,{dark:"#0b1020",light:S.teamC});
+   if(tWanted!==target)continue;
+   S.photoT=out;break;
+  }
+ }catch(e){S.photoT="";S.err="That treatment wouldn't run on this photo.";}
+ tBusy=false;S.treating=false;R();
+}
 const chip=(on,label,js)=>`<button class="ch ${on?'on':''}" onclick="${js}">${label}</button>`;
 function whoStep(title){
  return `<h3>${title}</h3>
@@ -147,7 +219,7 @@ function whoStep(title){
 }
 function nav(b,n,l){return `${S.err?`<div class="er">${S.err}</div>`:""}<div class="nv"><button class="dg" onclick="${b<0?"S.cmd='';S.step=0;R()":`go(${b})`}">${b<0?"Cancel":"Back"}</button><button class="db" onclick="go(${n})">${l||"Next"}</button></div>`}
 function alsoOn(sz){const m=mainB();return selB().filter(b=>b!=m&&S.teams[b]!=mainT()).map(b=>`<span style="display:inline-flex;align-items:center;gap:5px;margin:0 8px 4px 0">${lg(b,S.teams[b],sz)}<span style="color:#dbdee1;font-size:12px">${esc(S.teams[b])}</span></span>`).join("")}
-function card(){
+function card(which){
  const t=tm(),a=S.accent||t[2],sec=t[3],L=S.layout,m=mainB();
  const plate=`<div style="min-width:0;flex:1;padding:14px 12px;display:flex;flex-direction:column;justify-content:center;text-align:${L=='center'?'center':'left'}">
   <div style="color:${S.nameC};font-size:18px;font-weight:700;line-height:1.2">${esc(S.name)||"Name"}</div>
@@ -156,13 +228,13 @@ function card(){
   <div style="color:${S.teamC};font-size:19px;font-weight:700;line-height:1.15;word-wrap:break-word;min-width:0">${esc(mainT())||"Team name"}</div></div></div>`;
  let head;
  if(L=="center"){
-  head=`<div style="background:${a};height:${S.photo?220:112}px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">${S.photo?`<img alt="" src="${S.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:""}
+  head=`<div style="background:${a};height:${S.photo?220:112}px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">${S.photo?`<div style="${photoBox()}"></div>`:""}
   <div style="position:absolute;right:0;bottom:0;width:36%;height:18px;background:${sec};clip-path:polygon(12% 0,100% 0,100% 100%,0 100%)"></div>
   <div style="position:${S.photo?'absolute':'relative'};${S.photo?'left:8px;bottom:8px;background:#1e1f22;border-radius:50%;padding:5px;border:2px solid '+a:''}">${helm(S.nfl,S.photo?58:88)}</div></div>
   <div style="background:#1e1f22">${plate}</div>`;
  }else{
   const w=S.photo?170:124,hg=S.photo?196:116,cut=L=='left'?'polygon(0 0,100% 0,82% 100%,0 100%)':'polygon(18% 0,100% 0,100% 100%,0 100%)';
-  const inner=S.photo?`<img alt="" src="${S.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div style="position:absolute;${L=='left'?'left':'right'}:6px;bottom:6px;background:#1e1f22;border-radius:50%;padding:4px;border:2px solid ${a}">${helm(S.nfl,50)}</div>`
+  const inner=S.photo?`<div style="${photoBox()}"></div><div style="position:absolute;${L=='left'?'left':'right'}:6px;bottom:6px;background:#1e1f22;border-radius:50%;padding:4px;border:2px solid ${a}">${helm(S.nfl,50)}</div>`
    :`<div style="position:absolute;inset:0;background:${sec};clip-path:${L=='left'?'polygon(0 78%,100% 100%,0 100%)':'polygon(100% 78%,100% 100%,0 100%)'}"></div><div style="position:relative">${helm(S.nfl,82)}</div>`;
   const hs=`<div style="width:${w}px;flex-shrink:0;position:relative;background:${a};clip-path:${cut};display:flex;align-items:center;justify-content:center;min-height:${hg}px">${inner}</div>`;
   head=`<div style="display:flex;background:#1e1f22;align-items:stretch">${L=='left'?hs+plate:plate+hs}</div>`;
@@ -174,19 +246,55 @@ function card(){
  const edc={Rookie:"#1D9E75",Veteran:"#7F77DD",Commissioner:"#FFC62F"}[S.ed];
  const meta=[t[1],bshort(selB()),S.where?"📍 "+esc(S.where):"",S.since?"Playing since "+esc(S.since):""].filter(Boolean).join("  |  ");
  const also=alsoOn(24);
- return `<div class="card" style="border:3px solid ${a}">
- <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1e1f22"><span style="background:${edc};color:${S.ed=='Commissioner'?'#412402':'#fff'};font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px">${S.ed.toUpperCase()} EDITION</span><span style="color:#949ba4;font-size:11px">${serial()}</span></div>
- ${head}<div style="height:4px;background:${a}"></div>
- <div style="position:relative;padding:12px;overflow:hidden">
- <div style="position:absolute;right:-24px;bottom:-24px;pointer-events:none">${helm(S.nfl,180,.07)}</div>
- <div style="position:relative">
- <div style="color:#949ba4;font-size:12px;margin-bottom:6px;line-height:1.5">${meta}</div>
- ${also?`<div style="margin-bottom:6px"><div style="color:#949ba4;font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:4px">ALSO RUNNING</div>${also}</div>`:""}
- <div style="margin-bottom:6px">${bd}</div>
+ const foilOn=FOILS[S.foil]&&S.holoAmt>0;
+ const headWrap=foilOn
+  ? `<div style="position:relative">${head}<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div></div>`
+  : head;
+ // The four things that are true all season and never need typing twice: the NFL
+ // team, the boards, where you are, and how long you have been here. None of them
+ // goes stale mid-season, which is the whole reason a week-2 score is not here.
+ const facts=[["NFL",tm()[1],true],["BOARD",bshort(selB())],["HOME",S.where],["SINCE",S.since]]
+  .filter(f=>f[1]).map(f=>`<div style="min-width:0"><div style="color:#949ba4;font-size:8px;font-weight:700;letter-spacing:.12em">${f[0]}</div><div style="display:flex;align-items:center;gap:6px"><div style="color:#dbdee1;font-size:11px;line-height:1.3;overflow-wrap:anywhere">${esc(f[1])}</div>${f[2]?nflLogo(S.nfl,20):""}</div></div>`).join("");
+ // Counts come back from the mint; before that the traits still show, just
+ // without the "3 of 19" that only the league as a whole can tell you.
+ const tr=traits();
+ const rows=Object.keys(tr).map(k=>{const b=S.rarity&&S.rarity.breakdown&&S.rarity.breakdown[k];
+  return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #3f4147">
+   <span style="color:#949ba4;font-size:10px;letter-spacing:.04em">${k.toUpperCase()}</span>
+   <span style="color:#dbdee1;font-size:11px;text-align:right">${esc(tr[k])}${b&&b.of?` <span style="color:#6d7484">${b.count} of ${b.of}</span>`:""}</span></div>`}).join("");
+ const sheet=`<div style="margin-bottom:10px"><div style="color:#949ba4;font-size:9px;font-weight:700;letter-spacing:.08em;margin-bottom:3px">TRAITS</div>${rows}</div>`;
+ const topBar=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1e1f22"><span style="background:${edc};color:${S.ed=='Commissioner'?'#412402':'#fff'};font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px">${S.ed.toUpperCase()} EDITION</span><span style="color:#949ba4;font-size:11px">${serial()}${S.rarity&&S.rarity.tier?`  \u00b7  <b style="color:${TIERC[S.rarity.tier]||'#949ba4'}">${S.rarity.tier.toUpperCase()}</b>`:""}</span></div>`;
+ const wm=`<div style="position:absolute;right:-24px;bottom:-24px;pointer-events:none">${nflLogo(S.nfl,180,.09)}</div>`;
+
+ const front=`<div class="card" style="border:3px solid ${a}">
+ ${topBar}${headWrap}<div style="height:4px;background:${a}"></div>
+ <div style="position:relative;padding:12px;overflow:hidden">${wm}<div style="position:relative">
+ ${facts?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 10px;margin-bottom:10px">${facts}</div>`:""}
+ ${also?`<div style="margin-bottom:8px"><div style="color:#949ba4;font-size:9px;font-weight:700;letter-spacing:.06em;margin-bottom:4px">ALSO RUNNING</div>${also}</div>`:""}
+ <div style="color:#949ba4;font-size:10px;letter-spacing:.04em">EXPANSION LEAGUE  |  2026 SEASON</div>
+ </div></div></div>`;
+
+ // Everything a manager says about themselves goes on the back, the way a real
+ // card carries the write-up there instead of crowding the picture.
+ const back=`<div class="card" style="border:3px solid ${a}">
+ ${topBar}
+ <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;background:#1e1f22">${m?lg(m,mainT(),34):lg("","",34)}
+  <div style="min-width:0;flex:1"><div style="color:${S.nameC};font-size:14px;font-weight:700;line-height:1.2">${esc(S.name)||"Name"}</div>
+  <div style="color:${S.teamC};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(mainT())||"Team name"}</div></div>${nflLogo(S.nfl,26)}</div>
+ <div style="height:4px;background:${a}"></div>
+ <div style="position:relative;padding:12px;overflow:hidden">${wm}<div style="position:relative">
+ <div style="margin-bottom:8px">${bd||`<span style="color:#949ba4;font-size:11px">No badges picked</span>`}</div>
+ ${sheet}
  ${fl?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px">${fl}</div>`:""}
  ${S.take?`<div style="background:#1e1f22;border-left:3px solid ${S.nameC};padding:8px 10px;margin-bottom:10px"><div style="color:${S.nameC};font-size:11px;font-weight:700;letter-spacing:.04em">🔥 THE TAKE</div><div style="color:#dbdee1;font-size:13px;line-height:1.45;word-wrap:break-word">${esc(S.take)}</div></div>`:""}
- <div style="color:#949ba4;font-size:11px">EXPANSION LEAGUE  |  2026 SEASON</div>
+ <div style="color:#949ba4;font-size:10px;letter-spacing:.04em">EXPANSION LEAGUE  |  2026 SEASON</div>
  </div></div></div>`;
+
+ const f=FOILS[S.foil];
+ const wrap=c=>f?`<div class="nft" style="--f1:${f[0]};--f2:${f[1]};--f3:${f[2]}">${c}</div>`:c;
+ return which=="back"?wrap(back):which=="both"
+  ? `<div class="faces">${wrap(front)}${wrap(back)}</div>`
+  : wrap(front);
 }
 function bcard(){
  const a=S.bAccent,st=STAT.find(s=>s[0]==S.status),m=mainB(),multi=selB().length>1;
@@ -210,7 +318,7 @@ function bcard(){
 }
 function posted(ch,msg,body,btns){return `<div class="chan"># ${ch}</div><div style="display:flex;gap:10px"><div class="bot">🤖</div><div style="min-width:0;flex:1"><div style="font-size:14px"><b style="color:#f2f3f5">Crown or Clown</b> <span class="app">APP</span> <span style="color:#949ba4;font-size:11px">Today</span></div><div style="font-size:14px;margin:3px 0 8px">${msg}</div>${body}<div style="margin-top:6px">${btns}</div></div></div><div class="only" style="margin-top:14px">✅ Posted. You can close this tab and head back to Discord.</div>`}
 function draw(){
- let h="",total=S.cmd=="intro"?8:6;
+ let h="",total=S.cmd=="intro"?10:6;
  $("bar").textContent=S.cmd?`/${S.cmd}  step ${S.step} of ${total-1}`:"Pick a command";
  if(!S.cmd){
   h=`<div class="chan"># the-expansion-league</div><div class="sug"><div class="dl">COMMANDS MATCHING /</div>
@@ -224,8 +332,13 @@ function draw(){
    <div class="r2"><div><label class="dl">PLAYING SINCE</label><input class="di" value="${esc(S.since)}" placeholder="2019" oninput="S.since=this.value"></div><div><label class="dl">WHERE YOU AT</label><input class="di" value="${esc(S.where)}" placeholder="Orem, UT" oninput="S.where=this.value"></div></div>
    <label class="dl">YOUR TAKE</label><textarea class="di" rows="3" placeholder="Nobody won their draft..." oninput="S.take=this.value">${esc(S.take)}</textarea>`+nav(-1,2);
   else if(st==2)h=`<h3>Your photo</h3><label class="dl">PHOTO, GOES BIG IN THE HEADER (OPTIONAL)</label>
-   <div class="up">${S.photo?`<img alt="" src="${S.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover">`:`📷`}<input class="fi" type="file" accept="image/jpeg,image/png,image/webp,image/*" onchange="photo(event)" aria-label="Upload photo"></div>
-   ${S.photo?chip(false,"Remove photo","S.photo='';R()"):""}${S.err?`<div class="er">${S.err}</div>`:""}<div class="split"><div>${nav(1,3)}</div><div>${card()}</div></div>`;
+   <div class="up">${S.photo?`<img alt="" src="${S.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover">`:`📷`}<input class="fi" type="file" accept="image/*" multiple="false" onchange="photo(event)" aria-label="Upload photo"></div>
+   ${S.photo?chip(false,"Remove photo","S.photo='';S.photoT='';R()"):""}${S.err?`<div class="er">${S.err}</div>`:""}
+   ${S.photo?`<label class="dl" style="margin-top:12px">FRAMING</label>
+   <div>${[["cover","Fill the frame"],["contain","Show all of it"]].map(f=>chip(S.photoFit==f[0],f[1],`S.photoFit='${f[0]}';R()`)).join("")}</div>
+   ${S.photoFit=="cover"?`<label class="dl">ZOOM</label><input class="rng" type="range" min="100" max="260" value="${S.photoZ}" oninput="S.photoZ=+this.value;R()" aria-label="Zoom">
+   <label class="dl">UP AND DOWN</label><input class="rng" type="range" min="0" max="100" value="${S.photoY}" oninput="S.photoY=+this.value;R()" aria-label="Vertical framing">`:""}`:""}
+   <div class="split"><div>${nav(1,3)}</div><div>${card()}</div></div>`;
   else if(st==3)h=`<h3>Pick your look</h3><div class="split"><div>
    <label class="dl">LAYOUT</label><div>${[["left","Photo left"],["right","Photo right"],["center","Photo top"]].map(l=>chip(S.layout==l[0],l[1],`S.layout='${l[0]}';R()`)).join("")}</div>
    <label class="dl">CARD COLOR</label>${sw('accent',[tm()[2],tm()[3]].concat(PAL))}
@@ -237,8 +350,18 @@ function draw(){
    ${Object.keys(S.flair).map(f=>`<label class="dl">${f.toUpperCase()}</label>${f=='Perfect lineup'?`<textarea class="di" rows="3" placeholder="QB Burrow, RB McCaffrey, WR Lamb..." oninput="S.flair['Perfect lineup']=this.value">${esc(S.flair[f])}</textarea>`:`<input class="di" value="${esc(S.flair[f])}" placeholder="Your answer" oninput="S.flair[${JSON.stringify(f).replace(/"/g,'&quot;')}]=this.value">`}`).join("")}
    <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cf.map((c,i)=>`<div class="r2"><input class="di" value="${esc(c[0])}" placeholder="Your label" oninput="S.cf[${i}][0]=this.value"><input class="di" value="${esc(c[1])}" placeholder="Your answer" oninput="S.cf[${i}][1]=this.value"></div>`).join("")}`+nav(3,5);
   else if(st==5)h=`<h3>Badges</h3><label class="dl">PICK AS MANY AS YOU WANT (${S.badges.length} PICKED)</label><div>${BG.map((b,i)=>chip(S.badges.includes(b[0]),b[1]+" "+b[0],`tgBg(${i})`)).join("")}</div>
-   <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cb.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="24" placeholder="Your badge" oninput="S.cb[${i}]=this.value">`).join("")}`+nav(4,6,"Preview card");
-  else if(st==6)h=`<div class="only">👁 Only you can see this</div><div id="shot" style="display:inline-block;max-width:100%">${card()}</div>${postBar(5)}`;
+   <label class="dl" style="margin-top:10px">MAKE YOUR OWN (UP TO 3)</label>${S.cb.map((c,i)=>`<input class="di" value="${esc(c)}" maxlength="24" placeholder="Your badge" oninput="S.cb[${i}]=this.value">`).join("")}`+nav(4,6);
+  else if(st==6)h=`<h3>Make it a card</h3>
+   <label class="dl">TREATMENT${S.photo?"":" \u2014 ADD A PHOTO ON STEP 2 TO USE THESE"}</label>
+   <div>${TREAT.KINDS.map(t=>chip(S.treat==t,t,`setTreat(${JSON.stringify(t).replace(/"/g,"&quot;")})`)).join("")}</div>
+   ${S.treating?`<div class="ld">Working\u2026</div>`:""}${S.err?`<div class="er">${S.err}</div>`:""}
+   <div class="split"><div>${nav(5,7)}</div><div>${card()}</div></div>`;
+  else if(st==7)h=`<h3>Foil</h3><div class="split"><div>
+   <label class="dl">FINISH</label><div>${Object.keys(FOILS).concat(["None"]).map(f=>chip(S.foil==f,f,`S.foil='${f}';R()`)).join("")}</div>
+   <label class="dl">PATTERN</label><div>${Object.keys(PATS).map(f=>chip(S.pattern==f,f,`S.pattern='${f}';R()`)).join("")}</div>
+   <label class="dl">HOLOGRAM</label><input class="rng" type="range" min="0" max="100" value="${S.holoAmt}" oninput="S.holoAmt=+this.value;R()" aria-label="Hologram strength">
+   ${nav(6,8,"Preview card")}</div><div>${card()}</div></div>`;
+  else if(st==8)h=`<div class="only">👁 Only you can see this</div><div id="shot" style="display:inline-block;max-width:100%">${card("both")}</div>${postBar(7)}`;
   else h=posted("meet-the-crew",`New card in the pack. Welcome ${esc(S.name)}`,card(),`<span class="ch">👑 0</span><span class="ch">🤡 0</span>`);
  } else {
   const st=S.step;

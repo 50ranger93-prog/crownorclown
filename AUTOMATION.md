@@ -71,6 +71,10 @@ on a manual run) ignores the key when you genuinely want to send again.
 | `/api/cards/register` | Re-registers the slash commands. Closed behind `?key=<DISCORD_PUBLIC_KEY>`. |
 | `/api/cards/health` | Says which env vars are present. Never prints a value. |
 | `/api/cards/img` | Image proxy for the card builder. |
+| `/api/cards/mint` | Hands a card its mint number and records its traits, in `mints.json` on the **`board-data`** branch. POST only. Needs `GH_TOKEN`; without it a card still builds, just with no number or rarity. |
+| `/api/cards/stats` | Live record, standing, best week, crowns and vests for one team, read from ESPN. Cached 5 min. |
+| `/cards/live/` | A card that reads the league every time it is opened — `?board=1&team=<name>`. No storage: the URL is the whole state. |
+| `/cards/lab/` | Sandbox for trying card looks. Not linked from anywhere, `noindex`. |
 
 The Discord endpoint must be set to the **`www.`** host. `crownorclown.com` 308-redirects to
 `www.crownorclown.com`, and **Discord does not follow redirects** when it verifies an

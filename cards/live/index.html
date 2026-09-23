@@ -1,0 +1,147 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Card</title>
+<meta name="description" content="A Crown or Clown card that reads the league every time you open it.">
+<style>
+/* The live card. Everything on it that moves is read from ESPN when the page
+   opens, so a card is never showing week 2 in week 18. There is nothing stored
+   anywhere: the board and the team in the URL are the entire state, and the
+   artwork is the manager's own ESPN team logo. */
+:root{--f1:#fff6cf;--f2:#c8a04a;--f3:#7e5f18;--plate:#0c0e12;--accent:#2f8fd8;--second:#dfe6ee}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  padding:26px 16px 40px;background:radial-gradient(900px 620px at 50% 14%,#1a1e26 0%,#08090c 74%);
+  color:#eef0f4;font-family:"Inter","gg sans","Helvetica Neue",Helvetica,Arial,sans-serif}
+.tilt{perspective:2000px}
+.card{--w:min(400px,86vw);width:var(--w);aspect-ratio:2.5/3.5;position:relative;border-radius:19px;padding:8px;
+  transform-style:preserve-3d;transition:transform .18s cubic-bezier(.2,.7,.3,1);
+  background:linear-gradient(140deg,var(--f1) 0%,var(--f2) 21%,#fffdf4 37%,var(--f3) 51%,var(--f2) 66%,#fffaea 80%,var(--f3) 100%);
+  box-shadow:0 2px 5px rgba(0,0,0,.6),0 30px 64px -20px rgba(0,0,0,.9),inset 0 0 0 1px rgba(255,255,255,.34)}
+.face{position:relative;height:100%;border-radius:12px;overflow:hidden;background:var(--plate);box-shadow:inset 0 0 0 1px rgba(0,0,0,.7)}
+.artwrap{position:absolute;left:0;right:0;top:0;height:66%;overflow:hidden;background:#000}
+.blur{position:absolute;inset:-14%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.5) brightness(.6);transform:scale(1.1)}
+.art{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
+.hem{position:absolute;left:0;right:0;bottom:0;height:46%;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--plate) 80%,transparent) 55%,var(--plate))}
+.tint{position:absolute;inset:0;mix-blend-mode:soft-light;opacity:.42;background:linear-gradient(200deg,var(--accent),transparent 48%,var(--second))}
+.holo{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.3;mix-blend-mode:color-dodge;filter:saturate(1.5);
+  background:repeating-linear-gradient(105deg,rgba(255,80,120,.55) 0%,rgba(255,220,90,.55) 7%,rgba(90,255,180,.55) 14%,rgba(90,190,255,.55) 21%,rgba(190,120,255,.55) 28%,rgba(255,80,120,.55) 35%);
+  background-size:260% 260%;
+  -webkit-mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%);
+  mask-image:radial-gradient(70% 55% at var(--mx,50%) var(--my,32%),#000 0%,rgba(0,0,0,.45) 42%,transparent 76%)}
+.grain{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:.42;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E")}
+.capshade{position:absolute;top:0;left:0;right:0;height:23%;z-index:7;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.42),transparent)}
+.head{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:8}
+.ed{font-size:8px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:4px 9px;border-radius:3px;color:#130d02;
+  background:linear-gradient(135deg,var(--f1),var(--f2) 55%,var(--f1));box-shadow:0 1px 3px rgba(0,0,0,.7)}
+.ser{font-size:9px;letter-spacing:.13em;color:rgba(255,255,255,.66);font-variant-numeric:tabular-nums;text-shadow:0 1px 4px #000}
+.foot{position:absolute;left:0;right:0;bottom:0;padding:0 16px 16px;z-index:8}
+.rule{height:2px;margin-bottom:10px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--second) 60%,transparent)}
+.board{font-size:9px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--second);margin:0 0 3px;text-shadow:0 1px 5px #000}
+.team{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:.96;margin:0;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+.team.s2{font-size:24px}.team.s3{font-size:19px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;border-top:1px solid rgba(255,255,255,.15);margin-top:11px;padding-top:9px}
+.stat b{display:block;font-size:15px;font-weight:800;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{display:block;font-size:7px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:2px}
+.live{position:absolute;right:13px;bottom:70px;z-index:9;display:flex;align-items:center;gap:5px;
+  font-size:7.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72);
+  background:rgba(0,0,0,.5);border-radius:20px;padding:4px 9px;backdrop-filter:blur(4px)}
+.dot{width:5px;height:5px;border-radius:50%;background:#3fd07a;box-shadow:0 0 6px #3fd07a;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.note{color:#868d99;font-size:12px;text-align:center;max-width:420px;line-height:1.55}
+.note a{color:#5865F2}
+.bad{color:#f0a0a0}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.dot{animation:none}}
+</style></head><body>
+<div class="tilt"><div class="card" id="card"><div class="face" id="face">
+  <div class="artwrap"><div class="blur" id="blur"></div><div class="art" id="art"></div><div class="tint"></div><div class="hem"></div></div>
+  <div class="grain"></div><div class="holo" id="holo"></div><div class="capshade"></div>
+  <div class="head"><span class="ed" id="ed"></span><span class="ser" id="ser"></span></div>
+  <div class="live" id="livetag" hidden><span class="dot"></span><span id="asof"></span></div>
+  <div class="foot">
+    <div class="rule"></div>
+    <p class="board" id="board"></p>
+    <p class="team" id="team">Loading…</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</div></div></div>
+<p class="note" id="note"></p>
+
+<script>
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+// Board 1 / 2 / 3, however it was written in the link.
+const board = "Board " + (String(q.get("board") || q.get("b") || "").replace(/\D/g, "") || "1");
+const team  = (q.get("team") || q.get("t") || "").trim();
+
+// Same allowlisted proxy the builder uses, so the logo is same-origin and the
+// browser will actually paint it without a CORS argument.
+const viaProxy = u => u ? "/api/cards/img?u=" + encodeURIComponent(u) : "";
+
+const face = $("face"), card = $("card");
+face.addEventListener("pointermove", e => {
+  const r = card.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  face.style.setProperty("--mx", (x*100).toFixed(1) + "%");
+  face.style.setProperty("--my", (y*100).toFixed(1) + "%");
+  $("holo").style.backgroundPosition = (x*100).toFixed(1) + "% " + (y*100).toFixed(1) + "%";
+  card.style.transform = `rotateY(${(x-.5)*16}deg) rotateX(${(.5-y)*16}deg)`;
+});
+face.addEventListener("pointerleave", () => { card.style.transform = ""; });
+
+const el = (t, text, cls) => { const n = document.createElement(t); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
+
+function stat(value, label) {
+  const d = el("div", null, "stat");
+  d.append(el("b", String(value)), el("span", label));
+  $("stats").append(d);
+}
+
+(async () => {
+  if (!team) {
+    $("team").textContent = "No team";
+    $("note").textContent = "Add your board and team to the link, like ?board=1&team=Your Team Name";
+    return;
+  }
+  let d;
+  try {
+    const r = await fetch(`/api/cards/stats?board=${encodeURIComponent(board)}&team=${encodeURIComponent(team)}`);
+    d = await r.json();
+    if (d.error) throw new Error(d.error);
+  } catch (e) {
+    $("team").textContent = team;
+    $("board").textContent = board;
+    $("note").innerHTML = "";
+    $("note").append(el("span", "Couldn't reach the league right now. " + e.message, "bad"));
+    return;
+  }
+
+  document.title = d.team + " — Crown or Clown";
+  const logo = viaProxy(d.logo);
+  $("art").style.backgroundImage = logo ? `url(${JSON.stringify(logo)})` : "";
+  $("blur").style.backgroundImage = logo ? `url(${JSON.stringify(logo)})` : "";
+
+  $("board").textContent = d.board;
+  const t = $("team");
+  t.textContent = d.team;
+  t.className = "team" + (d.team.length > 18 ? " s3" : d.team.length > 12 ? " s2" : "");
+  $("ser").textContent = d.season + " SEASON";
+  $("ed").textContent = d.crowns > 0 ? "CROWN HOLDER" : "EXPANSION LEAGUE";
+
+  // Only things that are true right now. No week-2 number sitting there in week 18.
+  stat(d.record, "Record");
+  stat(d.pointsFor, "Points for");
+  stat(ordinal(d.standing) + " of " + d.of, "Standing");
+
+  $("livetag").hidden = false;
+  $("asof").textContent = "Live · Week " + d.week;
+  $("note").textContent = `${d.crowns} crown${d.crowns === 1 ? "" : "s"} · ${d.clowns} vest${d.clowns === 1 ? "" : "s"}`
+    + (d.bestWeek ? ` · best week ${d.bestWeek.points} in week ${d.bestWeek.week}` : "")
+    + ". This card reads the league every time it's opened.";
+})();
+
+function ordinal(n) {
+  const s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+</script>
+</body></html>
