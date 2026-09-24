@@ -39,6 +39,11 @@ on:
         description: 'A one-off line appended to the beat (a fly comment)'
         required: false
         default: ''
+      edit:
+        description: 'Edit this beat''s most recent post in place instead of posting new'
+        type: boolean
+        required: false
+        default: false
 
 # Don't let two pulse runs overlap (a manual dispatch racing a scheduled one) and post on top of
 # each other; let the newer one wait. The post() dedup is the real guard, this is belt-and-suspenders.
@@ -96,10 +101,12 @@ jobs:
           DRY: ${{ github.event.inputs.dry }}
           FORCE: ${{ github.event.inputs.force }}
           NOTE: ${{ github.event.inputs.note }}
+          EDIT: ${{ github.event.inputs.edit }}
         run: |
           args=()
           [ "$DRY" = "true" ] && args+=(--dry)
           [ "$FORCE" = "true" ] && args+=(--force)
+          [ "$EDIT" = "true" ] && args+=(--edit)
           [ -n "$NOTE" ] && args+=(--note "$NOTE")
           for b in ${{ steps.pick.outputs.beats }}; do
             if [ "$b" = "all" ]; then
