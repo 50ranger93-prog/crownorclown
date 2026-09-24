@@ -40,6 +40,7 @@ function arg(n) { const i = process.argv.indexOf("--" + n); if (i === -1) return
 const DRY = !!arg("dry");
 const FORCE = !!arg("force");   // post even while POSTING_PAUSED — for an explicit on-demand run only
 const NOTE = arg("note");       // a one-off line appended to the beat (a "fly comment")
+const EDIT = !!arg("edit");     // fix the last post of this beat in place (edit, don't repost)
 
 const fantasy = (id, q) => `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${id}?${q}`;
 
@@ -795,7 +796,27 @@ async function runCli() {
     if (!text) { console.log("  nothing to say"); continue; }
     const body = (NOTE && NOTE !== true) ? `${text}\n\n${NOTE}` : text;
     console.log(`(as ${beat.as.username})\n${body}`);
-    if (!DRY) await post(beat.hook, body, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
+    if (DRY) continue;
+    if (EDIT) {
+      // Correct this beat's most recent post in place — no repost. Match on the beat's header
+      // (the first line of its text), find it via the bot, and PATCH through the same webhook.
+      const url = process.env[beat.hook], BOT = process.env.DISCORD_BOT_TOKEN, API = "https://discord.com/api/v10";
+      const key = String(text).split("\n")[0];
+      if (!url || !BOT) { console.log("  --edit needs the beat's webhook + DISCORD_BOT_TOKEN — skipping."); continue; }
+      const wh = await fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (!wh || !wh.channel_id) { console.log("  couldn't read the webhook's channel — skipping."); continue; }
+      const msgs = await fetch(`${API}/channels/${wh.channel_id}/messages?limit=30`, { headers: { Authorization: `Bot ${BOT}` } })
+        .then(r => r.ok ? r.json() : []).catch(() => []);
+      const target = msgs.find(m => (m.content || "").includes(key));
+      if (!target) { console.log(`  no recent "${key}" message to edit — NOT posting a new one.`); continue; }
+      const res = await fetch(`${url}/messages/${target.id}`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: body, allowed_mentions: { parse: [] } })
+      });
+      console.log(res.ok ? `  edited ${target.id} in channel ${wh.channel_id} — nothing reposted.` : `  edit failed (${res.status}): ${await res.text()}`);
+      continue;
+    }
+    await post(beat.hook, body, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
   }
 }
 
