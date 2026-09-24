@@ -38,6 +38,8 @@ const UA = { accept: "application/json", "user-agent": "Mozilla/5.0 CrownOrClown
 
 function arg(n) { const i = process.argv.indexOf("--" + n); if (i === -1) return null; const v = process.argv[i + 1]; return v && !v.startsWith("--") ? v : true; }
 const DRY = !!arg("dry");
+const FORCE = !!arg("force");   // post even while POSTING_PAUSED — for an explicit on-demand run only
+const NOTE = arg("note");       // a one-off line appended to the beat (a "fly comment")
 
 const fantasy = (id, q) => `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${id}?${q}`;
 
@@ -547,7 +549,7 @@ async function recentBotMessages(channelId, limit = 50) {
 const POSTING_PAUSED = true;
 
 async function post(hookEnv, text, as, ping, chan, sig, cooldownH) {
-  if (POSTING_PAUSED) { console.log("  POSTING_PAUSED — nothing sent"); return; }
+  if (POSTING_PAUSED && !FORCE) { console.log("  POSTING_PAUSED — nothing sent"); return; }
   // Most beats never ping — a schedule pinging people reads as spam. The fights are the exception:
   // calling someone out by name is the whole point, so that beat pings exactly the ids it named
   // (never @everyone/@here). The parse:[] guard keeps that true even if copy ever changes.
@@ -791,8 +793,9 @@ async function runCli() {
     console.log(`\n=== ${name} ===`);
     const text = await safe(beat.fn);
     if (!text) { console.log("  nothing to say"); continue; }
-    console.log(`(as ${beat.as.username})\n${text}`);
-    if (!DRY) await post(beat.hook, text, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
+    const body = (NOTE && NOTE !== true) ? `${text}\n\n${NOTE}` : text;
+    console.log(`(as ${beat.as.username})\n${body}`);
+    if (!DRY) await post(beat.hook, body, beat.as, beat.ping, beat.chan, beat.sig, beat.cooldownH);
   }
 }
 

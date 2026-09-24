@@ -30,6 +30,15 @@ on:
         type: boolean
         required: false
         default: true
+      force:
+        description: 'Post even while POSTING_PAUSED is on (one-off manual post)'
+        type: boolean
+        required: false
+        default: false
+      note:
+        description: 'A one-off line appended to the beat (a fly comment)'
+        required: false
+        default: ''
 
 # Don't let two pulse runs overlap (a manual dispatch racing a scheduled one) and post on top of
 # each other; let the newer one wait. The post() dedup is the real guard, this is belt-and-suspenders.
@@ -85,13 +94,17 @@ jobs:
           DISCORD_BOT_TOKEN:       ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID:        ${{ secrets.DISCORD_GUILD_ID }}
           DRY: ${{ github.event.inputs.dry }}
+          FORCE: ${{ github.event.inputs.force }}
+          NOTE: ${{ github.event.inputs.note }}
         run: |
-          FLAG=""
-          if [ "$DRY" = "true" ]; then FLAG="--dry"; fi
+          args=()
+          [ "$DRY" = "true" ] && args+=(--dry)
+          [ "$FORCE" = "true" ] && args+=(--force)
+          [ -n "$NOTE" ] && args+=(--note "$NOTE")
           for b in ${{ steps.pick.outputs.beats }}; do
             if [ "$b" = "all" ]; then
-              node tools/pulse.mjs --all $FLAG
+              node tools/pulse.mjs --all "${args[@]}"
             else
-              node tools/pulse.mjs --beat "$b" $FLAG
+              node tools/pulse.mjs --beat "$b" "${args[@]}"
             fi
           done
