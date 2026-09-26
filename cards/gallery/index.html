@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The pack</title>
+<meta name="description" content="Every card the Expansion League has built, by number, with what each trait is actually worth.">
+<style>
+/* The collection. Every number the league has handed out, and what each trait is actually
+   worth — counted, not claimed. Nothing here is stored: it reads the same mints.json the
+   builder writes. */
+:root{--page:#0d0f13;--card:#16181d;--edge:#262a33;--ink:#eceef2;--dim:#8b93a1;--gold:#d8a943;--accent:#4c8ef7}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 600px at 50% -8%,#1b1f28 0%,var(--page) 68%);color:var(--ink);
+  font-family:"Inter","gg sans","Helvetica Neue",Helvetica,Arial,sans-serif;padding-block:34px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+h1{font-size:clamp(28px,6vw,44px);margin:0 0 6px;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--dim);font-size:15px;margin:0 0 4px;max-width:62ch;line-height:1.5}
+.bar{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 26px}
+.stat{background:var(--card);border:1px solid var(--edge);border-radius:11px;padding:11px 15px;min-width:116px}
+.stat b{display:block;font-size:25px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.note{background:#1a1712;border:1px solid #3d331c;border-radius:11px;padding:12px 15px;color:#e2cd9a;font-size:14px;line-height:1.5;margin-bottom:26px}
+h2{font-size:13px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:30px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:12px}
+.mint{background:var(--card);border:1px solid var(--edge);border-radius:13px;padding:14px;min-width:0}
+.mint header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.no{font-size:23px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.when{color:var(--dim);font-size:11px;white-space:nowrap}
+.tr{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid #20242c;font-size:12.5px;min-width:0}
+.tr:first-of-type{border-top:0}
+.k{color:var(--dim);flex-shrink:0}
+.v{text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n{color:var(--dim);font-variant-numeric:tabular-nums}
+.only .n{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--dim);font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:0 10px 7px 0;font-weight:700}
+td{padding:7px 10px 7px 0;border-top:1px solid #1f232b;vertical-align:top}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--dim);padding-right:0}
+.scroll{overflow-x:auto}
+.empty{background:var(--card);border:1px dashed var(--edge);border-radius:13px;padding:30px;text-align:center;color:var(--dim)}
+footer{color:var(--dim);font-size:12.5px;margin-top:34px;line-height:1.6}
+a{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style></head><body><div class="wrap">
+<h1>The pack</h1>
+<p class="sub">Every card the league has built, in the order it was built. A number is when you turned up, not how many exist &mdash; so there is no denominator and there never will be.</p>
+<div id="app"><p class="sub">Reading the collection&hellip;</p></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const pad = n => "#" + String(n).padStart(3, "0");
+const day = s => { const d = new Date(s); return isNaN(d) ? "" : d.toLocaleDateString(undefined, { month:"short", day:"numeric" }); };
+
+fetch("/api/cards/mints").then(r => r.json()).then(render).catch(() => {
+  $("app").innerHTML = '<div class="empty">Couldn\'t read the collection. Refresh to try again.</div>';
+});
+
+function render(d) {
+  if (!d || !d.configured) { $("app").innerHTML = '<div class="empty">The collection isn\'t wired up yet.</div>'; return; }
+  const cards = d.cards || [], counts = d.counts || {}, total = d.total || 0;
+
+  if (!total) {
+    $("app").innerHTML = '<div class="empty">No cards yet. The first <b>/intro</b> takes number one.</div>';
+    return;
+  }
+
+  // How many distinct trait values exist across the whole collection — a plain measure of how
+  // varied the pack is that doesn't need a tier system to mean something.
+  const variants = Object.values(counts).reduce((a, v) => a + Object.keys(v).length, 0);
+  const oneOfOne = cards.filter(c => Object.entries(c.traits || {}).some(([k, v]) => (counts[k] || {})[v] === 1)).length;
+
+  let h = '<div class="bar">'
+    + stat(total, total === 1 ? "card" : "cards")
+    + stat(variants, "trait variants")
+    + stat(oneOfOne, oneOfOne === 1 ? "card with a one-off" : "cards with a one-off")
+    + '</div>';
+
+  // Say plainly where rarity stands instead of quietly showing nothing.
+  if (d.tierIn > 0) {
+    h += '<div class="note"><b>Tier names are off.</b> Mythic is the rarest 5%, and one card can\'t be 5% of the pack until there are '
+      + d.tierAt + ' of them &mdash; so any tier shown now would be a trick of a small sample, not a fact. '
+      + '<b>' + d.tierIn + ' more</b> and they switch on by themselves. The counts below are true at any size.</div>';
+  }
+
+  h += '<h2>Cards</h2><div class="grid">' + cards.map(c => {
+    const rows = Object.entries(c.traits || {}).map(([k, v]) => {
+      const n = (counts[k] || {})[v] || 0;
+      return '<div class="tr' + (n === 1 ? " only" : "") + '"><span class="k">' + esc(k) + '</span>'
+        + '<span class="v">' + esc(v) + ' <span class="n">' + n + " of " + total + "</span></span></div>";
+    }).join("");
+    return '<article class="mint"><header><span class="no">' + pad(c.n) + '</span><span class="when">' + esc(day(c.at)) + "</span></header>"
+      + (rows || '<div class="tr"><span class="k">No traits recorded</span></div>') + "</article>";
+  }).join("") + "</div>";
+
+  h += '<h2>What each trait is worth</h2><div class="scroll"><table><thead><tr><th>Trait</th><th>Value</th><th class="num">Cards</th></tr></thead><tbody>'
+    + Object.entries(counts).flatMap(([k, vals]) =>
+        Object.entries(vals).sort((a, z) => z[1] - a[1] || a[0].localeCompare(z[0]))
+          .map(([v, n]) => '<tr><td>' + esc(k) + "</td><td>" + esc(v) + '</td><td class="num">' + n + " of " + total + "</td></tr>")
+      ).join("") + "</tbody></table></div>";
+
+  h += "<footer>Built from <code>mints.json</code>, which every card writes to when it reaches the preview. "
+    + "Numbers can have gaps: abandon a preview and that number is spent. "
+    + "No names are recorded, so none are shown here.</footer>";
+
+  $("app").innerHTML = h;
+}
+const stat = (n, label) => '<div class="stat"><b>' + n + "</b><span>" + esc(label) + "</span></div>";
+</script></body></html>

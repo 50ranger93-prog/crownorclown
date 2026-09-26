@@ -95,6 +95,13 @@ function cleanTraits(t) {
 /* Rarity, counted rather than decided. Each trait reports how many cards share
    its value; the card's tier comes from its rarest one. */
 const TIERS = [[0.05, "Mythic"], [0.14, "Rare"], [0.32, "Uncommon"], [1, "Common"]];
+
+// The floor is derived, not picked. The rarest tier is 5%, so one card cannot BE 5% of the
+// collection until there are twenty of them — below that "Mythic" is unreachable by arithmetic
+// and any tier shown would be an artefact of a small sample, not a fact about the league.
+// It was a hardcoded 8 before, which came from nowhere.
+const TIER_FLOOR = Math.ceil(1 / TIERS[0][0]);
+
 export function rarityOf(traits, cards) {
   const total = cards.length;
   const breakdown = {};
@@ -105,10 +112,10 @@ export function rarityOf(traits, cards) {
     breakdown[k] = { value: v, count, of: total };
     if (share < rarest) rarest = share;
   }
-  // Below this there are not enough cards for a tier to mean anything, and
-  // calling a one-of-four "Mythic" would be a lie.
-  const tier = total < 8 ? null : (TIERS.find(t => rarest <= t[0]) || TIERS[3])[1];
-  return { total, tier, breakdown };
+  // Counts are a fact at any size and always ship. The tier is a claim, so it waits until the
+  // collection is big enough for the claim to be earnable — and says how far off it is.
+  const tier = total < TIER_FLOOR ? null : (TIERS.find(t => rarest <= t[0]) || TIERS[3])[1];
+  return { total, tier, breakdown, tierAt: TIER_FLOOR, tierIn: Math.max(0, TIER_FLOOR - total) };
 }
 
 export async function POST(request) {

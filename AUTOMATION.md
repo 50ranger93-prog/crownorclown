@@ -72,6 +72,16 @@ on a manual run) ignores the key when you genuinely want to send again.
 | `/api/cards/health` | Says which env vars are present. Never prints a value. |
 | `/api/cards/img` | Image proxy for the card builder. |
 | `/api/cards/mint` | Hands a card its mint number and records its traits, in `mints.json` on the **`board-data`** branch. POST only. Needs `GH_TOKEN`; without it a card still builds, just with no number or rarity. |
+| `/api/cards/mints` | The collection, read-only: every number handed out and what each trait is counted at. Feeds `/cards/gallery/`. A separate route from `mint.mjs` on purpose — looking must never be able to hand out a number. Reads the public raw file, so no token. |
+
+**Tier names wait for 20 cards, and that number is derived.** Mythic is the rarest 5%, so one card
+cannot *be* 5% of the collection until there are twenty; below that any tier shown is an artefact
+of a small sample rather than a fact about the league. It was a hardcoded 8 with nothing behind
+it. Per-trait counts ("Gold foil · 2 of 2") are true at any size and always show.
+
+These are not NFTs and the code should not call them that. There is no chain and no wallet. What
+they have is a unique number, recorded traits, counted scarcity, and a public ledger — every mint
+is a git commit. That was a deliberate choice: no money, no wallets for 33 managers.
 | `/api/cards/stats` | Live record, standing, best week, crowns and vests for one team, read from ESPN. Cached 5 min. |
 | `/cards/live/` | A card that reads the league every time it is opened — `?board=1&team=<name>`. No storage: the URL is the whole state. |
 | `/cards/lab/` | Sandbox for trying card looks. Not linked from anywhere, `noindex`. |
