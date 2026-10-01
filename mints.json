@@ -1,5 +1,5 @@
 {
- "next": 4,
+ "next": 5,
  "cards": [
   {
    "n": 1,
@@ -45,7 +45,22 @@
     "Artwork": "Photo",
     "Layout": "center"
    }
+  },
+  {
+   "n": 4,
+   "at": "2026-10-01T00:57:32.931Z",
+   "traits": {
+    "Edition": "Veteran",
+    "Treatment": "Cartoon",
+    "Finish": "Chrome",
+    "Pattern": "Starburst",
+    "Hologram": "Medium",
+    "NFL team": "Miami Dolphins",
+    "Boards": "1",
+    "Artwork": "Photo",
+    "Layout": "left"
+   }
   }
  ],
- "updated": "2026-10-01T00:16:01.958Z"
+ "updated": "2026-10-01T00:57:32.931Z"
 }
