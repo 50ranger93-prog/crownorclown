@@ -1,5 +1,5 @@
 {
- "next": 5,
+ "next": 6,
  "cards": [
   {
    "n": 1,
@@ -60,7 +60,22 @@
     "Artwork": "Photo",
     "Layout": "left"
    }
+  },
+  {
+   "n": 5,
+   "at": "2026-10-01T22:03:54.815Z",
+   "traits": {
+    "Edition": "Veteran",
+    "Treatment": "Holo cartoon",
+    "Finish": "Gold foil",
+    "Pattern": "Starburst",
+    "Hologram": "Medium",
+    "NFL team": "Dallas Cowboys",
+    "Boards": "1",
+    "Artwork": "Photo",
+    "Layout": "left"
+   }
   }
  ],
- "updated": "2026-10-01T00:57:32.931Z"
+ "updated": "2026-10-01T22:03:54.815Z"
 }
