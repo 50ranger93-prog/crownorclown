@@ -131,13 +131,31 @@ async function getMint(){
 const Q=new URLSearchParams(location.search);S.token=Q.get("t")||"";
 if(S.token){try{const d=JSON.parse(atob(S.token.split(".")[0].replace(/-/g,"+").replace(/_/g,"/")));if(d.n)S.name=d.n.split(" ")[0];}catch(e){}}
 if(Q.get("cmd")=="intro"||Q.get("cmd")=="block"){S.cmd=Q.get("cmd");S.step=1;}
+// Capturing the card. BOLTGNG_801 built a card with a photo, saw it in the preview, and the
+// posted image came back without it. The exporter clones the card into an SVG and rasterises
+// that, and an image the browser has not finished decoding is simply absent from the first
+// raster — no error, no warning, just a card with a hole where somebody's photo was.
+//
+// So: decode the photo first and wait for it, then shoot twice and keep the second. The first
+// pass is what warms the clone; the second is the one that has everything. Costs a few hundred
+// milliseconds on a phone and is the difference between a card and an apology.
+async function shoot(node){
+ const src=PHOTO();
+ if(src){
+  try{ const im=new Image(); im.src=src; await (im.decode?im.decode():new Promise(r=>{im.onload=im.onerror=r})); }
+  catch(e){ /* a photo that will not decode is a photo the card never had */ }
+ }
+ const opts={pixelRatio:2,cacheBust:false};
+ await htmlToImage.toPng(node,opts);
+ return htmlToImage.toPng(node,opts);
+}
 async function postIt(){
  S.err="";
  if(!S.token){S.err="Preview only. Type /"+S.cmd+" in Discord to get your posting link.";return draw()}
  S.sending=true;draw();
  try{
   const node=document.getElementById("shot");
-  const png=await htmlToImage.toPng(node,{pixelRatio:2});
+  const png=await shoot(node);
   const names=S.cmd=="block"?S.players.filter(p=>p.name.trim()).map(p=>p.name.trim()):[];
   const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT(),names})});
   const d=await r.json().catch(()=>({}));
@@ -186,7 +204,9 @@ const PATS={Linear:"p-linear",Starburst:"p-burst","Cross-hatch":"p-hatch",Shatte
 // The treated photo when there is one, the original otherwise — so the card never
 // has to know whether a filter has been applied.
 const PHOTO=()=>S.photoT||S.photo;
-const photoBox=()=>`position:absolute;inset:0;background-image:url(${PHOTO()});background-repeat:no-repeat;`
+// The data URI is quoted. Unquoted it survives the live page but not always the clone the
+// exporter builds, which is exactly the shape of "it was in the preview and gone when posted".
+const photoBox=()=>`position:absolute;inset:0;background-image:url("${PHOTO()}");background-repeat:no-repeat;`
  +`background-size:${S.photoFit=="contain"?"contain":(S.photoZ<=100?"cover":S.photoZ+"%")};`
  +`background-position:center ${S.photoY}%;background-color:#111`;
 
