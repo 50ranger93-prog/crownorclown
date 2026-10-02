@@ -270,7 +270,11 @@ function card(which){
  const edc={Rookie:"#1D9E75",Veteran:"#7F77DD",Commissioner:"#FFC62F"}[S.ed];
  const meta=[t[1],bshort(selB()),S.where?"📍 "+esc(S.where):"",S.since?"Playing since "+esc(S.since):""].filter(Boolean).join("  |  ");
  const also=alsoOn(24);
- const foilOn=FOILS[S.foil]&&S.holoAmt>0;
+ // Finish, Pattern and Hologram are three separate controls and the card records all three, so
+ // the hologram has to stand on its own two. It used to need a finish as well — which meant
+ // choosing "None" for your edge silently threw away a hologram you had deliberately set, and
+ // the trait sheet then advertised a Ripple at Medium that was nowhere on the card.
+ const foilOn=S.holoAmt>0;
  const headWrap=foilOn
   ? `<div style="position:relative">${head}<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div></div>`
   : head;
