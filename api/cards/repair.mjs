@@ -51,4 +51,28 @@ export async function POST(request) {
   return json({ ok: true, messageId: id });
 }
 
-export function GET() { return new Response("Repair is POST only.", { status: 405, headers: { allow: "POST" } }); }
+// Same job from the address bar, so a correction is a link rather than a terminal session.
+// `src` is a path on this site only — never somewhere else's URL, so this can't be pointed at
+// an image someone else controls. The key is the app's public key, which is public by design.
+export async function GET(request) {
+  const q = new URL(request.url).searchParams;
+  const want = process.env.DISCORD_PUBLIC_KEY || "";
+  if (!want || q.get("key") !== want) return new Response("Not open.", { status: 404 });
+
+  const src = q.get("src") || "";
+  if (!/^\/[\w./-]+\.png$/.test(src) || src.includes("..")) return json({ error: "src must be a .png path on this site." }, 400);
+
+  const origin = new URL(request.url).origin;
+  const img = await fetch(origin + src);
+  if (!img.ok) return json({ error: `Couldn't read ${src} (${img.status}).` }, 404);
+  const png = Buffer.from(await img.arrayBuffer());
+
+  return POST(new Request(request.url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      key: want, cmd: q.get("cmd") || "intro", messageId: q.get("messageId") || "",
+      png: "data:image/png;base64," + png.toString("base64")
+    })
+  }));
+}
