@@ -302,7 +302,12 @@ function card(which){
  // The shine lives on the name plate — the block beside the photo carrying the name and the
  // team. Not over the artwork, which is the one part of the card that belongs to the person.
  const foilOn=S.holoAmt>0;
- const holo=foilOn?`<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div>`:"";
+ const holoDiv=foilOn?`<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div>`:"";
+ // With a photo the shine stays on the name plate so it never buries the picture. With no photo
+ // there is nothing to bury, so it runs across the whole header the way a foil card actually
+ // looks — which is what #004 shows and what everyone expects to see.
+ const holo=S.photo?holoDiv:"";
+ const headHolo=S.photo?"":holoDiv;
  const plate=`<div style="min-width:0;flex:1;position:relative;padding:14px 12px;display:flex;flex-direction:column;justify-content:center;text-align:${L=='center'?'center':'left'}">${holo}
   <div style="position:relative;color:${S.nameC};font-size:18px;font-weight:700;line-height:1.2">${esc(S.name)||"Name"}</div>
   ${S.nick?`<div style="position:relative;color:#b5bac1;font-size:12px;font-style:italic">“${esc(S.nick)}”</div>`:""}
@@ -328,7 +333,7 @@ function card(which){
  const edc={Rookie:"#1D9E75",Veteran:"#7F77DD",Commissioner:"#FFC62F"}[S.ed];
  const meta=[t[1],bshort(selB()),S.where?"📍 "+esc(S.where):"",S.since?"Playing since "+esc(S.since):""].filter(Boolean).join("  |  ");
  const also=alsoOn(24);
- const headWrap=head;
+ const headWrap=headHolo?`<div style="position:relative">${head}${headHolo}</div>`:head;
  // The four things that are true all season and never need typing twice: the NFL
  // team, the boards, where you are, and how long you have been here. None of them
  // goes stale mid-season, which is the whole reason a week-2 score is not here.
