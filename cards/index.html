@@ -52,7 +52,7 @@ button{font-family:inherit}
 .nft{--f1:#fff6cf;--f2:#c8a04a;--f3:#7e5f18;max-width:360px;position:relative;border-radius:16px;padding:7px;
   background:linear-gradient(140deg,var(--f1) 0%,var(--f2) 21%,#fffdf4 37%,var(--f3) 51%,var(--f2) 66%,#fffaea 80%,var(--f3) 100%);
   box-shadow:0 2px 5px rgba(0,0,0,.55),0 22px 48px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(255,255,255,.32)}
-.nft .card{max-width:none;border-radius:10px}
+.nft .card{max-width:100%;border-radius:10px}
 /* The foil sits on the artwork panel, not over the whole card: that is where
    light catches a real foil card, and it keeps the flair and the take readable.
    Deliberately not a mask — html-to-image drops mask-image, so a masked fade
@@ -263,7 +263,7 @@ function card(which){
   <div style="position:relative;color:${S.nameC};font-size:18px;font-weight:700;line-height:1.2">${esc(S.name)||"Name"}</div>
   ${S.nick?`<div style="position:relative;color:#b5bac1;font-size:12px;font-style:italic">“${esc(S.nick)}”</div>`:""}
   <div style="position:relative;display:flex;align-items:center;gap:9px;margin-top:8px;justify-content:${L=='center'?'center':'flex-start'}">${m?lg(m,mainT(),52):lg("","",52)}
-  <div style="color:${S.teamC};font-size:19px;font-weight:700;line-height:1.15;word-wrap:break-word;min-width:0">${esc(mainT())||"Team name"}</div></div></div>`;
+  <div style="color:${S.teamC};font-size:19px;font-weight:700;line-height:1.15;overflow-wrap:anywhere;min-width:0">${esc(mainT())||"Team name"}</div></div></div>`;
  let head;
  if(L=="center"){
   head=`<div style="background:${a};height:${S.photo?220:112}px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">${S.photo?`<div style="${photoBox()}"></div>`:""}
