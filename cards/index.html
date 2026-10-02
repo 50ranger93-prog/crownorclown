@@ -276,7 +276,7 @@ function card(which){
  const items=Object.keys(S.flair).map(f=>[f,FL.find(x=>x[0]==f)[1],S.flair[f]]).concat(S.cf.filter(c=>c[0].trim()).map(c=>[c[0],"✏️",c[1]]));
  const fl=items.map(x=>`<div style="min-width:0"><div style="color:${S.teamC};font-size:11px;font-weight:700;letter-spacing:.04em">${x[1]} ${esc(x[0]).toUpperCase()}</div><div style="color:#dbdee1;font-size:13px;word-wrap:break-word;white-space:pre-line">${esc(x[2])||"—"}</div></div>`).join("");
  const bl=(S.ed=="Commissioner"?[["Commissioner","👑"]]:[]).concat(S.badges.map(b=>BG.find(x=>x[0]==b))).concat(S.cb.filter(c=>c.trim()).map(c=>[c,"✨"]));
- const bd=bl.map(b=>{const g=b[0]=="Commissioner";return `<span style="display:inline-block;border:1px solid ${g?'#FFC62F':'#4e5058'};color:${g?'#FFC62F':'#dbdee1'};border-radius:10px;padding:2px 8px;font-size:11px;margin:0 4px 5px 0">${b[1]} ${esc(b[0])}</span>`}).join("");
+ const bd=bl.map(b=>{const g=b[0]=="Commissioner";return `<span style="display:inline-block;border:1px solid ${g?'#FFC62F':'#4e5058'};color:${g?'#FFC62F':'#dbdee1'};border-radius:10px;padding:2px 8px;font-size:11px;margin:0 4px 5px 0;white-space:nowrap">${b[1]} ${esc(b[0])}</span>`}).join("");
  const edc={Rookie:"#1D9E75",Veteran:"#7F77DD",Commissioner:"#FFC62F"}[S.ed];
  const meta=[t[1],bshort(selB()),S.where?"📍 "+esc(S.where):"",S.since?"Playing since "+esc(S.since):""].filter(Boolean).join("  |  ");
  const also=alsoOn(24);
