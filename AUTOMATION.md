@@ -71,9 +71,28 @@ on a manual run) ignores the key when you genuinely want to send again.
 | `/api/cards/register` | Re-registers the slash commands. Closed behind `?key=<DISCORD_PUBLIC_KEY>`. |
 | `/api/cards/repair` | Replaces the image on an already-posted card, in place — same message, same mint number, text untouched. Behind `key` = the app's public key. Exists because re-posting a broken card would burn a second number for the same person. |
 | `/api/cards/health` | Says which env vars are present. Never prints a value. |
-| `/api/cards/img` | Image proxy for the card builder. |
+| `/api/cards/img` | Image proxy for the card builder. **Do not route emoji or anything with many distinct images through it** — the exporter collapses them all into whichever it fetched first, which is how a card came out as nothing but lightning bolts, then nothing but helmets. Logos are fine; they are few. |
 | `/api/cards/mint` | Hands a card its mint number and records its traits, in `mints.json` on the **`board-data`** branch. POST only. Needs `GH_TOKEN`; without it a card still builds, just with no number or rarity. |
 | `/api/cards/mints` | The collection, read-only: every number handed out and what each trait is counted at. Feeds `/cards/gallery/`. A separate route from `mint.mjs` on purpose — looking must never be able to hand out a number. Reads the public raw file, so no token. |
+| `api/cards/archive.mjs` | Not a route — called by `post.mjs` after a card lands. Writes `cards/<n>.png` (the image that went out) and `cards/<n>.json` (number, Discord message id, traits, and the card's own state) to the **board-data** branch. Best effort: a card that posted must never report failed because its copy didn't save. |
+
+### Three rules the card builder now enforces, and why
+
+- **A card with a photo must prove the photo is in the export before it posts.** The panel is
+  sampled; real artwork has variation, a dropped one is a flat block. Two retries, then it refuses
+  and says so. BOLTGNG_801's card posted with a black hole where his picture should have been and
+  nothing anywhere said a word — that is the failure this exists to make impossible.
+- **The mint number is claimed at post, never at preview.** Handing one out to anybody who merely
+  looks spends a number no card will carry; that is how the ledger grew a #5 belonging to nobody.
+  The preview shows `#—` until it is real.
+- **The card is capped at its own frame width** (`.nft .card{max-width:100%}`) and long team names
+  break rather than shove the layout. A card that outgrows its foil frame gets its right edge —
+  frame, and the end of the mint number — cropped off the capture, and those pixels are gone for
+  good. Oscar's #005 could not be repaired for this reason; it had to be rebuilt.
+
+**Repairing a posted card:** rebuild it from `cards/<n>.json` and re-render. Do not try to patch
+the flattened PNG — stretching, cropping and repainting a captured card was tried for hours and
+produced smeared edges and doubled text every time. The recorded state is the source of truth.
 
 **Tier names wait for 20 cards, and that number is derived.** Mythic is the rarest 5%, so one card
 cannot *be* 5% of the collection until there are twenty; below that any tier shown is an artefact
