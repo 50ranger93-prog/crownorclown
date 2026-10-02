@@ -76,12 +76,14 @@ button{font-family:inherit}
 .db[disabled]{opacity:.6;cursor:wait}
 .bx{background:#383a40;border-radius:8px;padding:11px;color:#dbdee1}
 .only{color:#949ba4;font-size:12px;margin-bottom:8px}
+img.emoji{height:1em;width:1em;vertical-align:-.12em;display:inline-block}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style></head><body><div class="wrap">
 <div class="top"><h1>Expansion League card builder</h1><span id="bar"></span></div>
 <div id="pv" class="pv" hidden>Preview mode. To post for real, type <b>/intro</b> or <b>/block</b> in the league Discord and tap the button the bot sends you.</div>
 <div id="app" class="dm"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@15.1.0/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <script src="/cards/treat.js"></script>
 <script>let BOARDS={};</script>
 <script>const T=[["ARI","Arizona Cardinals","#97233F","#FFB612"],["ATL","Atlanta Falcons","#A71930","#000000"],["BAL","Baltimore Ravens","#241773","#9E7C0C"],["BUF","Buffalo Bills","#00338D","#C60C30"],["CAR","Carolina Panthers","#0085CA","#101820"],["CHI","Chicago Bears","#0B162A","#C83803"],["CIN","Cincinnati Bengals","#FB4F14","#000000"],["CLE","Cleveland Browns","#311D00","#FF3C00"],["DAL","Dallas Cowboys","#003594","#869397"],["DEN","Denver Broncos","#FB4F14","#002244"],["DET","Detroit Lions","#0076B6","#B0B7BC"],["GB","Green Bay Packers","#203731","#FFB612"],["HOU","Houston Texans","#03202F","#A71930"],["IND","Indianapolis Colts","#002C5F","#A2AAAD"],["JAX","Jacksonville Jaguars","#006778","#D7A22A"],["KC","Kansas City Chiefs","#E31837","#FFB81C"],["LV","Las Vegas Raiders","#000000","#A5ACAF"],["LAC","Los Angeles Chargers","#0080C6","#FFC20E"],["LAR","Los Angeles Rams","#003594","#FFA300"],["MIA","Miami Dolphins","#008E97","#FC4C02"],["MIN","Minnesota Vikings","#4F2683","#FFC62F"],["NE","New England Patriots","#002244","#C60C30"],["NO","New Orleans Saints","#101820","#D3BC8D"],["NYG","New York Giants","#0B2265","#A71930"],["NYJ","New York Jets","#125740","#FFFFFF"],["PHI","Philadelphia Eagles","#004C54","#A5ACAF"],["PIT","Pittsburgh Steelers","#101820","#FFB612"],["SF","San Francisco 49ers","#AA0000","#B3995D"],["SEA","Seattle Seahawks","#002244","#69BE28"],["TB","Tampa Bay Buccaneers","#D50A0A","#34302B"],["TEN","Tennessee Titans","#0C2340","#4B92DB"],["WAS","Washington Commanders","#5A1414","#FFB612"]];
@@ -437,6 +439,10 @@ function draw(){
   else h=posted("trade-block",`${esc(mainT())} is dealing`,bcard(),`<span class="ch">📞 Interested 0</span><span class="ch">✋ Pass 0</span>`);
  }
  $("app").innerHTML=h;
+ // Discord draws emoji with Twemoji. Left to the device font the same card comes out three
+ // different ways on three phones, none of them matching the channel it lands in. Routed
+ // through the image proxy so it is same-origin and survives the export like the logos do.
+ if(window.twemoji)try{twemoji.parse($("app"),{callback:icon=>IMG("https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/"+icon+".svg")})}catch(e){}
 }
 if(!S.token)$('pv').hidden=false;
 $('app').innerHTML='Loading your league…';
