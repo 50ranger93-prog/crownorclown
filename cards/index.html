@@ -285,9 +285,12 @@ function card(which){
  // choosing "None" for your edge silently threw away a hologram you had deliberately set, and
  // the trait sheet then advertised a Ripple at Medium that was nowhere on the card.
  const foilOn=S.holoAmt>0;
- const headWrap=foilOn
-  ? `<div style="position:relative">${head}<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div></div>`
-  : head;
+ // The shine belongs on the card, not on the picture. It used to sit over the artwork, where a
+ // colour-dodge rainbow buries whatever photo somebody chose — the one thing on the card that is
+ // actually theirs. It now runs across the body below the plate, over the watermark and under
+ // the text, which is where the foil is on a real card.
+ const holo=foilOn?`<div class="nftholo ${PATS[S.pattern]||'p-linear'}" style="opacity:${(S.holoAmt/100).toFixed(2)}"></div>`:"";
+ const headWrap=head;
  // The four things that are true all season and never need typing twice: the NFL
  // team, the boards, where you are, and how long you have been here. None of them
  // goes stale mid-season, which is the whole reason a week-2 score is not here.
@@ -306,7 +309,7 @@ function card(which){
 
  const front=`<div class="card" style="border:3px solid ${a}">
  ${topBar}${headWrap}<div style="height:4px;background:${a}"></div>
- <div style="position:relative;padding:12px;overflow:hidden">${wm}<div style="position:relative">
+ <div style="position:relative;padding:12px;overflow:hidden">${wm}${holo}<div style="position:relative">
  ${facts?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 10px;margin-bottom:10px">${facts}</div>`:""}
  ${also?`<div style="margin-bottom:8px"><div style="color:#949ba4;font-size:9px;font-weight:700;letter-spacing:.06em;margin-bottom:4px">ALSO RUNNING</div>${also}</div>`:""}
  <div style="color:#949ba4;font-size:10px;letter-spacing:.04em">EXPANSION LEAGUE  |  2026 SEASON</div>
