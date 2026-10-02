@@ -69,6 +69,7 @@ on a manual run) ignores the key when you genuinely want to send again.
 | `/api/cards/teams` | Team names + logos per board, from ESPN. |
 | `/api/cards/roster` | One board's rosters, so `/block` is a tap list instead of typing. |
 | `/api/cards/register` | Re-registers the slash commands. Closed behind `?key=<DISCORD_PUBLIC_KEY>`. |
+| `/api/cards/repair` | Replaces the image on an already-posted card, in place — same message, same mint number, text untouched. Behind `key` = the app's public key. Exists because re-posting a broken card would burn a second number for the same person. |
 | `/api/cards/health` | Says which env vars are present. Never prints a value. |
 | `/api/cards/img` | Image proxy for the card builder. |
 | `/api/cards/mint` | Hands a card its mint number and records its traits, in `mints.json` on the **`board-data`** branch. POST only. Needs `GH_TOKEN`; without it a card still builds, just with no number or rarity. |
