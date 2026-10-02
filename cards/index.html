@@ -213,9 +213,10 @@ const PATS={Linear:"p-linear",Starburst:"p-burst","Cross-hatch":"p-hatch",Shatte
 // The treated photo when there is one, the original otherwise — so the card never
 // has to know whether a filter has been applied.
 const PHOTO=()=>S.photoT||S.photo;
-// The data URI is quoted. Unquoted it survives the live page but not always the clone the
-// exporter builds, which is exactly the shape of "it was in the preview and gone when posted".
-const photoBox=()=>`position:absolute;inset:0;background-image:url("${PHOTO()}");background-repeat:no-repeat;`
+// Single quotes, and they matter: this whole string goes into a style="..." attribute, so a
+// double quote in here closes the attribute early and the markup falls apart. Quoting the URI
+// at all is what stops a stray character in the data breaking url() in the exporter's clone.
+const photoBox=()=>`position:absolute;inset:0;background-image:url('${PHOTO()}');background-repeat:no-repeat;`
  +`background-size:${S.photoFit=="contain"?"contain":(S.photoZ<=100?"cover":S.photoZ+"%")};`
  +`background-position:center ${S.photoY}%;background-color:#111`;
 
