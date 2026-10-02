@@ -112,7 +112,9 @@ const bshort=a=>a.length?"Board"+(a.length>1?"s ":" ")+a.map(b=>b.slice(6)).join
 function R(){draw()}
 // The order it was made in. Not a seat, not out of anything — #1 is whoever
 // built the first card and it keeps counting. Five cards, five numbers.
-function serial(){return S.mint?"#"+String(S.mint).padStart(3,"0"):(S.minting?"#…":"")}
+// No number until the card actually posts, so the preview shows the slot rather than a number
+// somebody else might end up with.
+function serial(){return S.mint?"#"+String(S.mint).padStart(3,"0"):(S.minting?"#…":"#—")}
 // Asked for once, when the card reaches the preview, so the number is on the card
 // before the image is made. A number that cannot be issued leaves the slot empty
 // rather than printing one that is not really yours.
@@ -156,17 +158,57 @@ async function shoot(node){
  }
  const opts={pixelRatio:2,cacheBust:false};
  await htmlToImage.toPng(node,opts);
- return htmlToImage.toPng(node,opts);
+ let png=await htmlToImage.toPng(node,opts);
+
+ // Prove the photo actually made it. The whole reason this function exists is a card that
+ // posted with a black hole where somebody's picture should have been, and nothing said a word.
+ // Two more tries, then stop: refusing to post is recoverable, posting a broken card in front
+ // of thirty-six people is not.
+ if(src){
+  for(let tries=0;tries<2&&!await hasPhoto(png);tries++){
+   await new Promise(r=>setTimeout(r,400));
+   png=await htmlToImage.toPng(node,opts);
+  }
+  if(!await hasPhoto(png))throw new Error("Your photo didn't make it into the card. Tap Post it again — if it keeps happening, tell the commish.");
+ }
+ return png;
+}
+
+// A photo panel that came out right has variety in it; one that didn't is a flat block of a
+// single colour. Sampling the artwork corner of the card tells those apart.
+async function hasPhoto(dataUrl){
+ try{
+  const im=new Image();
+  await new Promise(done=>{im.onload=done;im.onerror=done;setTimeout(done,3000);im.src=dataUrl;if(im.complete)done()});
+  if(!im.naturalWidth)return true;            // can't tell — never block a post on a guess
+  const w=Math.round(im.width*0.42),h=Math.round(im.height*0.22);
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  const cx=c.getContext("2d");
+  cx.drawImage(im,0,0,w,h,0,0,w,h);
+  const d=cx.getImageData(0,0,w,h).data;
+  let mn=255,mx=0;
+  for(let i=0;i<d.length;i+=4*53){const v=(d[i]+d[i+1]+d[i+2])/3;if(v<mn)mn=v;if(v>mx)mx=v;}
+  return (mx-mn)>18;
+ }catch(e){return true}
 }
 async function postIt(){
  S.err="";
  if(!S.token){S.err="Preview only. Type /"+S.cmd+" in Discord to get your posting link.";return draw()}
  S.sending=true;draw();
  try{
+  // The number is claimed here, not at the preview. Handing one out when somebody merely looks
+  // means an abandoned preview spends a number no card will ever carry — which is how the
+  // ledger ended up with a #5 belonging to nobody.
+  if(S.cmd=="intro"){
+   await getMint();
+   if(!S.mint)throw new Error("Couldn't get your card its number. Tap Post it again.");
+   draw();
+   await new Promise(r=>setTimeout(r,250));
+  }
   const node=document.getElementById("shot");
   const png=await shoot(node);
   const names=S.cmd=="block"?S.players.filter(p=>p.name.trim()).map(p=>p.name.trim()):[];
-  const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT(),names})});
+  const r=await fetch("/api/cards/post",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({t:S.token,png,team:mainT(),names,mint:S.mint,traits:traits(),state:{name:S.name,nick:S.nick,since:S.since,where:S.where,nfl:S.nfl,ed:S.ed,layout:S.layout,treat:S.treat,foil:S.foil,pattern:S.pattern,holoAmt:S.holoAmt,photoFit:S.photoFit,photoZ:S.photoZ,photoY:S.photoY,accent:S.accent,nameC:S.nameC,teamC:S.teamC,take:S.take,badges:S.badges,teams:S.teams,flair:S.flair}})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||"Posting failed. Try again.");
   S.sending=false;S.step=S.cmd=="intro"?9:5;draw();window.scrollTo({top:0});
@@ -183,7 +225,7 @@ function go(n){
  }
  if(S.cmd=="block"&&S.step==2&&n==3&&!S.players.some(p=>p.name.trim())){S.err="Add at least one player.";return draw()}
  S.step=n;draw();window.scrollTo({top:0});
- if(S.cmd=="intro"&&n==8)getMint();
+
 }
 const dropFrom=b=>{S.players=S.players.filter(p=>p.board!==b||p.man)};
 function tgBoard(b){const i=S.sel.indexOf(b);if(i>-1){S.sel.splice(i,1);delete S.teams[b];dropFrom(b)}else S.sel.push(b);S.err="";draw()}

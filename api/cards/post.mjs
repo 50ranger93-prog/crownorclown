@@ -1,4 +1,5 @@
 import { readToken } from "../../lib/cards-token.mjs";
+import { keep } from "./archive.mjs";
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
 
 export async function POST(request) {
@@ -43,5 +44,15 @@ export async function POST(request) {
   let r = await send(true);
   if (!r.ok) r = await send(false);
   if (!r.ok) return json({ error: `Discord said no (${r.status}). Tell the commish.` }, 502);
-  return json({ ok: true });
+
+  // Keep a copy of what just went out — the image and the settings behind it — so correcting a
+  // card later is a lookup instead of reading it back off a PNG in a channel. Best effort: a
+  // card that posted must never be reported as failed because its copy didn't save.
+  let archived = false;
+  try {
+    const msg = await r.clone().json().catch(() => ({}));
+    archived = await keep({ n: p.mint, messageId: msg && msg.id, png, state: p.state, traits: p.traits });
+  } catch { /* the card is already in the channel; the copy is a convenience */ }
+
+  return json({ ok: true, archived });
 }
