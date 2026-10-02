@@ -142,8 +142,17 @@ if(Q.get("cmd")=="intro"||Q.get("cmd")=="block"){S.cmd=Q.get("cmd");S.step=1;}
 async function shoot(node){
  const src=PHOTO();
  if(src){
-  try{ const im=new Image(); im.src=src; await (im.decode?im.decode():new Promise(r=>{im.onload=im.onerror=r})); }
-  catch(e){ /* a photo that will not decode is a photo the card never had */ }
+  // Wait for the photo, but never wait forever. img.decode() can sit unresolved on a detached
+  // element and that would hang Post it with no error and no way out — worse than the bug this
+  // whole function exists to fix. First of load, error or three seconds wins.
+  await new Promise(done=>{
+   const im=new Image();
+   const go=()=>done();
+   im.onload=go; im.onerror=go;
+   setTimeout(go,3000);
+   im.src=src;
+   if(im.complete)go();
+  });
  }
  const opts={pixelRatio:2,cacheBust:false};
  await htmlToImage.toPng(node,opts);
