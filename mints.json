@@ -1,5 +1,5 @@
 {
- "next": 6,
+ "next": 7,
  "cards": [
   {
    "n": 1,
@@ -75,7 +75,22 @@
     "Artwork": "Photo",
     "Layout": "left"
    }
+  },
+  {
+   "n": 6,
+   "at": "2026-10-02T00:19:21.858Z",
+   "traits": {
+    "Edition": "Veteran",
+    "Treatment": "Original",
+    "Finish": "Gold foil",
+    "Pattern": "Linear",
+    "Hologram": "Medium",
+    "NFL team": "Los Angeles Chargers",
+    "Boards": "1",
+    "Artwork": "Photo",
+    "Layout": "left"
+   }
   }
  ],
- "updated": "2026-10-01T22:03:54.815Z"
+ "updated": "2026-10-02T00:19:21.858Z"
 }
