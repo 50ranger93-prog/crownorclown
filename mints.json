@@ -1,5 +1,5 @@
 {
- "next": 8,
+ "next": 7,
  "cards": [
   {
    "n": 1,
@@ -63,21 +63,6 @@
   },
   {
    "n": 5,
-   "at": "2026-10-01T22:03:54.815Z",
-   "traits": {
-    "Edition": "Veteran",
-    "Treatment": "Holo cartoon",
-    "Finish": "Gold foil",
-    "Pattern": "Starburst",
-    "Hologram": "Medium",
-    "NFL team": "Dallas Cowboys",
-    "Boards": "1",
-    "Artwork": "Photo",
-    "Layout": "left"
-   }
-  },
-  {
-   "n": 6,
    "at": "2026-10-02T00:19:21.858Z",
    "traits": {
     "Edition": "Veteran",
@@ -92,7 +77,7 @@
    }
   },
   {
-   "n": 7,
+   "n": 6,
    "at": "2026-10-02T01:03:00.965Z",
    "traits": {
     "Edition": "Veteran",
@@ -107,5 +92,5 @@
    }
   }
  ],
- "updated": "2026-10-02T01:03:00.965Z"
+ "updated": "2026-10-02T08:46:10.124Z"
 }
