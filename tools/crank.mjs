@@ -65,6 +65,7 @@ const ROOM = {
   news:     [["general"], ["waivers-and-lineups", "waiver"]],
   ref:      [["trash-talk", "trash"], ["general"]],
   roundup:  [["general"]],
+  bums:     [["trash-talk", "trash"], ["general"]],
   bunk:     [["trash-talk", "trash"], ["general"]],
   benched:  [["waivers-and-lineups", "waiver", "lineup"], ["trash-talk", "general"]],
   faab:     [["waivers-and-lineups", "waiver"], ["trade-block", "trade"]],
@@ -130,6 +131,7 @@ export function choose(facts, ledger, want = 1) {
     news: 0.08,
     ref: 0.04,
     roundup: 0.04,   // one board a week, every name in it
+    bums: 0.03,      // one roll of the week's worst, with the picture
     surprise: 0.02,
     quiet: 0.01,
     tightwad: 0.01,
@@ -206,6 +208,17 @@ export function choose(facts, ledger, want = 1) {
  */
 export function extras(facts, day) {
   const out = [];
+
+  // The week's worst starts, all three boards, one post, with the artwork attached.
+  const flops = facts.filter(f => f.kind === "bunk").sort((a, b) => b.short - a.short);
+  const seenPlayer = new Set();
+  const rows = flops.filter(f => !seenPlayer.has(f.player) && seenPlayer.add(f.player)).slice(0, 6);
+  if (rows.length >= 4) {
+    out.push({
+      kind: "bums", key: `bums:${rows[0].week}`, manager: "", weight: 11,
+      week: rows[0].week, rows, file: "cards/art/bums.png",
+    });
+  }
 
   // One board a week, every manager in it named. Keyed by league and week so each board comes
   // round once and never repeats.
@@ -409,7 +422,10 @@ async function main() {
   const chan = await findChannel(rooms);
   if (!chan) { console.error(`No channel matched ${rooms.join(", ")}`); process.exitCode = 1; return; }
 
-  await say(chan.id, pick.full, pick.fact.poll ? { poll: pick.fact.poll } : {});
+  await say(chan.id, pick.full, {
+    ...(pick.fact.poll ? { poll: pick.fact.poll } : {}),
+    ...(pick.fact.file ? { file: pick.fact.file } : {}),
+  });
   await remember(pick, now.day, noticed);
   console.log(`posted to #${chan.name} [${pick.fact.kind}/${pick.angleId}]`);
 }
