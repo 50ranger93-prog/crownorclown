@@ -43,11 +43,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
  * The escalation is the point. If the big one goes off every week it is just the weekly post with
  * a louder picture on it.
  */
-const SITE = process.env.PUBLIC_URL || "https://www.crownorclown.com";
-const ART = {
-  cannon: `${SITE}/cards/art/cannon.png`,
-  plane:  `${SITE}/cards/art/plane.png`,
-  nuke:   `${SITE}/cards/art/nuke.png`,
+const FILE = {
+  cannon: "cards/art/cannon.png",
+  plane:  "cards/art/plane.png",
+  nuke:   "cards/art/nuke.png",
 };
 
 const OPENERS = {
@@ -90,7 +89,7 @@ async function battles() {
  * and the gun should say so. Held to a real threshold so the nuke stays rare enough to matter.
  */
 export function pickTier(fights, forced) {
-  if (forced && ART[forced]) return forced;
+  if (forced && FILE[forced]) return forced;
   const worst = fights.length ? fights[0].margin : 0;
   if (worst >= 75) return "nuke";
   if (worst >= 45) return "plane";
@@ -153,8 +152,9 @@ async function main() {
     const LINK = /https:\/\/\S+\/cards\/art\/\S+\.png/;
     const art = (LINK.exec(open.content || "") || [])[0];
     const cleaned = String(open.content || "").replace(new RegExp(`\\s*${LINK.source}\\s*`, "g"), "").trim();
-    if (!art) { console.log("already tidy"); return; }
-    await edit(chan.id, open.id, cleaned, { image: art });
+    void art;
+    const tierNow = /IS NOT A CANNON/.test(open.content) ? "nuke" : /WHEELS UP/.test(open.content) ? "plane" : "cannon";
+    await edit(chan.id, open.id, cleaned, { file: FILE[tierNow] });
     console.log("tidied", open.id);
     return;
   }
@@ -177,7 +177,7 @@ async function main() {
 
   // Words first, then the picture — Discord puts the embed under the text, so this reads as the
   // announcement followed by the thing going off rather than a stray link with a caption.
-  const open = `${OPENERS[tier](week)}\n${ART[tier]}`;
+  const open = OPENERS[tier](week);
   const close = CLOSERS[tier];
   // The last word is a poll. A barrage that ends in a question gets read; one that ends in four
   // buttons gets answered, and being answered is the entire point of firing it.
@@ -197,7 +197,7 @@ async function main() {
   const chan = await findChannel(["trash-talk", "trash", "general"]);
   if (!chan) { console.error("No channel to fire into."); process.exitCode = 1; return; }
 
-  await say(chan.id, open, { image: ART[tier] });
+  await say(chan.id, open, { file: FILE[tier] });
   for (const s of shells) { await wait(1400); await say(chan.id, s); }
   await wait(1400);
   await say(chan.id, close, closePoll ? { poll: closePoll } : {});
