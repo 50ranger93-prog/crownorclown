@@ -44,8 +44,12 @@ on:
 permissions:
   contents: write
 
+# Scheduled runs share one group so two of them can never post at the same moment. Manual runs
+# each get their own, because GitHub keeps only ONE pending run per group — fire three by hand and
+# the first two are cancelled before they ever start, which is exactly what happened to the first
+# announcement and the bums post.
 concurrency:
-  group: crank
+  group: crank-${{ github.event_name == 'schedule' && 'scheduled' || github.run_id }}
   cancel-in-progress: false
 
 jobs:
