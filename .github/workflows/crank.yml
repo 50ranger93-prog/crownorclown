@@ -18,6 +18,15 @@ on:
   schedule:
     - cron: "19 15-23 * * *"
     - cron: "19 0-3 * * *"
+  # GitHub's own scheduler is the weak link: a brand-new cron can take hours to register and free
+  # runners drop scheduled runs under load — this repo already documents them landing one to three
+  # hours late. So crank also rides on the workflows that demonstrably DO fire here, several times
+  # a day, every day. Extra triggers cost nothing: crank.mjs decides for itself whether the hour is
+  # inside 9am-8pm Mountain and whether today's count is already met, so a trigger that isn't
+  # needed simply prints why and stops.
+  workflow_run:
+    workflows: ["Channel heartbeat", "Channel pulse", "Archive the week", "Post the week", "Post the polls"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       dry:
@@ -49,7 +58,7 @@ permissions:
 # the first two are cancelled before they ever start, which is exactly what happened to the first
 # announcement and the bums post.
 concurrency:
-  group: crank-${{ github.event_name == 'schedule' && 'scheduled' || github.run_id }}
+  group: crank-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'auto' || github.run_id }}
   cancel-in-progress: false
 
 jobs:
