@@ -61,6 +61,10 @@ function targetForDay(day) {
 // instead of filling one channel and leaving the rest dead.
 const ROOM = {
   poll:     [["general"], ["trash-talk", "trash"], ["waivers-and-lineups", "waiver"]],
+  member:   [["general"], ["trash-talk", "trash"]],
+  news:     [["general"], ["waivers-and-lineups", "waiver"]],
+  ref:      [["trash-talk", "trash"], ["general"]],
+  roundup:  [["general"]],
   bunk:     [["trash-talk", "trash"], ["general"]],
   benched:  [["waivers-and-lineups", "waiver", "lineup"], ["trash-talk", "general"]],
   faab:     [["waivers-and-lineups", "waiver"], ["trade-block", "trade"]],
@@ -98,27 +102,52 @@ export function choose(facts, ledger, want = 1) {
   // The same name three times in an afternoon reads as a repeat even when every number is
   // different, so the player being talked about is pushed down hard once he's had his turn.
   const subjectOf = f => f.player || f.sat || f.manager;
+  // Everyone gets talked about. A manager the bot has never mentioned outranks whatever happened
+  // to be the worst afternoon this week — "no favourites, no 'these guys'" was the instruction,
+  // and a soft penalty wasn't enough to guarantee it.
+  const neverMentioned = f => f.manager && !(f.manager in seenBy) && !batchManager.has(f.manager);
   const factScore = f => {
     const batch = batchManager.get(f.manager) || 0;
     const subj = batchSubject.get(subjectOf(f)) || 0;
     const history = seenBy[f.manager] || 0;
     const kindRun = f.kind === lastKind ? 25 : 0;
     const kindUse = (seenKind[f.kind] || 0) * 1.5;
-    return f.weight - history * 2.5 - batch * 40 - subj * 60 - kindRun - kindUse;
+    const unseen = neverMentioned(f) ? 1000 : 0;
+    return f.weight + unseen - history * 2.5 - batch * 40 - subj * 60 - kindRun - kindUse;
   };
 
-  // Polls get a guaranteed share rather than competing on how bad somebody's week was — they
-  // always lose that fight, and they are the posts that actually get answered. Roughly one in
-  // three, counted across everything the bot has ever said so it self-corrects over time.
-  const saidTotal = Object.values(seenKind).reduce((a, b) => a + b, 0);
-  let pollsSaid = seenKind.poll || 0, allSaid = saidTotal;
+  // Each kind gets a share of the output rather than competing on weight. Weight answers "how
+  // bad was it", which polls, members, news and the officials always lose — and those are exactly
+  // the posts that get answered and that keep everybody in the conversation. Shares are measured
+  // against everything the bot has ever said, so the mix corrects itself over a season rather
+  // than over an afternoon.
+  const SHARE = {
+    poll: 0.26,      // the ones people actually answer
+    member: 0.22,    // nobody is invisible — 36 managers, all of them, on rotation
+    bunk: 0.15,
+    faab: 0.11,
+    benched: 0.10,
+    news: 0.08,
+    ref: 0.04,
+    roundup: 0.04,   // one board a week, every name in it
+    surprise: 0.02,
+    quiet: 0.01,
+    tightwad: 0.01,
+  };
+  const said = { ...seenKind };
+  let allSaid = Object.values(said).reduce((a, b) => a + b, 0);
 
   for (let n = 0; n < want; n++) {
     let pool = fresh.filter(f => !takenKey.has(f.key));
     if (!pool.length) break;
-    const wantPoll = pollsSaid / Math.max(allSaid, 1) < 0.34;
-    const polls = pool.filter(f => f.kind === "poll");
-    if (wantPoll && polls.length) pool = polls;
+
+    // Whichever kind is furthest behind its share, and still has something fresh to say, goes next.
+    const available = new Set(pool.map(f => f.kind));
+    const behind = Object.keys(SHARE)
+      .filter(k => available.has(k) && k !== lastKind)
+      .sort((x, y) => (SHARE[y] - (said[y] || 0) / Math.max(allSaid, 1)) - (SHARE[x] - (said[x] || 0) / Math.max(allSaid, 1)));
+    const wantKind = behind[0];
+    if (wantKind) pool = pool.filter(f => f.kind === wantKind);
     pool.sort((a, b) => factScore(b) - factScore(a));
 
     let picked = null;
@@ -161,8 +190,8 @@ export function choose(facts, ledger, want = 1) {
     seenAngle[`${picked.fact.kind}/${picked.angleId}`] = (seenAngle[`${picked.fact.kind}/${picked.angleId}`] || 0) + 1;
     seenKind[picked.fact.kind] = (seenKind[picked.fact.kind] || 0) + 1;
     lastKind = picked.fact.kind;
+    said[picked.fact.kind] = (said[picked.fact.kind] || 0) + 1;
     allSaid++;
-    if (picked.fact.kind === "poll") pollsSaid++;
   }
   return out;
 }
@@ -177,6 +206,20 @@ export function choose(facts, ledger, want = 1) {
  */
 export function extras(facts, day) {
   const out = [];
+
+  // One board a week, every manager in it named. Keyed by league and week so each board comes
+  // round once and never repeats.
+  const mem = facts.filter(f => f.kind === "member");
+  const byLeague = {};
+  for (const m of mem) (byLeague[m.league] ||= []).push(m);
+  for (const [lg, rows] of Object.entries(byLeague)) {
+    if (rows.length < 4) continue;
+    const sorted = [...rows].sort((a, b) => b.pf - a.pf).map((r, i) => ({ ...r, rank: i + 1 }));
+    out.push({
+      kind: "roundup", key: `roundup:${lg}:${rows[0].week}`, manager: "", weight: 12,
+      league: lg, weeks: rows[0].w + rows[0].l, rows: sorted,
+    });
+  }
 
   // Polls, built from the week's own numbers. Weighted high on purpose: the people who will never
   // type a message will still tap a button, and that is the difference between posting at a room
