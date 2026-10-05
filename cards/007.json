@@ -1,0 +1,47 @@
+{
+ "n": 7,
+ "messageId": "1556479521937563648",
+ "at": "2026-10-05T01:33:58.919Z",
+ "traits": {
+  "Edition": "Veteran",
+  "Treatment": "Original",
+  "Finish": "Gold foil",
+  "Pattern": "Starburst",
+  "Hologram": "Medium",
+  "NFL team": "Denver Broncos",
+  "Boards": "1",
+  "Artwork": "Photo",
+  "Layout": "center"
+ },
+ "state": {
+  "name": "Tatanka",
+  "nick": "TATANKA",
+  "since": "",
+  "where": "",
+  "nfl": "DEN",
+  "ed": "Veteran",
+  "layout": "center",
+  "treat": "Original",
+  "foil": "Gold foil",
+  "pattern": "Starburst",
+  "holoAmt": 31,
+  "photoFit": "contain",
+  "photoZ": 102,
+  "photoY": 65,
+  "accent": "#FF7A00",
+  "nameC": "#FF7A00",
+  "teamC": "#F2F3F5",
+  "take": "The revenant buffalo revenges any loss!",
+  "badges": [],
+  "teams": {
+   "Board 3": "THE MAD KING$ XCIII"
+  },
+  "flair": {
+   "Perfect lineup": "",
+   "Ride or die": "",
+   "Trash talk target": "",
+   "Championship prediction": "",
+   "This year's goal": ""
+  }
+ }
+}
