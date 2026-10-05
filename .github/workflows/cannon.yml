@@ -20,6 +20,10 @@ on:
         description: "Fire even if this week's has already gone"
         type: boolean
         default: false
+      tidy:
+        description: "Re-send the last opening shot as an embed instead of a bare link"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -48,4 +52,5 @@ jobs:
           args=""
           if [ "${{ inputs.dry }}" = "true" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then args="--dry"; fi
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          if [ "${{ inputs.tidy }}" = "true" ]; then args="--tidy"; fi
           node tools/cannon.mjs $args

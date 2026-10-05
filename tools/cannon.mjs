@@ -21,7 +21,7 @@ import { createHash } from "node:crypto";
 import { LEAGUES } from "../lib/crank-material.mjs";
 import { everything } from "../lib/crank-material.mjs";
 import { update, readJSON, configured } from "../lib/board-data.mjs";
-import { findChannel, say, ready } from "../lib/discord-bot.mjs";
+import { findChannel, say, ready, conversation, edit } from "../lib/discord-bot.mjs";
 
 const has = n => process.argv.includes("--" + n);
 const DRY = has("dry");
@@ -142,6 +142,23 @@ ${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**.
 async function main() {
   if (process.env.CRANK_OFF && !DRY) { console.log("CRANK_OFF is set — the gun stays cold."); return; }
 
+  // --tidy: the first barrage went out with the artwork as a bare link, so the raw URL sat above
+  // the picture. Re-sends that opening shot as a proper embed. Harmless to run again.
+  if (has("tidy")) {
+    const chan = await findChannel(["trash-talk", "trash", "general"]);
+    if (!chan) { console.error("no channel"); return; }
+    const msgs = await conversation(chan.id, 30);
+    const open = msgs.find(m => m.author && m.author.bot && /IS NOT A CANNON|CANNON IS LOADED|WHEELS UP/.test(m.content || ""));
+    if (!open) { console.log("nothing to tidy"); return; }
+    const LINK = /https:\/\/\S+\/cards\/art\/\S+\.png/;
+    const art = (LINK.exec(open.content || "") || [])[0];
+    const cleaned = String(open.content || "").replace(new RegExp(`\\s*${LINK.source}\\s*`, "g"), "").trim();
+    if (!art) { console.log("already tidy"); return; }
+    await edit(chan.id, open.id, cleaned, { image: art });
+    console.log("tidied", open.id);
+    return;
+  }
+
   const fights = await battles();
   if (!fights.length) { console.log("No settled week to fire at yet."); return; }
   const facts = await everything().catch(() => []);
@@ -180,7 +197,7 @@ async function main() {
   const chan = await findChannel(["trash-talk", "trash", "general"]);
   if (!chan) { console.error("No channel to fire into."); process.exitCode = 1; return; }
 
-  await say(chan.id, open);
+  await say(chan.id, open, { image: ART[tier] });
   for (const s of shells) { await wait(1400); await say(chan.id, s); }
   await wait(1400);
   await say(chan.id, close, closePoll ? { poll: closePoll } : {});
