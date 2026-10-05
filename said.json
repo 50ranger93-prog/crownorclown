@@ -10,7 +10,8 @@
   "poll:still-trust:4",
   "member:2026:w4:951407474:3",
   "ref:401772969",
-  "roundup:Board 1:4"
+  "roundup:Board 1:4",
+  "poll:own-it:4"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -22,10 +23,11 @@
   "24210a158471c729",
   "7440fbac1056b9af",
   "959fe587569f9612",
-  "78cc91cccc3b12bd"
+  "78cc91cccc3b12bd",
+  "eb5a25dcaab62a64"
  ],
  "managers": {
-  "": 5,
+  "": 6,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -33,7 +35,7 @@
   "Andrew's Astounding Team": 1
  },
  "angles": {
-  "poll/poll": 2,
+  "poll/poll": 3,
   "member/record": 1,
   "bunk/crowd": 1,
   "faab/bold": 1,
@@ -44,7 +46,7 @@
   "roundup/board": 1
  },
  "kinds": {
-  "poll": 2,
+  "poll": 3,
   "member": 2,
   "bunk": 1,
   "faab": 1,
@@ -54,7 +56,7 @@
   "roundup": 1
  },
  "days": {
-  "2026-10-05": 10
+  "2026-10-05": 11
  },
  "noticed": [
   "1551681634460237886",
@@ -73,5 +75,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "roundup"
+ "lastKind": "poll"
 }
