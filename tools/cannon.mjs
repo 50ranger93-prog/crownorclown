@@ -33,15 +33,64 @@ const r1 = n => Math.round(n * 10) / 10;
 const clean = s => String(s || "").replace(/[*_`~|]/g, "").trim();
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-const GUN = [
-  "```",
-  "        ▄█████▄",
-  "   ▄████████████▄▄▄▄",
-  "  ███████████████████)═══════►   ●",
-  "   ▀████████████▀▀▀▀",
-  "        ▀█████▀",
-  "```",
-].join("\n");
+/**
+ * Three tiers of ordnance, picked by what the week actually did rather than by a coin toss.
+ *
+ *   cannon  — the standard weekly barrage
+ *   plane   — a bombing run: one pass, a bomb dropped on every board
+ *   nuke    — held back for a genuine massacre, so it still means something when it goes
+ *
+ * The escalation is the point. If the big one goes off every week it is just the weekly post with
+ * a louder picture on it.
+ */
+const ART = {
+  cannon: [
+    "```",
+    "        ▄█████▄",
+    "   ▄████████████▄▄▄▄",
+    "  ███████████████████)═══════►   ●",
+    "   ▀████████████▀▀▀▀",
+    "        ▀█████▀",
+    "```",
+  ].join("\n"),
+
+  plane: [
+    "```",
+    "                      |",
+    "                 __,--o--,__",
+    "        =========(__________)=========>",
+    "                 `--,-o-,--`",
+    "                      |",
+    "            ●     ●     ●     ●",
+    "```",
+  ].join("\n"),
+
+  nuke: [
+    "```",
+    "            . . . . . o o o o o o",
+    "         .              _____",
+    "       .          ,----'     '----,",
+    "      .          /   .  .  .  .   \\",
+    "      .         |  .   .   .   .   |",
+    "       .         \\    .  .  .     /",
+    "        .         '----,_____,----'",
+    "                       |||||",
+    "                    ===|||||===",
+    "```",
+  ].join("\n"),
+};
+
+const OPENERS = {
+  cannon: w => `**THE CANNON IS LOADED.** Week ${w} is settled, and somebody has to answer for it.`,
+  plane: w => `**WHEELS UP.** One pass over all three boards. Week ${w}, bomb bay open.`,
+  nuke: w => `**THIS ONE IS NOT A CANNON.**\nWeek ${w} produced something that needed the big one.\n\n**3…**\n**2…**\n**1…**`,
+};
+
+const CLOSERS = {
+  cannon: `**Guns cold.** Reload is Sunday.\n-# Whose turn is it to take one next week? Name them.`,
+  plane: `**Back to base.** Everybody check your roof.\n-# Who deserves the next run? Make your case.`,
+  nuke: `**Fallout settles Sunday.**\n-# Nothing like that has happened all season. Think you can beat it?`,
+};
 
 /** Last completed week's matchups across all three boards, worst beatings first. */
 async function battles() {
@@ -66,13 +115,34 @@ async function battles() {
   return out.sort((x, y) => y.margin - x.margin);
 }
 
+/**
+ * Which tier the week has earned. A seventy-point beating is a different event from a tight week,
+ * and the gun should say so. Held to a real threshold so the nuke stays rare enough to matter.
+ */
+export function pickTier(fights, forced) {
+  if (forced && ART[forced]) return forced;
+  const worst = fights.length ? fights[0].margin : 0;
+  if (worst >= 75) return "nuke";
+  if (worst >= 45) return "plane";
+  return "cannon";
+}
+
 /** Everything the gun is pointed at, in the order it fires. */
-export function loadShells(fights, facts) {
+export function loadShells(fights, facts, tier = "cannon") {
   const shells = [];
   const wk = fights.length ? fights[0].week : 0;
 
-  for (const f of fights.slice(0, 4)) {
-    shells.push(`💥 **DIRECT HIT** · ${f.league}\n${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**. ${f.margin} points of daylight.`);
+  if (tier === "nuke") {
+    const f = fights[0];
+    shells.push(`☢️ **GROUND ZERO** · ${f.league}
+${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**.
+**${f.margin} points.** That is not a loss, that is a weather event.`);
+  }
+
+  const hits = tier === "plane" ? 3 : tier === "nuke" ? 2 : 4;
+  for (const f of (tier === "nuke" ? fights.slice(1, 1 + hits) : fights.slice(0, hits))) {
+    const mark = tier === "plane" ? "🛩️ **BOMB AWAY**" : tier === "nuke" ? "💥 **SECONDARY**" : "💥 **DIRECT HIT**";
+    shells.push(`${mark} · ${f.league}\n${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**. ${f.margin} points of daylight.`);
   }
 
   // "Nothing else came close" has to be true before it is said. Every score that week, both
@@ -105,9 +175,11 @@ async function main() {
   const fights = await battles();
   if (!fights.length) { console.log("No settled week to fire at yet."); return; }
   const facts = await everything().catch(() => []);
-  const { week, shells } = loadShells(fights, facts);
+  const forced = (process.argv[process.argv.indexOf("--tier") + 1] || "").trim();
+  const tier = pickTier(fights, has("tier") ? forced : "");
+  const { week, shells } = loadShells(fights, facts, tier);
 
-  const key = `cannon:${SEASON}:w${week}`;
+  const key = `cannon:${SEASON}:w${week}`;   // one set piece a week, whichever tier it earned
   const ledger = configured()
     ? (await readJSON(LEDGER, null).catch(() => ({ data: null }))).data || {}
     : {};
@@ -116,8 +188,8 @@ async function main() {
     return;
   }
 
-  const open = `${GUN}\n**THE CANNON IS LOADED.** Week ${week} is settled, and somebody has to answer for it.`;
-  const close = `**Guns cold.** Reload is Sunday.\n-# Whose turn is it to take one next week? Name them.`;
+  const open = `${ART[tier]}\n${OPENERS[tier](week)}`;
+  const close = CLOSERS[tier];
 
   if (DRY) {
     console.log([open, ...shells, close].join("\n\n— — —\n\n"));
@@ -138,7 +210,7 @@ async function main() {
     await update(LEDGER, { keys: [] }, `Cannon week ${week}`,
       L => ({ ...(L || {}), keys: ((L && L.keys) || []).concat(key) })).catch(() => {});
   }
-  console.log(`fired ${shells.length + 2} rounds into #${chan.name}`);
+  console.log(`fired ${tier}: ${shells.length + 2} rounds into #${chan.name}`);
 }
 
 main().catch(e => { console.error(e.message || e); process.exitCode = 1; });
