@@ -11,7 +11,8 @@
   "member:2026:w4:951407474:3",
   "ref:401772969",
   "roundup:Board 1:4",
-  "poll:own-it:4"
+  "poll:own-it:4",
+  "bunk:2026:w4:1963204215:4432620"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -24,7 +25,8 @@
   "7440fbac1056b9af",
   "959fe587569f9612",
   "78cc91cccc3b12bd",
-  "eb5a25dcaab62a64"
+  "eb5a25dcaab62a64",
+  "18d0f8f3bb971c97"
  ],
  "managers": {
   "": 6,
@@ -32,7 +34,8 @@
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
   "Big birds rockin'": 1,
-  "Andrew's Astounding Team": 1
+  "Andrew's Astounding Team": 1,
+  "Max's Magnificent Team": 1
  },
  "angles": {
   "poll/poll": 3,
@@ -43,12 +46,13 @@
   "news/desk": 1,
   "member/points": 1,
   "ref/named": 1,
-  "roundup/board": 1
+  "roundup/board": 1,
+  "bunk/ledger": 1
  },
  "kinds": {
   "poll": 3,
   "member": 2,
-  "bunk": 1,
+  "bunk": 2,
   "faab": 1,
   "benched": 1,
   "news": 1,
@@ -56,7 +60,7 @@
   "roundup": 1
  },
  "days": {
-  "2026-10-05": 11
+  "2026-10-05": 12
  },
  "noticed": [
   "1551681634460237886",
@@ -75,5 +79,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "poll"
+ "lastKind": "bunk"
 }
