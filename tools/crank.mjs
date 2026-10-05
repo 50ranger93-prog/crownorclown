@@ -23,9 +23,9 @@
 
 import { createHash } from "node:crypto";
 import { everything } from "../lib/crank-material.mjs";
-import { ANGLES, render, clean } from "../lib/crank-voice.mjs";
+import { ANGLES, POLLS, render, clean } from "../lib/crank-voice.mjs";
 import { update, readJSON, configured } from "../lib/board-data.mjs";
-import { findChannel, say, ready } from "../lib/discord-bot.mjs";
+import { findChannel, say, react, conversation, ready } from "../lib/discord-bot.mjs";
 
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const has = n => process.argv.includes("--" + n);
@@ -60,6 +60,7 @@ function targetForDay(day) {
 // Each kind has more than one home, and they rotate, so the bot fans out across the server
 // instead of filling one channel and leaving the rest dead.
 const ROOM = {
+  poll:     [["general"], ["trash-talk", "trash"], ["waivers-and-lineups", "waiver"]],
   bunk:     [["trash-talk", "trash"], ["general"]],
   benched:  [["waivers-and-lineups", "waiver", "lineup"], ["trash-talk", "general"]],
   faab:     [["waivers-and-lineups", "waiver"], ["trade-block", "trade"]],
@@ -106,9 +107,18 @@ export function choose(facts, ledger, want = 1) {
     return f.weight - history * 2.5 - batch * 40 - subj * 60 - kindRun - kindUse;
   };
 
+  // Polls get a guaranteed share rather than competing on how bad somebody's week was — they
+  // always lose that fight, and they are the posts that actually get answered. Roughly one in
+  // three, counted across everything the bot has ever said so it self-corrects over time.
+  const saidTotal = Object.values(seenKind).reduce((a, b) => a + b, 0);
+  let pollsSaid = seenKind.poll || 0, allSaid = saidTotal;
+
   for (let n = 0; n < want; n++) {
-    const pool = fresh.filter(f => !takenKey.has(f.key));
+    let pool = fresh.filter(f => !takenKey.has(f.key));
     if (!pool.length) break;
+    const wantPoll = pollsSaid / Math.max(allSaid, 1) < 0.34;
+    const polls = pool.filter(f => f.kind === "poll");
+    if (wantPoll && polls.length) pool = polls;
     pool.sort((a, b) => factScore(b) - factScore(a));
 
     let picked = null;
@@ -151,6 +161,8 @@ export function choose(facts, ledger, want = 1) {
     seenAngle[`${picked.fact.kind}/${picked.angleId}`] = (seenAngle[`${picked.fact.kind}/${picked.angleId}`] || 0) + 1;
     seenKind[picked.fact.kind] = (seenKind[picked.fact.kind] || 0) + 1;
     lastKind = picked.fact.kind;
+    allSaid++;
+    if (picked.fact.kind === "poll") pollsSaid++;
   }
   return out;
 }
@@ -165,6 +177,19 @@ export function choose(facts, ledger, want = 1) {
  */
 export function extras(facts, day) {
   const out = [];
+
+  // Polls, built from the week's own numbers. Weighted high on purpose: the people who will never
+  // type a message will still tap a button, and that is the difference between posting at a room
+  // and hearing back from it. Keyed by week so each one runs once and never comes round again.
+  const wk = (facts.find(f => f.week) || {}).week || 0;
+  for (const p of POLLS) {
+    const built = p.build(facts);
+    if (!built) continue;
+    out.push({
+      kind: "poll", key: `poll:${p.id}:${wk}`, manager: "", weight: 14,
+      text: built.text, poll: { question: built.question, answers: built.answers, hours: 24 },
+    });
+  }
   out.push({ kind: "quiet", key: `quiet:${day}`, manager: "", weight: 3, who: "Somebody in here" });
 
   // Something true that reads as improbable: the same player started by several managers and
@@ -195,13 +220,50 @@ export function extras(facts, day) {
   return out;
 }
 
+/**
+ * Notice the people who answered.
+ *
+ * A room stops replying to something that never replies back. Every run, before it says anything
+ * new, the bot looks at the rooms it posts in, finds real messages that landed after one of its
+ * own, and puts a reaction on them. It costs one API call and it is the difference between a
+ * noticeboard and a conversation.
+ *
+ * It only ever reacts — it never argues, never corrects anybody, and never replies in words,
+ * because a bot with opinions about what a member said is exactly the thing that starts fights.
+ */
+const NODS = ["👀", "🔥", "😂", "💀", "🫡", "📈", "🤝", "🏈"];
+async function noticeReplies(ledger) {
+  const seen = new Set(ledger.noticed || []);
+  const fresh = [];
+  const rooms = ["general", "trash-talk", "waivers-and-lineups", "trade-block"];
+  for (const name of rooms) {
+    const chan = await findChannel([name]).catch(() => null);
+    if (!chan) continue;
+    const msgs = await conversation(chan.id, 30).catch(() => []);
+    // Newest first from Discord; walk back to the bot's most recent post and take the humans
+    // who have spoken since.
+    const since = [];
+    for (const m of msgs) {
+      if (m.author && m.author.bot) break;
+      since.push(m);
+    }
+    for (const m of since) {
+      if (seen.has(m.id)) continue;
+      if (!m.id || (m.author && m.author.bot)) continue;
+      const nod = NODS[parseInt(hash(m.id).slice(0, 4), 16) % NODS.length];
+      if (await react(chan.id, m.id, nod).catch(() => false)) fresh.push(m.id);
+    }
+  }
+  return fresh;
+}
+
 async function readLedger() {
   if (!configured()) return EMPTY;
   const { data } = await readJSON(LEDGER, null).catch(() => ({ data: null }));
   return data || EMPTY;
 }
 
-async function remember(pick, day) {
+async function remember(pick, day, extraNoticed = []) {
   return update(LEDGER, EMPTY, `Said: ${pick.fact.kind} ${pick.angleId}`, L => {
     const next = {
       keys: (L.keys || []).concat(pick.fact.key),
@@ -210,6 +272,7 @@ async function remember(pick, day) {
       angles: { ...(L.angles || {}) },
       kinds: { ...(L.kinds || {}) },
       days: { ...(L.days || {}) },
+      noticed: (L.noticed || []).concat(extraNoticed).slice(-500),
       lastKind: pick.fact.kind,
     };
     const a = `${pick.fact.kind}/${pick.angleId}`;
@@ -237,7 +300,10 @@ async function main() {
     const seen = {};
     picks.forEach((p, i) => {
       const n = (seen[p.fact.kind] = (seen[p.fact.kind] || 0) + 1) - 1;
-      console.log(`${String(i + 1).padStart(2)}. [${p.fact.kind}/${p.angleId}] → #${roomFor(p.fact.kind, n)[0]}\n    ${p.full.replace(/\n/g, "\n    ")}\n`);
+      const poll = p.fact.poll
+        ? `\n    POLL → ${p.fact.poll.question}\n` + p.fact.poll.answers.map(a => `           ( ) ${a.text}`).join("\n")
+        : "";
+      console.log(`${String(i + 1).padStart(2)}. [${p.fact.kind}/${p.angleId}] → #${roomFor(p.fact.kind, n)[0]}\n    ${p.full.replace(/\n/g, "\n    ")}${poll}\n`);
     });
     return;
   }
@@ -264,6 +330,11 @@ async function main() {
     }
   }
 
+  // Acknowledge anybody who spoke since the bot last did, whether or not this run posts.
+  let noticed = [];
+  if (!DRY && ready()) noticed = await noticeReplies(ledger).catch(() => []);
+  if (noticed.length) console.log(`noticed ${noticed.length} message(s) from members`);
+
   const base = await everything();
   const facts = base.concat(extras(base, now.day));
   const [pick] = choose(facts, ledger, 1);
@@ -279,8 +350,8 @@ async function main() {
   const chan = await findChannel(rooms);
   if (!chan) { console.error(`No channel matched ${rooms.join(", ")}`); process.exitCode = 1; return; }
 
-  await say(chan.id, pick.full);
-  await remember(pick, now.day);
+  await say(chan.id, pick.full, pick.fact.poll ? { poll: pick.fact.poll } : {});
+  await remember(pick, now.day, noticed);
   console.log(`posted to #${chan.name} [${pick.fact.kind}/${pick.angleId}]`);
 }
 
