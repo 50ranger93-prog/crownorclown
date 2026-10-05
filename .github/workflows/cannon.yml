@@ -1,0 +1,51 @@
+# The cannon. Once a week, after the games have settled.
+#
+# Tuesday mid-morning Mountain: late enough that Monday night is final and every matchup has a
+# result, early enough that the beating is still fresh. One barrage a week — the script refuses to
+# fire twice at the same week, so a late or repeated run costs nothing.
+#
+# Minute sits off the hour because GitHub throttles top-of-the-hour schedules.
+
+name: Cannon
+on:
+  schedule:
+    - cron: "41 16 * * 2"   # Tue 10:41 Mountain
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: "Print the barrage, fire nothing"
+        type: boolean
+        default: true
+      force:
+        description: "Fire even if this week's has already gone"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cannon
+  cancel-in-progress: false
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Fire
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOARD_REPO_OWNER: ${{ github.repository_owner }}
+          BOARD_REPO: ${{ github.event.repository.name }}
+          CRANK_OFF: ${{ vars.CRANK_OFF }}
+        run: |
+          args=""
+          if [ "${{ inputs.dry }}" = "true" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then args="--dry"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          node tools/cannon.mjs $args
