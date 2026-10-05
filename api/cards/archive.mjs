@@ -79,7 +79,7 @@ function clean(s) {
   };
 }
 
-export async function keep({ n, messageId, png, state, traits }) {
+export async function keep({ n, messageId, png, state, traits, check }) {
   if (!TOKEN || !OWNER || !REPO || !n) {
     const missing = [!TOKEN && "token", !OWNER && "owner", !REPO && "repo", !n && "mint"].filter(Boolean);
     console.error("card archive skipped — no " + missing.join(", "));
@@ -88,6 +88,10 @@ export async function keep({ n, messageId, png, state, traits }) {
   const num = String(n).padStart(3, "0");
   const body = {
     n, messageId: String(messageId || ""), at: new Date().toISOString(),
+    // What the check saw when this card went out: "match" means the image in the channel is
+    // the image that was built, to the byte. "corrected" means it wasn't, and was put right.
+    check: check && typeof check === "object"
+      ? { verified: STR(check.verified, 12), corrected: !!check.corrected } : null,
     traits: traits && typeof traits === "object" ? traits : {},
     state: clean(state)
   };
