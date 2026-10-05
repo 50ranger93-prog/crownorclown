@@ -488,7 +488,10 @@ const BEATS = {
   slate:     { fn: slate,     hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Today's slate",         cooldownH: 10 },
   inactives: { fn: inactives, hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Starter's not playing", cooldownH: 6 },
   injuries:  { fn: injuries,  hook: "PULSE_WEBHOOK_GENERAL",   as: CHIP,  sig: "Injury tags this week", cooldownH: 18 },
-  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, ping: true, sig: "This week's fights", cooldownH: 18 },
+  // No ping any more. This beat used to @ the two managers by name to start something between
+  // them; the rule now is that members are never aimed at each other, so it posts the matchups
+  // and lets people find their own fights.
+  matchups:  { fn: matchups,  hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE, sig: "This week's fights", cooldownH: 18 },
   jab:       { fn: jab,       hook: "PULSE_WEBHOOK_GENERAL",   as: DUECE },
   crownvest: { fn: crownvest, hook: "PULSE_WEBHOOK_CROWNVEST", as: DUECE, chan: ["crown-and-vest", "crown", "vest", "standings", "awards"] },
   faab:      { fn: faab,      hook: "PULSE_WEBHOOK_TRADE",     as: DUECE, chan: ["trade-block", "trade", "faab", "waiver"] },

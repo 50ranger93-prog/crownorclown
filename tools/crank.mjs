@@ -1,0 +1,273 @@
+/**
+ * The daily bot. Posts between 9am and 8pm Mountain, never overnight, and never the same thing
+ * twice — not the same fact, not the same wording, not ever.
+ *
+ *   node tools/crank.mjs --dry            what it would say right now
+ *   node tools/crank.mjs --dry --plan 12  twelve posts in a row, to read the variety
+ *   node tools/crank.mjs                  post, if this hour is one of today's slots
+ *   node tools/crank.mjs --force          post now regardless of the hour or the day's count
+ *
+ * Why the old one repeated, for anyone who finds this later: it chose from twenty-one hand-written
+ * sentences and only remembered its recent posts. Finite words plus a short memory is a loop. This
+ * one writes about numbers that happened — a projection missed by 11.4, a $15 waiver claim that
+ * returned 0.7 — which are never the same twice, and it keeps every fact key and every line it has
+ * ever said in a permanent ledger that it refuses to reuse.
+ *
+ * The rules it will not break:
+ *   - 9am to 8pm Mountain. Nobody wants a notification at 3am.
+ *   - Players get called out. Managers get teased about decisions. Members are never attacked and
+ *     never set against each other.
+ *   - Clean. Checked on the finished text, not trusted to the writing.
+ *   - Every post ends with something to answer, because the point is a room that talks.
+ */
+
+import { createHash } from "node:crypto";
+import { everything } from "../lib/crank-material.mjs";
+import { ANGLES, render, clean } from "../lib/crank-voice.mjs";
+import { update, readJSON, configured } from "../lib/board-data.mjs";
+import { findChannel, say, ready } from "../lib/discord-bot.mjs";
+
+const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
+const has = n => process.argv.includes("--" + n);
+const DRY = has("dry");
+const FORCE = has("force");
+const PLAN = Number(arg("plan") || 0);
+const LEDGER = "said.json";
+const EMPTY = { keys: [], texts: [], managers: {}, angles: {}, kinds: {}, days: {}, lastKind: "" };
+
+const hash = s => createHash("sha256").update(String(s).toLowerCase().replace(/\s+/g, " ").trim()).digest("hex").slice(0, 16);
+
+// Mountain time without pulling in a library: ask the runtime what the hour is over there.
+const mt = (d = new Date()) => {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Denver", hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit",
+  }).formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {});
+  return { day: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) };
+};
+
+const OPEN_HOUR = 9, CLOSE_HOUR = 20;      // 9am through 8pm, inclusive of the 8pm hour
+
+// A stable number per day, so every run on the same day agrees how many posts today gets without
+// anybody having to store it. Some days are busy, some are quiet; that unpredictability is the
+// point — a room learns a fixed schedule in a week and stops looking.
+function targetForDay(day) {
+  const n = parseInt(hash("target:" + day).slice(0, 6), 16);
+  return 3 + (n % 7);                       // 3 to 9
+}
+
+// Which rooms each kind of material belongs in.
+// Each kind has more than one home, and they rotate, so the bot fans out across the server
+// instead of filling one channel and leaving the rest dead.
+const ROOM = {
+  bunk:     [["trash-talk", "trash"], ["general"]],
+  benched:  [["waivers-and-lineups", "waiver", "lineup"], ["trash-talk", "general"]],
+  faab:     [["waivers-and-lineups", "waiver"], ["trade-block", "trade"]],
+  tightwad: [["trade-block", "trade"], ["waivers-and-lineups", "waiver"]],
+  quiet:    [["general"]],
+  surprise: [["general"], ["trash-talk", "trash"]],
+};
+const roomFor = (kind, n) => {
+  const sets = ROOM[kind] || [["general"]];
+  return sets[n % sets.length];
+};
+
+/**
+ * Choose what to say. Everything already said is off the table, and managers who have been in the
+ * bot's mouth most recently go to the back of the queue — the instruction was call everyone out,
+ * not find three people and live there.
+ */
+export function choose(facts, ledger, want = 1) {
+  const usedKeys = new Set(ledger.keys || []);
+  const usedText = new Set(ledger.texts || []);
+  const seenBy = ledger.managers || {};        // manager -> times featured, all season
+  const seenAngle = { ...(ledger.angles || {}) };  // "kind/angle" -> times used, all season
+  const seenKind = { ...(ledger.kinds || {}) };
+
+  const fresh = facts.filter(f => !usedKeys.has(f.key));
+  const out = [];
+  const takenKey = new Set();
+  const batchManager = new Map();
+  const batchSubject = new Map();              // the player being talked about
+  let lastKind = ledger.lastKind || "";
+
+  // Worst offences first, but a manager the bot has already been talking about drops down the
+  // list, and so does a kind of post it just made. The instruction was call everyone out — not
+  // find three people and live there, and not say the same shape of sentence all afternoon.
+  // The same name three times in an afternoon reads as a repeat even when every number is
+  // different, so the player being talked about is pushed down hard once he's had his turn.
+  const subjectOf = f => f.player || f.sat || f.manager;
+  const factScore = f => {
+    const batch = batchManager.get(f.manager) || 0;
+    const subj = batchSubject.get(subjectOf(f)) || 0;
+    const history = seenBy[f.manager] || 0;
+    const kindRun = f.kind === lastKind ? 25 : 0;
+    const kindUse = (seenKind[f.kind] || 0) * 1.5;
+    return f.weight - history * 2.5 - batch * 40 - subj * 60 - kindRun - kindUse;
+  };
+
+  for (let n = 0; n < want; n++) {
+    const pool = fresh.filter(f => !takenKey.has(f.key));
+    if (!pool.length) break;
+    pool.sort((a, b) => factScore(b) - factScore(a));
+
+    let picked = null;
+    for (const f of pool.slice(0, 40)) {
+      // Rotate the wording: the angle used least gets first refusal, so a shape can't dominate
+      // an afternoon just because it happens to be first in the list.
+      const angles = (ANGLES[f.kind] || [])
+        .map(a => ({ a, used: seenAngle[`${f.kind}/${a.id}`] || 0 }))
+        .sort((x, y) => x.used - y.used);
+
+      for (const { a } of angles) {
+        const r = render(f, a);
+        if (!r) continue;
+        const full = r.hook ? `${r.text}\n-# ${r.hook}` : r.text;
+        if (!clean(full)) continue;
+        if (usedText.has(hash(full))) continue;
+        picked = { fact: f, ...r, full, textHash: hash(full) };
+        break;
+      }
+      if (picked) break;
+    }
+    if (!picked) break;
+
+    out.push(picked);
+    takenKey.add(picked.fact.key);
+    usedText.add(picked.textHash);
+    batchManager.set(picked.fact.manager, (batchManager.get(picked.fact.manager) || 0) + 1);
+    const s = subjectOf(picked.fact);
+    batchSubject.set(s, (batchSubject.get(s) || 0) + 1);
+    seenAngle[`${picked.fact.kind}/${picked.angleId}`] = (seenAngle[`${picked.fact.kind}/${picked.angleId}`] || 0) + 1;
+    seenKind[picked.fact.kind] = (seenKind[picked.fact.kind] || 0) + 1;
+    lastKind = picked.fact.kind;
+  }
+  return out;
+}
+
+/**
+ * The material that isn't a stat line: the nudges about using the place, and the surprises.
+ *
+ * Both are keyed by the day, so each one can be said exactly once ever and then never again. The
+ * nudges never name anybody — a joke about a specific quiet person has to be funny to that person
+ * first, and a schedule can't judge that. The surprises are built out of the week's own facts, so
+ * they're true, and they're the only posts that aren't about somebody falling short.
+ */
+export function extras(facts, day) {
+  const out = [];
+  out.push({ kind: "quiet", key: `quiet:${day}`, manager: "", weight: 3, who: "Somebody in here" });
+
+  // Something true that reads as improbable: the same player started by several managers and
+  // letting all of them down on the same afternoon.
+  const byPlayer = {};
+  for (const f of facts) if (f.kind === "bunk") (byPlayer[f.player] ||= []).push(f);
+  const shared = Object.entries(byPlayer)
+    .filter(([, l]) => l.length >= 3)
+    .sort((a, b) => b[1][0].short - a[1][0].short)[0];
+  if (shared) {
+    const [name, list] = shared;
+    out.push({
+      kind: "surprise", key: `surprise:shouldnt:${day}:${name}`, manager: list[0].manager, weight: 9,
+      stat: `${name} was started by ${list.length} different managers across the three boards this week. He scored ${list[0].scored} for every one of them.`,
+    });
+  }
+
+  // A quiet, genuine one. Nobody expects the robot to be nice, which is exactly why it lands.
+  const best = {};
+  for (const f of facts) if (f.kind === "bunk") best[f.manager] = (best[f.manager] || 0) + 1;
+  const cleanest = Object.entries(best).sort((a, b) => a[1] - b[1])[0];
+  if (cleanest) {
+    out.push({
+      kind: "surprise", key: `surprise:praise:${day}:${cleanest[0]}`, manager: cleanest[0], weight: 6,
+      reason: "having fewer starters let them down than anybody else on the board",
+    });
+  }
+  return out;
+}
+
+async function readLedger() {
+  if (!configured()) return EMPTY;
+  const { data } = await readJSON(LEDGER, null).catch(() => ({ data: null }));
+  return data || EMPTY;
+}
+
+async function remember(pick, day) {
+  return update(LEDGER, EMPTY, `Said: ${pick.fact.kind} ${pick.angleId}`, L => {
+    const next = {
+      keys: (L.keys || []).concat(pick.fact.key),
+      texts: (L.texts || []).concat(pick.textHash),
+      managers: { ...(L.managers || {}) },
+      angles: { ...(L.angles || {}) },
+      kinds: { ...(L.kinds || {}) },
+      days: { ...(L.days || {}) },
+      lastKind: pick.fact.kind,
+    };
+    const a = `${pick.fact.kind}/${pick.angleId}`;
+    next.managers[pick.fact.manager] = (next.managers[pick.fact.manager] || 0) + 1;
+    next.angles[a] = (next.angles[a] || 0) + 1;
+    next.kinds[pick.fact.kind] = (next.kinds[pick.fact.kind] || 0) + 1;
+    next.days[day] = (next.days[day] || 0) + 1;
+    return next;
+  });
+}
+
+async function main() {
+  const now = mt();
+  const ledger = await readLedger();
+
+  if (PLAN) {
+    const base = await everything();
+    const facts = base.concat(extras(base, now.day));
+    const picks = choose(facts, ledger, PLAN);
+    console.log(`${facts.length} facts available, ${picks.length} distinct posts planned:\n`);
+    const seen = {};
+    picks.forEach((p, i) => {
+      const n = (seen[p.fact.kind] = (seen[p.fact.kind] || 0) + 1) - 1;
+      console.log(`${String(i + 1).padStart(2)}. [${p.fact.kind}/${p.angleId}] → #${roomFor(p.fact.kind, n)[0]}\n    ${p.full.replace(/\n/g, "\n    ")}\n`);
+    });
+    return;
+  }
+
+  if (!FORCE) {
+    if (now.hour < OPEN_HOUR || now.hour > CLOSE_HOUR) {
+      console.log(`${now.hour}:00 Mountain — outside 9am–8pm. Nothing posts.`);
+      return;
+    }
+    const done = (ledger.days || {})[now.day] || 0;
+    const target = targetForDay(now.day);
+    if (done >= target) {
+      console.log(`${done}/${target} already posted today. Done.`);
+      return;
+    }
+    // Spread what's left over the hours that are left, so the day fills naturally rather than
+    // firing everything at 9am.
+    const left = CLOSE_HOUR - now.hour + 1;
+    const need = target - done;
+    const chance = Math.min(1, need / Math.max(left, 1));
+    if (Math.random() > chance) {
+      console.log(`${done}/${target} today, ${left} hour(s) left — skipping this slot.`);
+      return;
+    }
+  }
+
+  const base = await everything();
+  const facts = base.concat(extras(base, now.day));
+  const [pick] = choose(facts, ledger, 1);
+  if (!pick) { console.log("Nothing fresh to say — every fact on the board has been used."); return; }
+
+  const rooms = roomFor(pick.fact.kind, (ledger.kinds || {})[pick.fact.kind] || 0);
+  if (DRY) {
+    console.log(`→ #${rooms[0]}  [${pick.fact.kind}/${pick.angleId}]\n${pick.full}`);
+    return;
+  }
+  if (!ready()) { console.error("No DISCORD_BOT_TOKEN — nothing posted."); process.exitCode = 1; return; }
+
+  const chan = await findChannel(rooms);
+  if (!chan) { console.error(`No channel matched ${rooms.join(", ")}`); process.exitCode = 1; return; }
+
+  await say(chan.id, pick.full);
+  await remember(pick, now.day);
+  console.log(`posted to #${chan.name} [${pick.fact.kind}/${pick.angleId}]`);
+}
+
+main().catch(e => { console.error(e.message || e); process.exitCode = 1; });

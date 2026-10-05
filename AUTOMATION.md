@@ -20,6 +20,7 @@ top-of-the-hour schedules hard.
 | **Post the week** | Tue 09:25 | Crown / clown / closest game / beatdown / robbed for all three boards, plus the Go get it leaderboard. | `tools/weekly-post.mjs` |
 | **Post the polls** | Thu 09:25 | One native Discord poll per board, built from that league's own standings and slate. | `tools/poll-post.mjs` |
 | **Weekly DK reconciliation** | Sun 10:00 | Finds the only two places ESPN and DraftKings scoring can diverge and reports a checklist. | `tools/reconcile.mjs`, see `tools/README.md` |
+| **Crank** (the daily bot) | hourly, 9am–8pm Mountain | Posts between three and nine times a day, never overnight, and **never the same thing twice** — not the fact, not the wording. Writes about real numbers (a projection missed by 11.4, a $15 claim that returned 0.7) because numbers are never the same twice; a permanent ledger (`said.json` on board-data) refuses any fact key or line it has already used. Rotates angle, kind, manager, player and channel so nothing clusters. Every post ends with a question. | `tools/crank.mjs` |
 | **Card of the year** | hourly 06:00–12:00 UTC, 17 Oct only | Announces the winner in `#announcements` once voting closes. Hourly because a free cron lands late; the endpoint refuses before the close and records the message id after, so the repeats announce nothing twice. Needs repo secret `CARDS_KEY`. | `/api/cards/vote-result` |
 
 ### Channel pulse beats
@@ -129,6 +130,7 @@ interactions endpoint. `fetch` does, which hides the problem from every test you
 | `WEBHOOK_TRASH` / `WEBHOOK_WAIVERS` / `WEBHOOK_GENERAL` | shared rooms | Post the polls, only with `per: 2` |
 | `PULSE_WEBHOOK_GENERAL` / `_TRADE` / `_CROWNVEST` / `_HOTTAKE` | see beats table | Channel pulse |
 | `RECONCILE_WEBHOOK` | optional | Weekly DK reconciliation |
+| `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` | any channel | Channel pulse, Crank. The bot reaches any room it can see, so a new channel needs no new webhook. |
 | `CARDS_KEY` | — | Card of the year. The Discord app's **public key** (developer portal → General Information), the same value `/api/cards/repair` and `/api/cards/register` are gated on. Not a token; it identifies, it doesn't authorise anything in Discord. |
 
 **Vercel environment variables** — used by the live site, *not* by the workflows:

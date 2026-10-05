@@ -1,0 +1,65 @@
+# The daily bot.
+#
+# Fires every hour from 9am to 8pm Mountain and lets tools/crank.mjs decide whether this
+# particular hour is one of today's slots. The day's post count is 3 to 9, derived from the date
+# itself, so it varies without anyone storing a plan and the room never learns the rhythm.
+#
+# The hours below cover Mountain daylight AND standard time, and crank.mjs checks the real
+# Mountain hour itself and refuses outside 9am–8pm. Two guards, because the one thing nobody
+# forgives is a 3am notification.
+#
+# Minutes sit off the hour: GitHub throttles top-of-the-hour schedules hard.
+#
+# Secrets used, all already present: DISCORD_BOT_TOKEN, DISCORD_GUILD_ID. The ledger is written
+# with the workflow's own GITHUB_TOKEN, which is why this job asks for contents: write.
+
+name: Crank
+on:
+  schedule:
+    - cron: "19 15-23 * * *"
+    - cron: "19 0-3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: "Print what it would say, post nothing"
+        type: boolean
+        default: true
+      plan:
+        description: "Print this many posts in a row to read the variety (implies dry)"
+        default: ""
+      force:
+        description: "Post now regardless of the hour or today's count"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crank
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Say something
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOARD_REPO_OWNER: ${{ github.repository_owner }}
+          BOARD_REPO: ${{ github.event.repository.name }}
+        run: |
+          args=""
+          if [ -n "${{ inputs.plan }}" ]; then
+            args="--dry --plan ${{ inputs.plan }}"
+          elif [ "${{ inputs.dry }}" = "true" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            args="--dry"
+          fi
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          node tools/crank.mjs $args
