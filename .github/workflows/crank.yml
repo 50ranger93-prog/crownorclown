@@ -54,6 +54,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BOARD_REPO_OWNER: ${{ github.repository_owner }}
           BOARD_REPO: ${{ github.event.repository.name }}
+          CRANK_OFF: ${{ vars.CRANK_OFF }}
         run: |
           args=""
           if [ -n "${{ inputs.plan }}" ]; then

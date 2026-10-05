@@ -115,11 +115,21 @@ export function choose(facts, ledger, want = 1) {
     for (const f of pool.slice(0, 40)) {
       // Rotate the wording: the angle used least gets first refusal, so a shape can't dominate
       // an afternoon just because it happens to be first in the list.
+      // A fact can only be used once, so whichever angle takes it is the only line it will ever
+      // get. The specific ones — the genuine biggest bid, the dollar that returned twenty — fit
+      // only a handful of facts, so they get a head start or a generic line eats the fact and the
+      // good line never fires. A head start, not a free pass: it is worth three quarters of a use,
+      // so a sharp angle wins the close calls and then falls back in line. Letting it win outright
+      // just swaps one repeated sentence for another, which is the whole thing we are fixing.
       const angles = (ANGLES[f.kind] || [])
-        .map(a => ({ a, used: seenAngle[`${f.kind}/${a.id}`] || 0 }))
-        .sort((x, y) => x.used - y.used);
+        .map(a => ({ a, used: seenAngle[`${f.kind}/${a.id}`] || 0, pri: a.priority || 0 }))
+        .sort((x, y) => (x.used - x.pri * 0.75) - (y.used - y.pri * 0.75));
 
       for (const { a } of angles) {
+        // A line that names one manager is only allowed when that manager was actually alone in
+        // it. Half the league starts the same players; singling one person out for something six
+        // of them did is unfair, and everyone reading knows it.
+        if (a.solo && !f.solo) continue;
         const r = render(f, a);
         if (!r) continue;
         const full = r.hook ? `${r.text}\n-# ${r.hook}` : r.text;
@@ -212,6 +222,10 @@ async function remember(pick, day) {
 }
 
 async function main() {
+  // Off switch that needs no deploy and no code change: set repo variable CRANK_OFF to anything
+  // and the next run says nothing. The last kill-switch lived in the source and meant the bot
+  // stayed off for three weeks because turning it back on was a commit.
+  if (process.env.CRANK_OFF && !DRY && !PLAN) { console.log("CRANK_OFF is set — nothing posts."); return; }
   const now = mt();
   const ledger = await readLedger();
 
