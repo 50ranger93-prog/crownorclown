@@ -61,6 +61,12 @@ jobs:
           BOARD_REPO_OWNER: ${{ github.repository_owner }}
           BOARD_REPO: ${{ github.event.repository.name }}
           CRANK_OFF: ${{ vars.CRANK_OFF }}
+          # Passed as environment, never interpolated into the command line. A backtick in the
+          # text was being executed by the shell — `/vote` in an announcement tried to run /vote
+          # as a program — and anything interpolated straight into a run block is an injection
+          # waiting to happen.
+          SAY: ${{ inputs.say }}
+          ROOM: ${{ inputs.room }}
         run: |
           args=""
           if [ -n "${{ inputs.plan }}" ]; then
@@ -69,8 +75,8 @@ jobs:
             args="--dry"
           fi
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          if [ -n "${{ inputs.say }}" ]; then
-            node tools/crank.mjs --say "${{ inputs.say }}" --room "${{ inputs.room }}" $args
+          if [ -n "$SAY" ]; then
+            node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
           else
             node tools/crank.mjs $args
           fi
