@@ -352,6 +352,49 @@ function dstFromBox(box, g) {
   return out;
 }
 
+// A kicker starts every week in this league and regularly beats a WR3, so leaving him out of
+// the top six showed the week a starter short. DraftKings prices a field goal by distance —
+// three inside forty, four from the forties, five from fifty — plus a point an extra point.
+// The box score reports only makes and the longest one, so the makes come from the box, which
+// is the authoritative count, and each is priced off the scoring play that produced it. A make
+// the plays don't name falls back to three rather than being dropped.
+function kFromBox(box, sum) {
+  const fgs = {};
+  for (const pl of sum?.scoringPlays || []) {
+    const t = String(pl.text || "").trim();
+    const fg = /^(.+?)\s+(\d+)\s*Yd\s+Field\s+Goal/i.exec(t);
+    if (fg) (fgs[fg[1].trim()] ||= []).push(Number(fg[2]));
+  }
+  const out = [];
+  for (const tp of box?.players || []) {
+    const tm = tp.team?.abbreviation || "";
+    for (const grp of tp.statistics || []) {
+      if (grp.name !== "kicking") continue;
+      const keys = grp.keys || [];
+      for (const a of grp.athletes || []) {
+        const nm = a.athlete?.displayName || "", st = a.stats || [];
+        const pair = key => {
+          const i = keys.indexOf(key);
+          const m = i < 0 ? null : /(\d+)\s*\/\s*(\d+)/.exec(String(st[i] ?? ""));
+          return m ? [Number(m[1]), Number(m[2])] : [0, 0];
+        };
+        const [fgm, fga] = pair("fieldGoalsMade/fieldGoalAttempts");
+        const [xpm, xpa] = pair("extraPointsMade/extraPointAttempts");
+        if (!fgm && !xpm) continue;
+        const d = (fgs[nm] || []).slice(0, fgm);
+        let p = d.reduce((s, y) => s + (y >= 50 ? 5 : y >= 40 ? 4 : 3), 0);
+        p += (fgm - d.length) * 3 + xpm;
+        if (p <= 0) continue;
+        const bits = fga ? [`${fgm}/${fga} FG`] : [];
+        if (d.length) bits.push([...d].sort((x, y) => y - x).join(", ") + " yd");
+        if (xpa) bits.push(`${xpm}/${xpa} XP`);
+        out.push({ name: nm, team: tm, pos: "K", dk: Math.round(p * 10) / 10, line: bits.join(" · ") });
+      }
+    }
+  }
+  return out;
+}
+
 // The number on its own says a player scored; the line says how, which is the part that
 // tells you whether to expect it again.
 function statLine(r) {
@@ -671,7 +714,8 @@ async function buildWeek(week) {
       // and both are shown either way — the point is being able to see that a defence beat
       // the bottom of the box, which you cannot do if it is missing when it loses.
       g.dst = dstFromBox(s.boxscore, g);
-      g.top = scored.concat(g.dst).sort((a, b) => b.dk - a.dk).slice(0, 6);
+      g.k = kFromBox(s.boxscore, s);
+      g.top = scored.concat(g.dst).concat(g.k).sort((a, b) => b.dk - a.dk).slice(0, 6);
     }
     if (scored.length) out.forEach(p => { if (p.sure) p.took = tookOver(p, scored, outNames); });
 
