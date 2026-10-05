@@ -35,15 +35,25 @@ const gh = (path, opts = {}) => fetch(API + path, {
 });
 
 async function put(path, buf, message) {
-  // Look first: a retry of the same post must overwrite rather than fail on a missing sha.
-  let sha = null;
-  const head = await gh(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${encodeURIComponent(BRANCH)}`);
-  if (head.ok) sha = (await head.json()).sha || null;
-  const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, {
-    method: "PUT",
-    body: JSON.stringify({ message, content: buf.toString("base64"), branch: BRANCH, ...(sha ? { sha } : {}) })
-  });
-  return r.ok;
+  // Two commits to the same branch at the same moment is a 409 from GitHub — the second one
+  // is written against a head that already moved. Card #007 posted with no copy saved for
+  // exactly that reason, and nothing said so, because the result was thrown away. Each write
+  // now re-reads the sha and tries again, and hands back why it failed if it still fails.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let sha = null;
+    const head = await gh(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${encodeURIComponent(BRANCH)}`);
+    if (head.ok) sha = (await head.json()).sha || null;
+    const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, {
+      method: "PUT",
+      body: JSON.stringify({ message, content: buf.toString("base64"), branch: BRANCH, ...(sha ? { sha } : {}) })
+    });
+    if (r.ok) return "";
+    const why = `${r.status} ${(await r.text().catch(() => "")).slice(0, 180)}`;
+    if (r.status !== 409 && r.status !== 422) return why;
+    if (attempt === 2) return why;
+    await new Promise(done => setTimeout(done, 350 * (attempt + 1)));
+  }
+  return "gave up";
 }
 
 // Only the keys a card is actually made of, each clipped, so a public endpoint can't write
@@ -70,16 +80,24 @@ function clean(s) {
 }
 
 export async function keep({ n, messageId, png, state, traits }) {
-  if (!TOKEN || !OWNER || !REPO || !n) return false;
+  if (!TOKEN || !OWNER || !REPO || !n) {
+    const missing = [!TOKEN && "token", !OWNER && "owner", !REPO && "repo", !n && "mint"].filter(Boolean);
+    console.error("card archive skipped — no " + missing.join(", "));
+    return false;
+  }
   const num = String(n).padStart(3, "0");
   const body = {
     n, messageId: String(messageId || ""), at: new Date().toISOString(),
     traits: traits && typeof traits === "object" ? traits : {},
     state: clean(state)
   };
-  const [a, b] = await Promise.all([
-    put(`cards/${num}.png`, png, `Card #${num}`),
-    put(`cards/${num}.json`, Buffer.from(JSON.stringify(body, null, 1) + "\n", "utf8"), `Card #${num} details`)
-  ]);
-  return a && b;
+  // One after the other, not at once: both land on the same branch head.
+  const a = await put(`cards/${num}.png`, png, `Card #${num}`);
+  const b = await put(`cards/${num}.json`,
+    Buffer.from(JSON.stringify(body, null, 1) + "\n", "utf8"), `Card #${num} details`);
+  if (a || b) {
+    console.error(`card archive #${num} failed — png: ${a || "ok"} · json: ${b || "ok"}`);
+    return false;
+  }
+  return true;
 }

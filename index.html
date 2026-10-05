@@ -3250,7 +3250,8 @@
             if(g.state!=='pre' && s.boxscore){
               scored = dkFromBox(s.boxscore);
               g.dst = dstFromBox(s.boxscore, g);
-              g.top = scored.concat(g.dst).sort(function(a,b){ return b.dk-a.dk; }).slice(0,6);
+              g.k   = kFromBox(s.boxscore, s);
+              g.top = scored.concat(g.dst).concat(g.k).sort(function(a,b){ return b.dk-a.dk; }).slice(0,6);
             }
             if(scored.length) out.forEach(function(p){ if(p.sure) p.took = tookOver(p, scored, names); });
 
@@ -3359,6 +3360,54 @@
           line:[sacks?(sacks+' sk'):'', ints?(ints+' int'):'', fum?(fum+' fum'):'',
                 dtd?(dtd+' TD'):'', pa+' allowed'].filter(Boolean).join(', ') });
       }
+      return out;
+    }
+
+    /* ---- the kickers ----
+       A kicker starts every week in this league and regularly beats a WR3, so leaving him
+       out of the top six meant the card showed a starter short. DraftKings prices a field
+       goal by distance — three inside forty, four from the forties, five from fifty — plus
+       a point an extra point. The box score only reports makes and the longest one, but the
+       scoring plays carry every distance, so the makes come from the box, which is the
+       authoritative count, and each one is priced off the play that produced it. A make the
+       plays don't name falls back to three rather than being dropped. */
+    function kFromBox(box, sum){
+      var fgs={}, xps={};
+      ((sum && sum.scoringPlays) || []).forEach(function(pl){
+        var t = String(pl.text || '').trim();
+        var fg = /^(.+?)\s+(\d+)\s*Yd\s+Field\s+Goal/i.exec(t);
+        if(fg){ (fgs[fg[1].trim()] = fgs[fg[1].trim()] || []).push(Number(fg[2])); return; }
+        var xp = /\(([^)]+?)\s+Kick\)/i.exec(t);
+        if(xp){ var n = xp[1].trim(); xps[n] = (xps[n]||0) + 1; }
+      });
+      var out=[];
+      ((box && box.players) || []).forEach(function(tp){
+        var tm = ((tp.team||{}).abbreviation) || '';
+        (tp.statistics||[]).forEach(function(grp){
+          if(grp.name !== 'kicking') return;
+          var keys = grp.keys || [];
+          (grp.athletes||[]).forEach(function(a){
+            var nm = (a.athlete && a.athlete.displayName) || '', st = a.stats || [];
+            function pair(key){
+              var i = keys.indexOf(key); if(i < 0) return [0,0];
+              var m = /(\d+)\s*\/\s*(\d+)/.exec(String(st[i]||''));
+              return m ? [Number(m[1]), Number(m[2])] : [0,0];
+            }
+            var fg = pair('fieldGoalsMade/fieldGoalAttempts'),
+                xp = pair('extraPointsMade/extraPointAttempts');
+            if(!fg[0] && !xp[0]) return;
+            var d = (fgs[nm]||[]).slice(0, fg[0]), p = 0;
+            d.forEach(function(y){ p += y >= 50 ? 5 : (y >= 40 ? 4 : 3); });
+            for(var i = d.length; i < fg[0]; i++) p += 3;
+            p += xp[0];
+            if(p <= 0) return;
+            var bits = fg[1] ? [fg[0] + '/' + fg[1] + ' FG'] : [];
+            if(d.length) bits.push(d.slice().sort(function(x,y){ return y-x; }).join(', ') + ' yd');
+            if(xp[1]) bits.push(xp[0] + '/' + xp[1] + ' XP');
+            out.push({ name:nm, team:tm, pos:'K', dk:Math.round(p*10)/10, line:bits.join(' · ') });
+          });
+        });
+      });
       return out;
     }
 
