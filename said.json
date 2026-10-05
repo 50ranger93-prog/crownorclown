@@ -13,7 +13,8 @@
   "roundup:Board 1:4",
   "poll:own-it:4",
   "bunk:2026:w4:1963204215:4432620",
-  "member:2026:w4:951407474:4"
+  "member:2026:w4:951407474:4",
+  "faab:2026:1963204215:7403bf16-20aa-4ecb-8014-79c5b12360ee"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -28,7 +29,8 @@
   "78cc91cccc3b12bd",
   "eb5a25dcaab62a64",
   "18d0f8f3bb971c97",
-  "70bb7fba2e5048e2"
+  "70bb7fba2e5048e2",
+  "56bf8f8fa886fe3e"
  ],
  "managers": {
   "": 6,
@@ -38,7 +40,8 @@
   "Big birds rockin'": 1,
   "Andrew's Astounding Team": 1,
   "Max's Magnificent Team": 1,
-  "No Flokin": 1
+  "No Flokin": 1,
+  "Slapworthy": 1
  },
  "angles": {
   "poll/poll": 3,
@@ -51,20 +54,21 @@
   "ref/named": 1,
   "roundup/board": 1,
   "bunk/ledger": 1,
-  "member/streak": 1
+  "member/streak": 1,
+  "faab/price": 1
  },
  "kinds": {
   "poll": 3,
   "member": 3,
   "bunk": 2,
-  "faab": 1,
+  "faab": 2,
   "benched": 1,
   "news": 1,
   "ref": 1,
   "roundup": 1
  },
  "days": {
-  "2026-10-05": 13
+  "2026-10-05": 14
  },
  "noticed": [
   "1551681634460237886",
@@ -83,5 +87,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "member"
+ "lastKind": "faab"
 }
