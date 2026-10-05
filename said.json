@@ -8,7 +8,8 @@
   "benched:2026:w4:1963204215:10:4635008",
   "news:50111202",
   "poll:still-trust:4",
-  "member:2026:w4:951407474:3"
+  "member:2026:w4:951407474:3",
+  "ref:401772969"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -18,10 +19,11 @@
   "40fe382d30a54946",
   "a7af7e55cd5f3937",
   "24210a158471c729",
-  "7440fbac1056b9af"
+  "7440fbac1056b9af",
+  "959fe587569f9612"
  ],
  "managers": {
-  "": 3,
+  "": 4,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -35,7 +37,8 @@
   "faab/bold": 1,
   "benched/crowd": 1,
   "news/desk": 1,
-  "member/points": 1
+  "member/points": 1,
+  "ref/named": 1
  },
  "kinds": {
   "poll": 2,
@@ -43,10 +46,11 @@
   "bunk": 1,
   "faab": 1,
   "benched": 1,
-  "news": 1
+  "news": 1,
+  "ref": 1
  },
  "days": {
-  "2026-10-05": 8
+  "2026-10-05": 9
  },
  "noticed": [
   "1551681634460237886",
@@ -65,5 +69,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "member"
+ "lastKind": "ref"
 }
