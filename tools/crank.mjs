@@ -83,14 +83,15 @@ const roomFor = (kind, n) => {
  * bot's mouth most recently go to the back of the queue — the instruction was call everyone out,
  * not find three people and live there.
  */
-export function choose(facts, ledger, want = 1) {
+export function choose(facts, ledger, want = 1, only = "") {
   const usedKeys = new Set(ledger.keys || []);
   const usedText = new Set(ledger.texts || []);
   const seenBy = ledger.managers || {};        // manager -> times featured, all season
   const seenAngle = { ...(ledger.angles || {}) };  // "kind/angle" -> times used, all season
   const seenKind = { ...(ledger.kinds || {}) };
 
-  const fresh = facts.filter(f => !usedKeys.has(f.key));
+  // --only lets one kind be fired on demand without waiting for its share to come round.
+  const fresh = facts.filter(f => !usedKeys.has(f.key) && (!only || f.kind === only));
   const out = [];
   const takenKey = new Set();
   const batchManager = new Map();
@@ -367,7 +368,7 @@ async function main() {
   if (PLAN) {
     const base = await everything();
     const facts = base.concat(extras(base, now.day));
-    const picks = choose(facts, ledger, PLAN);
+    const picks = choose(facts, ledger, PLAN, arg("only") || "");
     console.log(`${facts.length} facts available, ${picks.length} distinct posts planned:\n`);
     const seen = {};
     picks.forEach((p, i) => {
@@ -409,7 +410,7 @@ async function main() {
 
   const base = await everything();
   const facts = base.concat(extras(base, now.day));
-  const [pick] = choose(facts, ledger, 1);
+  const [pick] = choose(facts, ledger, 1, arg("only") || "");
   if (!pick) { console.log("Nothing fresh to say — every fact on the board has been used."); return; }
 
   const rooms = roomFor(pick.fact.kind, (ledger.kinds || {})[pick.fact.kind] || 0);

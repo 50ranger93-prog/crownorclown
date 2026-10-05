@@ -37,6 +37,9 @@ on:
       room:
         description: "Channel for --say (general, announcements, trash-talk, ...)"
         default: "general"
+      only:
+        description: "Fire one kind on demand: bums, poll, roundup, member, news, ref, bunk, faab, benched"
+        default: ""
 
 permissions:
   contents: write
@@ -66,6 +69,7 @@ jobs:
           # as a program — and anything interpolated straight into a run block is an injection
           # waiting to happen.
           SAY: ${{ inputs.say }}
+          ONLY: ${{ inputs.only }}
           ROOM: ${{ inputs.room }}
         run: |
           args=""
@@ -78,5 +82,6 @@ jobs:
           if [ -n "$SAY" ]; then
             node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
           else
+            if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi
             node tools/crank.mjs $args
           fi
