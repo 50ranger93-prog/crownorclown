@@ -19,7 +19,8 @@
   "benched:2026:w4:1963204215:11:4036133",
   "member:2026:w4:951407474:5",
   "bunk:2026:w4:976183547:4432620",
-  "poll:cooked:4"
+  "poll:cooked:4",
+  "bums:4"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -40,10 +41,11 @@
   "c7759bf8f55e0ed1",
   "218d0a5d9cf73e9d",
   "70ca1210e4b087da",
-  "a021392c8a715b37"
+  "a021392c8a715b37",
+  "37a1d5263c87522f"
  ],
  "managers": {
-  "": 8,
+  "": 9,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -70,7 +72,8 @@
   "member/streak": 1,
   "faab/price": 1,
   "benched/coin": 1,
-  "bunk/goose": 1
+  "bunk/goose": 1,
+  "bums/roll": 1
  },
  "kinds": {
   "poll": 5,
@@ -80,10 +83,11 @@
   "benched": 2,
   "news": 1,
   "ref": 1,
-  "roundup": 1
+  "roundup": 1,
+  "bums": 1
  },
  "days": {
-  "2026-10-05": 19
+  "2026-10-05": 20
  },
  "noticed": [
   "1551681634460237886",
@@ -102,5 +106,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "poll"
+ "lastKind": "bums"
 }
