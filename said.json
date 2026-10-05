@@ -2,26 +2,31 @@
  "keys": [
   "cannon:2026:w3",
   "poll:drop-now:4",
-  "member:2026:w4:951407474:1"
+  "member:2026:w4:951407474:1",
+  "bunk:2026:w4:951407474:4432620"
  ],
  "texts": [
   "40aeea709920a2b1",
-  "50dd75cdf415db88"
+  "50dd75cdf415db88",
+  "14919636b4461436"
  ],
  "managers": {
   "": 1,
-  "TumbleWEED Tactics": 1
+  "TumbleWEED Tactics": 1,
+  "Stockholm Sack Exchange": 1
  },
  "angles": {
   "poll/poll": 1,
-  "member/record": 1
+  "member/record": 1,
+  "bunk/crowd": 1
  },
  "kinds": {
   "poll": 1,
-  "member": 1
+  "member": 1,
+  "bunk": 1
  },
  "days": {
-  "2026-10-05": 2
+  "2026-10-05": 3
  },
  "noticed": [
   "1551681634460237886",
@@ -40,5 +45,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "member"
+ "lastKind": "bunk"
 }
