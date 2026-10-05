@@ -1,6 +1,7 @@
 const COMMANDS = [
   { name: "intro", description: "Build your Expansion League card", type: 1 },
-  { name: "block", description: "Put players on the trade block", type: 1 }
+  { name: "block", description: "Put players on the trade block", type: 1 },
+  { name: "vote", description: "Vote for card of the year", type: 1 }
 ];
 // Closed now that the commands are registered. This was an unauthenticated endpoint making an
 // authenticated Discord call — never worse than a rate limit, but no reason to leave it open to
@@ -16,5 +17,5 @@ export async function GET(request) {
     method: "PUT", headers: { Authorization: `Bot ${tok}`, "content-type": "application/json" }, body: JSON.stringify(COMMANDS)
   });
   const text = await r.text();
-  return new Response(r.ok ? "Done. /intro and /block are registered. They can take a minute to show up in Discord." : `Discord error ${r.status}: ${text}`, { status: r.ok ? 200 : 502 });
+  return new Response(r.ok ? `Done. ${COMMANDS.map(c => "/" + c.name).join(", ")} are registered. They can take a minute to show up in Discord.` : `Discord error ${r.status}: ${text}`, { status: r.ok ? 200 : 502 });
 }

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Card of the Year</title>
+<style>
+:root{
+  --bg:#1a1b1e; --panel:#232428; --line:#3f4147; --ink:#f2f3f5; --dim:#949ba4;
+  --gold:#FFC62F; --go:#1D9E75; --no:#E24B4A; --link:#00A8FC;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.5 "gg sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:16px;-webkit-text-size-adjust:100%}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:0 0 2px;letter-spacing:-.01em}
+.sub{color:var(--dim);font-size:14px;margin:0 0 16px}
+.bar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:14px}
+.bar b{color:var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;position:relative}
+.card.mine{border-color:var(--go);box-shadow:0 0 0 1px var(--go)}
+.card.own{opacity:.62}
+.shot{display:block;width:100%;height:auto;background:#111}
+.foot{padding:10px 11px;display:flex;align-items:center;gap:9px;min-height:52px}
+.team{font-size:13px;color:var(--dim);flex:1;min-width:0;overflow-wrap:anywhere}
+button.pick{appearance:none;border:0;border-radius:8px;padding:8px 13px;font:inherit;font-size:14px;
+  font-weight:600;background:var(--link);color:#06121c;cursor:pointer;white-space:nowrap}
+button.pick:disabled{background:#4e5058;color:#b5bac1;cursor:default}
+button.pick.voted{background:var(--go);color:#02160f}
+.tag{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.72);color:var(--ink);
+  font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 7px;border-radius:5px}
+.count{margin-left:auto;font-weight:700;font-size:15px;color:var(--gold);font-variant-numeric:tabular-nums}
+.msg{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--no);
+  border-radius:8px;padding:11px 13px;margin-bottom:14px;font-size:14px}
+.msg.good{border-left-color:var(--go)}
+.empty{color:var(--dim);padding:28px 0;text-align:center}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s,opacity .15s}}
+</style>
+</head><body>
+<div class="wrap">
+  <h1>Card of the Year</h1>
+  <p class="sub">Every card posted in #meet-the-crew. One vote each.</p>
+  <div id="note"></div>
+  <div id="bar" class="bar">Loading the ballot…</div>
+  <div id="grid" class="grid"></div>
+</div>
+<script>
+var T = new URLSearchParams(location.search).get("t") || "";
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+var state = null, busy = false;
+
+function say(text, good){
+  $("note").innerHTML = text ? '<div class="msg'+(good?" good":"")+'">'+esc(text)+'</div>' : "";
+}
+
+function when(iso){
+  try {
+    return new Date(iso).toLocaleString([], {weekday:"short", month:"short", day:"numeric",
+      hour:"numeric", minute:"2-digit"});
+  } catch(e){ return iso; }
+}
+
+function header(){
+  if(state.phase === "before")
+    return "Voting opens <b>" + esc(when(state.opens)) + "</b> and runs 48 hours.";
+  if(state.phase === "open")
+    return "Voting closes <b>" + esc(when(state.closes)) + "</b>. You can change your pick until then." +
+           (state.mine ? "" : " You haven't voted yet.");
+  return "Voting closed <b>" + esc(when(state.closes)) + "</b>." +
+         (state.cast != null ? " " + state.cast + (state.cast === 1 ? " vote" : " votes") + " counted." : "");
+}
+
+function draw(){
+  $("bar").innerHTML = header();
+  var cards = state.cards || [];
+  if(!cards.length){ $("grid").innerHTML = '<p class="empty">No cards on the ballot yet.</p>'; return; }
+  var closed = state.phase === "closed";
+  $("grid").innerHTML = cards.map(function(c, i){
+    var mine = state.mine === c.id;
+    var label = closed ? "" : c.yours ? "Your card" : mine ? "Your vote" : "Vote";
+    return '<div class="card'+(mine?" mine":"")+(c.yours?" own":"")+'">' +
+      (closed && i === 0 && c.votes > 0 ? '<span class="tag">WINNER</span>' : "") +
+      '<img class="shot" loading="lazy" alt="Card by a league member" src="'+esc(c.image)+'">' +
+      '<div class="foot">' +
+        '<span class="team">'+esc(c.team || "")+'</span>' +
+        (closed
+          ? '<span class="count">'+(c.votes||0)+'</span>'
+          : '<button class="pick'+(mine?" voted":"")+'" '+
+            (c.yours || state.phase !== "open" ? "disabled" : 'onclick="cast(\''+esc(c.id)+'\')"')+
+            '>'+esc(label)+'</button>') +
+      '</div></div>';
+  }).join("");
+}
+
+function cast(id){
+  if(busy) return;
+  busy = true; say("");
+  fetch("/api/cards/vote", {
+    method:"POST", headers:{"content-type":"application/json"},
+    body: JSON.stringify({ t:T, card:id })
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+    .then(function(res){
+      busy = false;
+      if(!res.ok){ say(res.d.error || "That didn't go through."); return; }
+      state.mine = res.d.mine;
+      say("Vote counted. Change it any time before it closes.", true);
+      draw();
+    })
+    .catch(function(){ busy = false; say("Couldn't reach the server. Try again."); });
+}
+
+if(!T){
+  $("bar").textContent = "Open this from the /vote link the bot sends you in Discord.";
+} else {
+  fetch("/api/cards/vote?t=" + encodeURIComponent(T))
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+    .then(function(res){
+      if(!res.ok){ $("bar").textContent = res.d.error || "Couldn't load the ballot."; return; }
+      state = res.d; draw();
+    })
+    .catch(function(){ $("bar").textContent = "Couldn't load the ballot. Refresh to try again."; });
+}
+</script>
+</body></html>

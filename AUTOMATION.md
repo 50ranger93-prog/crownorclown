@@ -20,6 +20,7 @@ top-of-the-hour schedules hard.
 | **Post the week** | Tue 09:25 | Crown / clown / closest game / beatdown / robbed for all three boards, plus the Go get it leaderboard. | `tools/weekly-post.mjs` |
 | **Post the polls** | Thu 09:25 | One native Discord poll per board, built from that league's own standings and slate. | `tools/poll-post.mjs` |
 | **Weekly DK reconciliation** | Sun 10:00 | Finds the only two places ESPN and DraftKings scoring can diverge and reports a checklist. | `tools/reconcile.mjs`, see `tools/README.md` |
+| **Card of the year** | hourly 06:00–12:00 UTC, 17 Oct only | Announces the winner in `#announcements` once voting closes. Hourly because a free cron lands late; the endpoint refuses before the close and records the message id after, so the repeats announce nothing twice. Needs repo secret `CARDS_KEY`. | `/api/cards/vote-result` |
 
 ### Channel pulse beats
 
@@ -74,6 +75,8 @@ on a manual run) ignores the key when you genuinely want to send again.
 | `/api/cards/img` | Image proxy for the card builder. **Do not route emoji or anything with many distinct images through it** — the exporter collapses them all into whichever it fetched first, which is how a card came out as nothing but lightning bolts, then nothing but helmets. Logos are fine; they are few. |
 | `/api/cards/mint` | Hands a card its mint number and records its traits, in `mints.json` on the **`board-data`** branch. POST only. Needs `GH_TOKEN`; without it a card still builds, just with no number or rarity. |
 | `/api/cards/mints` | The collection, read-only: every number handed out and what each trait is counted at. Feeds `/cards/gallery/`. A separate route from `mint.mjs` on purpose — looking must never be able to hand out a number. Reads the public raw file, so no token. |
+| `/api/cards/vote` | Card of the year. `GET` returns the ballot and your own vote; `POST` casts or changes it. The ballot is **not a stored list** — it is read live from `#meet-the-crew`, so a card can never be left off by an archive that failed. One vote each, no voting for your own card, only inside the window; all three enforced here, not in the page. Votes live in `votes.json` on **board-data**, keyed by voter, so changing a vote overwrites it. |
+| `/api/cards/vote-result` | Tallies and announces the winner in `#announcements`. Behind `key` = the app's public key. Refuses before the close, and writes the posted message id into `votes.json` so a late or repeated cron cannot announce twice. `&dry=1` prints the message without posting. |
 | `api/cards/archive.mjs` | Not a route — called by `post.mjs` after a card lands. Writes `cards/<n>.png` (the image that went out) and `cards/<n>.json` (number, Discord message id, traits, and the card's own state) to the **board-data** branch. Best effort: a card that posted must never report failed because its copy didn't save. |
 
 ### Three rules the card builder now enforces, and why
@@ -126,6 +129,7 @@ interactions endpoint. `fetch` does, which hides the problem from every test you
 | `WEBHOOK_TRASH` / `WEBHOOK_WAIVERS` / `WEBHOOK_GENERAL` | shared rooms | Post the polls, only with `per: 2` |
 | `PULSE_WEBHOOK_GENERAL` / `_TRADE` / `_CROWNVEST` / `_HOTTAKE` | see beats table | Channel pulse |
 | `RECONCILE_WEBHOOK` | optional | Weekly DK reconciliation |
+| `CARDS_KEY` | — | Card of the year. The Discord app's **public key** (developer portal → General Information), the same value `/api/cards/repair` and `/api/cards/register` are gated on. Not a token; it identifies, it doesn't authorise anything in Discord. |
 
 **Vercel environment variables** — used by the live site, *not* by the workflows:
 `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `LINK_SECRET`,

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { makeToken } from "../../lib/cards-token.mjs";
+import { OPENS as VOTE_OPENS } from "../../lib/cards-vote.mjs";
 
 function verify(pubHex, sigHex, ts, body) {
   try {
@@ -29,11 +30,29 @@ export async function POST(request) {
   }
 
   if (i.type === 2) {
-    const cmd = i.data?.name === "block" ? "block" : "intro";
+    const asked = i.data?.name;
+    const cmd = asked === "block" ? "block" : asked === "vote" ? "vote" : "intro";
     const user = i.member?.user || i.user || {};
     const name = user.global_name || user.username || "";
     const t = makeToken({ u: user.id, n: name, c: cmd });
     const origin = process.env.PUBLIC_URL || new URL(request.url).origin;
+
+    // Card of the year. The link carries who you are, which is the only way the page can keep
+    // you to one vote and keep you off your own card — a Discord poll can do neither.
+    if (cmd === "vote") {
+      const link = `${origin}/cards/vote/?t=${encodeURIComponent(t)}`;
+      const open = Date.now() >= VOTE_OPENS;
+      return json({
+        type: 4,
+        data: {
+          flags: 64,
+          content: open
+            ? `Card of the year${name ? ", " + name.split(" ")[0] : ""}. Every card in #meet-the-crew is on the ballot. One vote each, you can't vote for your own, and you can change your mind until it closes.\n-# Only you can see this. Link's good for 45 minutes.`
+            : `Voting opens on the 15th and runs 48 hours. Every card in #meet-the-crew will be on the ballot — one vote each, and you can't vote for your own.\n-# Only you can see this.`,
+          ...(open ? { components: [{ type: 1, components: [{ type: 2, style: 5, label: "Open the ballot", url: link }] }] } : {}),
+        },
+      });
+    }
     // The trailing slash matters. Served at /cards the browser resolves a relative
     // URL against the site root, so /cards/treat.js was fetched as /treat.js and
     // 404ed. Absolute srcs fix today's case; the slash fixes the next one too.

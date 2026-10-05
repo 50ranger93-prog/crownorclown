@@ -1,0 +1,45 @@
+# Announce card of the year when voting closes.
+#
+# Voting opens 00:00 Mountain on 15 Oct and runs 48 hours, so it closes 00:00 Mountain on the
+# 17th — 06:00 UTC. GitHub's free crons routinely land one to three hours late, so this tries
+# every hour through that morning instead of once on the dot. The endpoint refuses to do
+# anything before the close and records the message id after it posts, so the extra runs cost
+# one HTTP call and announce nothing twice.
+#
+# Needs one repo secret: CARDS_KEY — the Discord app's public key, the same value the repair
+# and register endpoints are gated on (Discord developer portal → General Information).
+
+name: Card of the year
+on:
+  schedule:
+    - cron: "0 6,7,8,9,10,11,12 17 10 *"
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: "Print what it would say without posting"
+        type: boolean
+        default: false
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post the result
+        env:
+          KEY: ${{ secrets.CARDS_KEY }}
+          DRY: ${{ inputs.dry && '1' || '' }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "CARDS_KEY isn't set — add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          url="https://www.crownorclown.com/api/cards/vote-result?key=$KEY"
+          [ -n "$DRY" ] && url="$url&dry=1"
+          code=$(curl -sS -o body.txt -w "%{http_code}" "$url")
+          echo "HTTP $code"
+          cat body.txt
+          # 409 is "not closed yet" or "already announced" — both are fine for a retry.
+          case "$code" in
+            200|409) exit 0 ;;
+            *) exit 1 ;;
+          esac
