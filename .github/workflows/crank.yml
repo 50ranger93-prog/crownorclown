@@ -77,6 +77,10 @@ jobs:
           BOARD_REPO_OWNER: ${{ github.repository_owner }}
           BOARD_REPO: ${{ github.event.repository.name }}
           CRANK_OFF: ${{ vars.CRANK_OFF }}
+          CRANK_OPEN: ${{ vars.CRANK_OPEN }}
+          CRANK_CLOSE: ${{ vars.CRANK_CLOSE }}
+          CRANK_MIN: ${{ vars.CRANK_MIN }}
+          CRANK_MAX: ${{ vars.CRANK_MAX }}
           # Passed as environment, never interpolated into the command line. A backtick in the
           # text was being executed by the shell — `/vote` in an announcement tried to run /vote
           # as a program — and anything interpolated straight into a run block is an injection

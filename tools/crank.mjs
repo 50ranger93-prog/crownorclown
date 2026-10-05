@@ -46,14 +46,21 @@ const mt = (d = new Date()) => {
   return { day: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) };
 };
 
-const OPEN_HOUR = 9, CLOSE_HOUR = 20;      // 9am through 8pm, inclusive of the 8pm hour
+// The window and the daily count are environment-tunable so launch week can run hot and be dialled
+// back later without a deploy — set repo variables CRANK_OPEN / CRANK_CLOSE / CRANK_MIN / CRANK_MAX.
+// The close hour still refuses anything that would wake somebody up.
+const num = (k, d) => { const n = Number(process.env[k]); return Number.isFinite(n) && n > 0 ? n : d; };
+const OPEN_HOUR = num("CRANK_OPEN", 9);
+const CLOSE_HOUR = Math.min(num("CRANK_CLOSE", 20), 23);
+const MIN_A_DAY = num("CRANK_MIN", 3);
+const MAX_A_DAY = Math.max(num("CRANK_MAX", 9), MIN_A_DAY);
 
 // A stable number per day, so every run on the same day agrees how many posts today gets without
 // anybody having to store it. Some days are busy, some are quiet; that unpredictability is the
 // point — a room learns a fixed schedule in a week and stops looking.
 function targetForDay(day) {
   const n = parseInt(hash("target:" + day).slice(0, 6), 16);
-  return 3 + (n % 7);                       // 3 to 9
+  return MIN_A_DAY + (n % (MAX_A_DAY - MIN_A_DAY + 1));
 }
 
 // Which rooms each kind of material belongs in.
