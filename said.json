@@ -14,7 +14,8 @@
   "poll:own-it:4",
   "bunk:2026:w4:1963204215:4432620",
   "member:2026:w4:951407474:4",
-  "faab:2026:1963204215:7403bf16-20aa-4ecb-8014-79c5b12360ee"
+  "faab:2026:1963204215:7403bf16-20aa-4ecb-8014-79c5b12360ee",
+  "poll:defend-it:4"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -30,10 +31,11 @@
   "eb5a25dcaab62a64",
   "18d0f8f3bb971c97",
   "70bb7fba2e5048e2",
-  "56bf8f8fa886fe3e"
+  "56bf8f8fa886fe3e",
+  "f556560d9049312e"
  ],
  "managers": {
-  "": 6,
+  "": 7,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -44,7 +46,7 @@
   "Slapworthy": 1
  },
  "angles": {
-  "poll/poll": 3,
+  "poll/poll": 4,
   "member/record": 1,
   "bunk/crowd": 1,
   "faab/bold": 1,
@@ -58,7 +60,7 @@
   "faab/price": 1
  },
  "kinds": {
-  "poll": 3,
+  "poll": 4,
   "member": 3,
   "bunk": 2,
   "faab": 2,
@@ -68,7 +70,7 @@
   "roundup": 1
  },
  "days": {
-  "2026-10-05": 14
+  "2026-10-05": 15
  },
  "noticed": [
   "1551681634460237886",
@@ -87,5 +89,5 @@
   "1543771051304026192",
   "1543443557019553892"
  ],
- "lastKind": "faab"
+ "lastKind": "poll"
 }
