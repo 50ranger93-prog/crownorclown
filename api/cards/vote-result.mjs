@@ -44,7 +44,20 @@ export async function GET(request) {
   if (!configured()) return text("Board storage isn't configured, so there are no votes to read.", 500);
 
   const dry = u.searchParams.get("dry") === "1";
-  if (phase() !== "closed") return text(`Voting is still ${phase()}. It closes ${new Date(CLOSES).toISOString()}.`, 409);
+
+  // A dry run works before the close too, and reports what the ballot reads. The bot needing
+  // Read Message History in #meet-the-crew is the one thing that would silently produce an
+  // empty ballot on the day, so it has to be checkable before the day.
+  if (phase() !== "closed") {
+    if (!dry) return text(`Voting is still ${phase()}. It closes ${new Date(CLOSES).toISOString()}.`, 409);
+    const cards = await ballot();
+    const lines = cards.map(c => `  ${c.at.slice(0, 10)}  owner ${c.owner}  ${c.team || "(no team in the text)"}`);
+    return text(
+      `Voting is ${phase()}; closes ${new Date(CLOSES).toISOString()}.\n` +
+      `Ballot reads ${cards.length} card(s) out of the channel:\n` +
+      (lines.join("\n") || "  (none — check the bot can read #meet-the-crew)") + "\n"
+    );
+  }
 
   const { data: votes } = await readJSON(VOTES_FILE, {});
   const already = votes && votes.announced;
