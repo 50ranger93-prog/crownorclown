@@ -43,41 +43,11 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
  * The escalation is the point. If the big one goes off every week it is just the weekly post with
  * a louder picture on it.
  */
+const SITE = process.env.PUBLIC_URL || "https://www.crownorclown.com";
 const ART = {
-  cannon: [
-    "```",
-    "        ▄█████▄",
-    "   ▄████████████▄▄▄▄",
-    "  ███████████████████)═══════►   ●",
-    "   ▀████████████▀▀▀▀",
-    "        ▀█████▀",
-    "```",
-  ].join("\n"),
-
-  plane: [
-    "```",
-    "                      |",
-    "                 __,--o--,__",
-    "        =========(__________)=========>",
-    "                 `--,-o-,--`",
-    "                      |",
-    "            ●     ●     ●     ●",
-    "```",
-  ].join("\n"),
-
-  nuke: [
-    "```",
-    "            . . . . . o o o o o o",
-    "         .              _____",
-    "       .          ,----'     '----,",
-    "      .          /   .  .  .  .   \\",
-    "      .         |  .   .   .   .   |",
-    "       .         \\    .  .  .     /",
-    "        .         '----,_____,----'",
-    "                       |||||",
-    "                    ===|||||===",
-    "```",
-  ].join("\n"),
+  cannon: `${SITE}/cards/art/cannon.png`,
+  plane:  `${SITE}/cards/art/plane.png`,
+  nuke:   `${SITE}/cards/art/nuke.png`,
 };
 
 const OPENERS = {
@@ -188,12 +158,21 @@ async function main() {
     return;
   }
 
-  const open = `${ART[tier]}\n${OPENERS[tier](week)}`;
+  // Words first, then the picture — Discord puts the embed under the text, so this reads as the
+  // announcement followed by the thing going off rather than a stray link with a caption.
+  const open = `${OPENERS[tier](week)}\n${ART[tier]}`;
   const close = CLOSERS[tier];
+  // The last word is a poll. A barrage that ends in a question gets read; one that ends in four
+  // buttons gets answered, and being answered is the entire point of firing it.
+  const sitting = [...new Set(fights.map(f => f.lose.name))].slice(0, 4);
+  const closePoll = sitting.length >= 2
+    ? { question: "Who takes the next one?", answers: sitting.map(n => ({ text: n })), hours: 48 }
+    : null;
 
   if (DRY) {
     console.log([open, ...shells, close].join("\n\n— — —\n\n"));
-    console.log(`\n(${shells.length + 2} messages, ~${(((shells.length + 1) * 1.4)).toFixed(1)}s to fire)`);
+    if (closePoll) console.log("\nPOLL → " + closePoll.question + "\n" + closePoll.answers.map(a => "       ( ) " + a.text).join("\n"));
+    console.log(`\n(tier: ${tier} — ${shells.length + 2} messages, ~${((shells.length + 1) * 1.4).toFixed(1)}s to fire)`);
     return;
   }
   if (!ready()) { console.error("No DISCORD_BOT_TOKEN — nothing fired."); process.exitCode = 1; return; }
@@ -204,7 +183,7 @@ async function main() {
   await say(chan.id, open);
   for (const s of shells) { await wait(1400); await say(chan.id, s); }
   await wait(1400);
-  await say(chan.id, close);
+  await say(chan.id, close, closePoll ? { poll: closePoll } : {});
 
   if (configured()) {
     await update(LEDGER, { keys: [] }, `Cannon week ${week}`,
