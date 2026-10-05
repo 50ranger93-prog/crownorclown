@@ -43,7 +43,7 @@ button.pick.voted{background:var(--go);color:#02160f}
 </head><body>
 <div class="wrap">
   <h1>Card of the Year</h1>
-  <p class="sub">Every card posted in #meet-the-crew. One vote each.</p>
+  <p class="sub">Every card posted in #meet-the-crew. One vote each. Winner takes <b id="prize">25 bonus FAAB</b>.</p>
   <div id="note"></div>
   <div id="bar" class="bar">Loading the ballot…</div>
   <div id="grid" class="grid"></div>
@@ -70,8 +70,8 @@ function header(){
   if(state.phase === "before")
     return "Voting opens <b>" + esc(when(state.opens)) + "</b> and runs 48 hours.";
   if(state.phase === "open")
-    return "Voting closes <b>" + esc(when(state.closes)) + "</b>. You can change your pick until then." +
-           (state.mine ? "" : " You haven't voted yet.");
+    return "Voting closes <b>" + esc(when(state.closes)) + "</b> — winner takes <b>" + esc(state.prize || "the prize") +
+           "</b>. You can change your pick until then." + (state.mine ? "" : " You haven't voted yet.");
   return "Voting closed <b>" + esc(when(state.closes)) + "</b>." +
          (state.cast != null ? " " + state.cast + (state.cast === 1 ? " vote" : " votes") + " counted." : "");
 }
@@ -122,7 +122,9 @@ if(!T){
     .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
     .then(function(res){
       if(!res.ok){ $("bar").textContent = res.d.error || "Couldn't load the ballot."; return; }
-      state = res.d; draw();
+      state = res.d;
+      if(state.prize) document.getElementById("prize").textContent = state.prize;
+      draw();
     })
     .catch(function(){ $("bar").textContent = "Couldn't load the ballot. Refresh to try again."; });
 }

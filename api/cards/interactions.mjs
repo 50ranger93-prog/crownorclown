@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { makeToken } from "../../lib/cards-token.mjs";
-import { OPENS as VOTE_OPENS } from "../../lib/cards-vote.mjs";
+import { OPENS as VOTE_OPENS, PRIZE as VOTE_PRIZE } from "../../lib/cards-vote.mjs";
 
 function verify(pubHex, sigHex, ts, body) {
   try {
@@ -47,8 +47,8 @@ export async function POST(request) {
         data: {
           flags: 64,
           content: open
-            ? `Card of the year${name ? ", " + name.split(" ")[0] : ""}. Every card in #meet-the-crew is on the ballot. One vote each, you can't vote for your own, and you can change your mind until it closes.\n-# Only you can see this. Link's good for 45 minutes.`
-            : `Voting opens on the 15th and runs 48 hours. Every card in #meet-the-crew will be on the ballot — one vote each, and you can't vote for your own.\n-# Only you can see this.`,
+            ? `Card of the year${name ? ", " + name.split(" ")[0] : ""}. Every card in #meet-the-crew is on the ballot and the winner takes **${VOTE_PRIZE}**. One vote each, you can't vote for your own, and you can change your mind until it closes.\n-# Only you can see this. Link's good for 45 minutes.`
+            : `Voting opens on the 15th and runs 48 hours, and the winner takes **${VOTE_PRIZE}**. Every card in #meet-the-crew will be on the ballot — one vote each, and you can't vote for your own. Get yours in with \`/intro\` before the 15th.\n-# Only you can see this.`,
           ...(open ? { components: [{ type: 1, components: [{ type: 2, style: 5, label: "Open the ballot", url: link }] }] } : {}),
         },
       });

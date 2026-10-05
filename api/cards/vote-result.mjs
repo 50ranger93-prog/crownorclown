@@ -13,7 +13,7 @@
  */
 
 import { readJSON, update, configured } from "../../lib/board-data.mjs";
-import { ballot, tally, phase, CLOSES, VOTES_FILE } from "../../lib/cards-vote.mjs";
+import { ballot, tally, phase, CLOSES, VOTES_FILE, PRIZE } from "../../lib/cards-vote.mjs";
 
 const BOT = process.env.DISCORD_BOT_TOKEN || "";
 const GUILD = process.env.DISCORD_GUILD_ID || "1543364312028946432";
@@ -74,7 +74,7 @@ export async function GET(request) {
 
   const head = tied.length > 1
     ? `**Card of the Year — a ${tied.length}-way tie.** ${tied.map(c => `<@${c.owner}>`).join(" and ")}, ${top.votes} votes each.`
-    : `**Card of the Year goes to <@${top.owner}>**${top.team ? ` — ${top.team}` : ""}, with ${top.votes} vote${top.votes === 1 ? "" : "s"}.`;
+    : `**Card of the Year goes to <@${top.owner}>**${top.team ? ` — ${top.team}` : ""}, with ${top.votes} vote${top.votes === 1 ? "" : "s"}. That's **${PRIZE}**, posted within 24 hours.`;
   const rest = runners.length
     ? "\n" + runners.map(c => `-# <@${c.owner}>${c.team ? ` · ${c.team}` : ""} — ${c.votes}`).join("\n")
     : "";

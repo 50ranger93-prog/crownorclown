@@ -31,6 +31,12 @@ on:
         description: "Post now regardless of the hour or today's count"
         type: boolean
         default: false
+      say:
+        description: "Post this exact text as the bot instead of generating one"
+        default: ""
+      room:
+        description: "Channel for --say (general, announcements, trash-talk, ...)"
+        default: "general"
 
 permissions:
   contents: write
@@ -63,4 +69,8 @@ jobs:
             args="--dry"
           fi
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          node tools/crank.mjs $args
+          if [ -n "${{ inputs.say }}" ]; then
+            node tools/crank.mjs --say "${{ inputs.say }}" --room "${{ inputs.room }}" $args
+          else
+            node tools/crank.mjs $args
+          fi

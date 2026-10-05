@@ -11,13 +11,13 @@
 
 import { readToken } from "../../lib/cards-token.mjs";
 import { update, readJSON, configured } from "../../lib/board-data.mjs";
-import { ballot, check, tally, phase, OPENS, CLOSES, VOTES_FILE } from "../../lib/cards-vote.mjs";
+import { ballot, check, tally, phase, OPENS, CLOSES, VOTES_FILE, PRIZE } from "../../lib/cards-vote.mjs";
 
 const json = (o, s = 200) => new Response(JSON.stringify(o), {
   status: s, headers: { "content-type": "application/json", "cache-control": "no-store" },
 });
 
-const window_ = () => ({ phase: phase(), opens: new Date(OPENS).toISOString(), closes: new Date(CLOSES).toISOString() });
+const window_ = () => ({ phase: phase(), prize: PRIZE, opens: new Date(OPENS).toISOString(), closes: new Date(CLOSES).toISOString() });
 
 export async function GET(request) {
   const t = new URL(request.url).searchParams.get("t") || "";

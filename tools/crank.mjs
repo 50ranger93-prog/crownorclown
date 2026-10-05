@@ -332,6 +332,22 @@ async function main() {
   // and the next run says nothing. The last kill-switch lived in the source and meant the bot
   // stayed off for three weeks because turning it back on was a commit.
   if (process.env.CRANK_OFF && !DRY && !PLAN) { console.log("CRANK_OFF is set — nothing posts."); return; }
+
+  // --say "text" --room announcements : post one thing written by hand, as the bot. An
+  // announcement and the odd gameday callout need a voice that isn't generated, and the
+  // alternative was a throwaway script with the bot token sitting in it.
+  if (has("say")) {
+    const text = arg("say") || "";
+    const room = arg("room") || "general";
+    if (!text) { console.error("--say needs something to say"); process.exitCode = 1; return; }
+    if (DRY) { console.log(`→ #${room}\n${text}`); return; }
+    if (!ready()) { console.error("No DISCORD_BOT_TOKEN."); process.exitCode = 1; return; }
+    const chan = await findChannel([room, "general"]);
+    if (!chan) { console.error(`no channel matched ${room}`); process.exitCode = 1; return; }
+    const m = await say(chan.id, text);
+    console.log(`said it in #${chan.name} (${m.id || "?"})`);
+    return;
+  }
   const now = mt();
   const ledger = await readLedger();
 
