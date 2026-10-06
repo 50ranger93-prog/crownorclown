@@ -27,7 +27,8 @@
   "quiet:2026-10-06",
   "member:2026:w5:951407474:7",
   "cannon:2026:w4",
-  "poll:budget-truth:5"
+  "poll:budget-truth:5",
+  "tightwad:2026:w5:951407474:8"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -55,7 +56,8 @@
   "aba35c5c8b02d551",
   "f461873015530464",
   "6c0ba9f90fe28842",
-  "aea1402507c69d26"
+  "aea1402507c69d26",
+  "479d38e09212a3cf"
  ],
  "managers": {
   "": 13,
@@ -71,7 +73,8 @@
   "Payton's Pointed Team": 1,
   "Walt's Fault": 1,
   "BorderPatrol Vol 2": 1,
-  "OnlyFins": 1
+  "OnlyFins": 1,
+  "Quintin's Marvelous Team": 1
  },
  "angles": {
   "poll/poll": 7,
@@ -90,7 +93,8 @@
   "bunk/goose": 1,
   "bums/roll": 1,
   "news/plain": 1,
-  "quiet/lurk": 1
+  "quiet/lurk": 1,
+  "tightwad/untouched": 1
  },
  "kinds": {
   "poll": 7,
@@ -102,11 +106,12 @@
   "ref": 1,
   "roundup": 1,
   "bums": 1,
-  "quiet": 1
+  "quiet": 1,
+  "tightwad": 1
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 6
+  "2026-10-06": 7
  },
  "noticed": [
   "1551681634460237886",
@@ -127,5 +132,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "poll"
+ "lastKind": "tightwad"
 }
