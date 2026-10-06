@@ -29,7 +29,8 @@
   "cannon:2026:w4",
   "poll:budget-truth:5",
   "tightwad:2026:w5:951407474:8",
-  "news:40699880"
+  "news:40699880",
+  "poll:worst-habit:5"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -59,10 +60,11 @@
   "6c0ba9f90fe28842",
   "aea1402507c69d26",
   "479d38e09212a3cf",
-  "c676531df38e3aee"
+  "c676531df38e3aee",
+  "f77af1ef8914c161"
  ],
  "managers": {
-  "": 14,
+  "": 15,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -79,7 +81,7 @@
   "Quintin's Marvelous Team": 1
  },
  "angles": {
-  "poll/poll": 7,
+  "poll/poll": 8,
   "member/record": 2,
   "bunk/crowd": 1,
   "faab/bold": 1,
@@ -100,7 +102,7 @@
   "news/who-cares": 1
  },
  "kinds": {
-  "poll": 7,
+  "poll": 8,
   "member": 6,
   "bunk": 3,
   "faab": 2,
@@ -114,7 +116,7 @@
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 8
+  "2026-10-06": 9
  },
  "noticed": [
   "1551681634460237886",
@@ -135,5 +137,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "news"
+ "lastKind": "poll"
 }
