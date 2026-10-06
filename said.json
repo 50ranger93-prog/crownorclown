@@ -21,7 +21,8 @@
   "bunk:2026:w4:976183547:4432620",
   "poll:cooked:4",
   "bums:4",
-  "news:50118818"
+  "news:50118818",
+  "member:2026:w5:951407474:6"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -44,7 +45,8 @@
   "70ca1210e4b087da",
   "a021392c8a715b37",
   "37a1d5263c87522f",
-  "6009877cfd19b60f"
+  "6009877cfd19b60f",
+  "b1112c1aa2e38b16"
  ],
  "managers": {
   "": 10,
@@ -58,7 +60,8 @@
   "Slapworthy": 1,
   "Ashton Powers": 1,
   "Payton's Pointed Team": 1,
-  "Walt's Fault": 1
+  "Walt's Fault": 1,
+  "BorderPatrol Vol 2": 1
  },
  "angles": {
   "poll/poll": 5,
@@ -71,7 +74,7 @@
   "ref/named": 1,
   "roundup/board": 1,
   "bunk/ledger": 1,
-  "member/streak": 1,
+  "member/streak": 2,
   "faab/price": 1,
   "benched/coin": 1,
   "bunk/goose": 1,
@@ -80,7 +83,7 @@
  },
  "kinds": {
   "poll": 5,
-  "member": 4,
+  "member": 5,
   "bunk": 3,
   "faab": 2,
   "benched": 2,
@@ -91,7 +94,7 @@
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 1
+  "2026-10-06": 2
  },
  "noticed": [
   "1551681634460237886",
@@ -112,5 +115,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "news"
+ "lastKind": "member"
 }
