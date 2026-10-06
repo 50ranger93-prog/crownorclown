@@ -22,7 +22,8 @@
   "poll:cooked:4",
   "bums:4",
   "news:50118818",
-  "member:2026:w5:951407474:6"
+  "member:2026:w5:951407474:6",
+  "poll:confession:5"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -46,10 +47,11 @@
   "a021392c8a715b37",
   "37a1d5263c87522f",
   "6009877cfd19b60f",
-  "b1112c1aa2e38b16"
+  "b1112c1aa2e38b16",
+  "aba35c5c8b02d551"
  ],
  "managers": {
-  "": 10,
+  "": 11,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -64,7 +66,7 @@
   "BorderPatrol Vol 2": 1
  },
  "angles": {
-  "poll/poll": 5,
+  "poll/poll": 6,
   "member/record": 2,
   "bunk/crowd": 1,
   "faab/bold": 1,
@@ -82,7 +84,7 @@
   "news/plain": 1
  },
  "kinds": {
-  "poll": 5,
+  "poll": 6,
   "member": 5,
   "bunk": 3,
   "faab": 2,
@@ -94,7 +96,7 @@
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 2
+  "2026-10-06": 3
  },
  "noticed": [
   "1551681634460237886",
@@ -115,5 +117,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "member"
+ "lastKind": "poll"
 }
