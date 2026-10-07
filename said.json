@@ -31,7 +31,8 @@
   "tightwad:2026:w5:951407474:8",
   "news:40699880",
   "poll:worst-habit:5",
-  "member:2026:w5:951407474:9"
+  "member:2026:w5:951407474:9",
+  "ref:401772961"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -63,10 +64,11 @@
   "479d38e09212a3cf",
   "c676531df38e3aee",
   "f77af1ef8914c161",
-  "cdcde0f09202e94b"
+  "cdcde0f09202e94b",
+  "65b7b7b009d48aa3"
  ],
  "managers": {
-  "": 15,
+  "": 16,
   "TumbleWEED Tactics": 1,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -103,7 +105,8 @@
   "quiet/lurk": 1,
   "tightwad/untouched": 1,
   "news/who-cares": 1,
-  "member/top": 1
+  "member/top": 1,
+  "ref/quiet": 1
  },
  "kinds": {
   "poll": 8,
@@ -112,7 +115,7 @@
   "faab": 2,
   "benched": 2,
   "news": 3,
-  "ref": 1,
+  "ref": 2,
   "roundup": 1,
   "bums": 1,
   "quiet": 1,
@@ -120,7 +123,7 @@
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 10
+  "2026-10-06": 11
  },
  "noticed": [
   "1551681634460237886",
@@ -141,5 +144,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "member"
+ "lastKind": "ref"
 }
