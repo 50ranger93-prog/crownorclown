@@ -34,7 +34,8 @@
   "member:2026:w5:951407474:9",
   "ref:401772961",
   "roundup:Board 1:5",
-  "bunk:2026:w5:1963204215:4241389"
+  "bunk:2026:w5:1963204215:4241389",
+  "faab:2026:1963204215:a71c8470-dd55-4a7e-b98c-2bb2934d8646"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -69,7 +70,8 @@
   "cdcde0f09202e94b",
   "65b7b7b009d48aa3",
   "c01734a287b47f05",
-  "9f4d247f36dc7328"
+  "9f4d247f36dc7328",
+  "4c72191cbd55e01f"
  ],
  "managers": {
   "": 17,
@@ -88,7 +90,8 @@
   "OnlyFins": 1,
   "Quintin's Marvelous Team": 1,
   "REDBIRDSKELLY": 1,
-  "Quinn's Tremendous Team": 1
+  "Quinn's Tremendous Team": 1,
+  "Wait What!?": 1
  },
  "angles": {
   "poll/poll": 8,
@@ -113,13 +116,14 @@
   "member/top": 1,
   "ref/quiet": 1,
   "roundup/board-points": 1,
-  "bunk/arith": 1
+  "bunk/arith": 1,
+  "faab/terse": 1
  },
  "kinds": {
   "poll": 8,
   "member": 7,
   "bunk": 4,
-  "faab": 2,
+  "faab": 3,
   "benched": 2,
   "news": 3,
   "ref": 2,
@@ -131,7 +135,7 @@
  "days": {
   "2026-10-05": 20,
   "2026-10-06": 12,
-  "2026-10-08": 1
+  "2026-10-08": 2
  },
  "noticed": [
   "1551681634460237886",
@@ -152,5 +156,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "bunk"
+ "lastKind": "faab"
 }
