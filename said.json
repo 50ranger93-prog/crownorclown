@@ -39,7 +39,8 @@
   "bunk:2026:w5:976183547:4241389",
   "poll:cooked:5",
   "faab:2026:951407474:88742acc-07a3-44ad-baf5-9b7479b10b37",
-  "member:2026:w5:951407474:10"
+  "member:2026:w5:951407474:10",
+  "surprise:shouldnt:2026-10-08:Brandon Aubrey"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -79,11 +80,12 @@
   "9852543094ba0b1b",
   "c4ccb1261c819302",
   "67142bdb387eacb0",
-  "72e99a3c95afe1a1"
+  "72e99a3c95afe1a1",
+  "dadca5aee793efeb"
  ],
  "managers": {
   "": 18,
-  "TumbleWEED Tactics": 1,
+  "TumbleWEED Tactics": 2,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
   "Big birds rockin'": 1,
@@ -129,7 +131,8 @@
   "bunk/arith": 1,
   "faab/terse": 1,
   "bunk/percent": 1,
-  "faab/share": 1
+  "faab/share": 1,
+  "surprise/award": 1
  },
  "kinds": {
   "poll": 9,
@@ -142,12 +145,13 @@
   "roundup": 2,
   "bums": 1,
   "quiet": 1,
-  "tightwad": 1
+  "tightwad": 1,
+  "surprise": 1
  },
  "days": {
   "2026-10-05": 20,
   "2026-10-06": 12,
-  "2026-10-08": 6
+  "2026-10-08": 7
  },
  "noticed": [
   "1551681634460237886",
@@ -168,5 +172,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "member"
+ "lastKind": "surprise"
 }
