@@ -37,7 +37,8 @@
   "bunk:2026:w5:1963204215:4241389",
   "faab:2026:1963204215:a71c8470-dd55-4a7e-b98c-2bb2934d8646",
   "bunk:2026:w5:976183547:4241389",
-  "poll:cooked:5"
+  "poll:cooked:5",
+  "faab:2026:951407474:88742acc-07a3-44ad-baf5-9b7479b10b37"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -75,7 +76,8 @@
   "9f4d247f36dc7328",
   "4c72191cbd55e01f",
   "9852543094ba0b1b",
-  "c4ccb1261c819302"
+  "c4ccb1261c819302",
+  "67142bdb387eacb0"
  ],
  "managers": {
   "": 18,
@@ -88,7 +90,7 @@
   "No Flokin": 1,
   "Slapworthy": 1,
   "Ashton Powers": 1,
-  "Payton's Pointed Team": 1,
+  "Payton's Pointed Team": 2,
   "Walt's Fault": 1,
   "BorderPatrol Vol 2": 1,
   "OnlyFins": 1,
@@ -123,13 +125,14 @@
   "roundup/board-points": 1,
   "bunk/arith": 1,
   "faab/terse": 1,
-  "bunk/percent": 1
+  "bunk/percent": 1,
+  "faab/share": 1
  },
  "kinds": {
   "poll": 9,
   "member": 7,
   "bunk": 5,
-  "faab": 3,
+  "faab": 4,
   "benched": 2,
   "news": 3,
   "ref": 2,
@@ -141,7 +144,7 @@
  "days": {
   "2026-10-05": 20,
   "2026-10-06": 12,
-  "2026-10-08": 4
+  "2026-10-08": 5
  },
  "noticed": [
   "1551681634460237886",
@@ -162,5 +165,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "poll"
+ "lastKind": "faab"
 }
