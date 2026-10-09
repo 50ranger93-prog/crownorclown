@@ -33,7 +33,8 @@
   "poll:worst-habit:5",
   "member:2026:w5:951407474:9",
   "ref:401772961",
-  "roundup:Board 1:5"
+  "roundup:Board 1:5",
+  "bunk:2026:w5:1963204215:4241389"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -67,7 +68,8 @@
   "f77af1ef8914c161",
   "cdcde0f09202e94b",
   "65b7b7b009d48aa3",
-  "c01734a287b47f05"
+  "c01734a287b47f05",
+  "9f4d247f36dc7328"
  ],
  "managers": {
   "": 17,
@@ -85,7 +87,8 @@
   "BorderPatrol Vol 2": 1,
   "OnlyFins": 1,
   "Quintin's Marvelous Team": 1,
-  "REDBIRDSKELLY": 1
+  "REDBIRDSKELLY": 1,
+  "Quinn's Tremendous Team": 1
  },
  "angles": {
   "poll/poll": 8,
@@ -109,12 +112,13 @@
   "news/who-cares": 1,
   "member/top": 1,
   "ref/quiet": 1,
-  "roundup/board-points": 1
+  "roundup/board-points": 1,
+  "bunk/arith": 1
  },
  "kinds": {
   "poll": 8,
   "member": 7,
-  "bunk": 3,
+  "bunk": 4,
   "faab": 2,
   "benched": 2,
   "news": 3,
@@ -126,7 +130,8 @@
  },
  "days": {
   "2026-10-05": 20,
-  "2026-10-06": 12
+  "2026-10-06": 12,
+  "2026-10-08": 1
  },
  "noticed": [
   "1551681634460237886",
@@ -147,5 +152,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "roundup"
+ "lastKind": "bunk"
 }
