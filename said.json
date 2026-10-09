@@ -38,7 +38,8 @@
   "faab:2026:1963204215:a71c8470-dd55-4a7e-b98c-2bb2934d8646",
   "bunk:2026:w5:976183547:4241389",
   "poll:cooked:5",
-  "faab:2026:951407474:88742acc-07a3-44ad-baf5-9b7479b10b37"
+  "faab:2026:951407474:88742acc-07a3-44ad-baf5-9b7479b10b37",
+  "member:2026:w5:951407474:10"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -77,7 +78,8 @@
   "4c72191cbd55e01f",
   "9852543094ba0b1b",
   "c4ccb1261c819302",
-  "67142bdb387eacb0"
+  "67142bdb387eacb0",
+  "72e99a3c95afe1a1"
  ],
  "managers": {
   "": 18,
@@ -98,11 +100,12 @@
   "REDBIRDSKELLY": 1,
   "Quinn's Tremendous Team": 1,
   "Wait What!?": 1,
-  "Tatanka": 1
+  "Tatanka": 1,
+  "The Veep!": 1
  },
  "angles": {
   "poll/poll": 9,
-  "member/record": 2,
+  "member/record": 3,
   "bunk/crowd": 1,
   "faab/bold": 1,
   "benched/crowd": 1,
@@ -130,7 +133,7 @@
  },
  "kinds": {
   "poll": 9,
-  "member": 7,
+  "member": 8,
   "bunk": 5,
   "faab": 4,
   "benched": 2,
@@ -144,7 +147,7 @@
  "days": {
   "2026-10-05": 20,
   "2026-10-06": 12,
-  "2026-10-08": 5
+  "2026-10-08": 6
  },
  "noticed": [
   "1551681634460237886",
@@ -165,5 +168,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "faab"
+ "lastKind": "member"
 }
