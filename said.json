@@ -40,7 +40,8 @@
   "poll:cooked:5",
   "faab:2026:951407474:88742acc-07a3-44ad-baf5-9b7479b10b37",
   "member:2026:w5:951407474:10",
-  "surprise:shouldnt:2026-10-08:Brandon Aubrey"
+  "surprise:shouldnt:2026-10-08:Brandon Aubrey",
+  "bunk:2026:w5:976183547:-16006"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -81,7 +82,8 @@
   "c4ccb1261c819302",
   "67142bdb387eacb0",
   "72e99a3c95afe1a1",
-  "dadca5aee793efeb"
+  "dadca5aee793efeb",
+  "d19e830fe041d55d"
  ],
  "managers": {
   "": 18,
@@ -103,7 +105,8 @@
   "Quinn's Tremendous Team": 1,
   "Wait What!?": 1,
   "Tatanka": 1,
-  "The Veep!": 1
+  "The Veep!": 1,
+  "Toxic Toots": 1
  },
  "angles": {
   "poll/poll": 9,
@@ -132,12 +135,13 @@
   "faab/terse": 1,
   "bunk/percent": 1,
   "faab/share": 1,
-  "surprise/award": 1
+  "surprise/award": 1,
+  "bunk/quiet-one": 1
  },
  "kinds": {
   "poll": 9,
   "member": 8,
-  "bunk": 5,
+  "bunk": 6,
   "faab": 4,
   "benched": 2,
   "news": 3,
@@ -151,7 +155,8 @@
  "days": {
   "2026-10-05": 20,
   "2026-10-06": 12,
-  "2026-10-08": 7
+  "2026-10-08": 7,
+  "2026-10-09": 1
  },
  "noticed": [
   "1551681634460237886",
@@ -172,5 +177,5 @@
   "1557108614681075866",
   "1557107911937884181"
  ],
- "lastKind": "surprise"
+ "lastKind": "bunk"
 }
