@@ -42,7 +42,14 @@ export async function POST(request) {
   // Sending `attachments` with one new file replaces what is on the message. `content` is left
   // out on purpose so the welcome line and the mention stay exactly as they were posted.
   const fd = new FormData();
-  fd.append("payload_json", JSON.stringify({ attachments: [{ id: 0, filename: "card.png" }] }));
+  // `content` is left alone unless `text` is passed — the welcome line names the team, so a card
+  // fixed because the wrong team was picked needs the sentence corrected with it or the two
+  // disagree with each other in the channel.
+  const text = typeof p.text === "string" && p.text.trim() ? p.text.trim().slice(0, 1800) : null;
+  fd.append("payload_json", JSON.stringify({
+    attachments: [{ id: 0, filename: "card.png" }],
+    ...(text ? { content: text, allowed_mentions: { users: [...new Set([...text.matchAll(/<@!?(d+)>/g)].map(x => x[1]))] } } : {}),
+  }));
   fd.append("files[0]", new Blob([png], { type: "image/png" }), "card.png");
 
   const base = hook.split("?")[0].replace(/\/+$/, "");
