@@ -87,6 +87,8 @@ jobs:
           # waiting to happen.
           SAY: ${{ inputs.say }}
           ONLY: ${{ inputs.only }}
+          GRAB: ${{ inputs.grab }}
+          CARDN: ${{ inputs.n }}
           ROOM: ${{ inputs.room }}
         run: |
           args=""
@@ -96,7 +98,9 @@ jobs:
             args="--dry"
           fi
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          if [ -n "$SAY" ]; then
+          if [ -n "$GRAB" ]; then
+            node tools/crank.mjs --grab "$GRAB" --n "$CARDN"
+          elif [ -n "$SAY" ]; then
             node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
           else
             if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi

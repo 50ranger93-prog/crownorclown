@@ -354,6 +354,28 @@ async function main() {
   // stayed off for three weeks because turning it back on was a commit.
   if (process.env.CRANK_OFF && !DRY && !PLAN) { console.log("CRANK_OFF is set — nothing posts."); return; }
 
+  // --grab <messageId> --n <number> : pull a posted card's image back out of Discord and file it
+  // in the archive. Card #007 posted on the day the archive hit a 409 writing two files at once,
+  // so its picture only ever existed inside the message. Repairing it meant going and getting it.
+  if (has("grab")) {
+    const id = arg("grab"), n = String(arg("n") || "").padStart(3, "0");
+    if (!id || !n) { console.error("--grab <messageId> --n <number>"); process.exitCode = 1; return; }
+    const chan = await findChannel(["meet-the-crew", "introductions", "general"]);
+    if (!chan) { console.error("no channel"); process.exitCode = 1; return; }
+    const msgs = await conversation(chan.id, 60);
+    const m = msgs.find(x => x.id === id);
+    if (!m) { console.error("message not in the last 60"); process.exitCode = 1; return; }
+    const att = (m.attachments || [])[0];
+    if (!att || !att.url) { console.error("no attachment on that message"); process.exitCode = 1; return; }
+    const r = await fetch(att.url);
+    if (!r.ok) { console.error("couldn't download: " + r.status); process.exitCode = 1; return; }
+    const png = Buffer.from(await r.arrayBuffer());
+    const { writeBytes } = await import("../lib/board-data.mjs");
+    await writeBytes(`cards/${n}.png`, png, `Card #${n} image, recovered from the channel`);
+    console.log(`grabbed ${png.length} bytes and archived cards/${n}.png`);
+    return;
+  }
+
   // --say "text" --room announcements : post one thing written by hand, as the bot. An
   // announcement and the odd gameday callout need a voice that isn't generated, and the
   // alternative was a throwaway script with the bot token sitting in it.
