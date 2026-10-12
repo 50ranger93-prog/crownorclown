@@ -79,6 +79,7 @@ export async function GET(request) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       key: want, cmd: q.get("cmd") || "intro", messageId: q.get("messageId") || "",
+      text: q.get("text") || "",
       png: "data:image/png;base64," + png.toString("base64")
     })
   }));
