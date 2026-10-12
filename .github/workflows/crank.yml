@@ -49,6 +49,12 @@ on:
       only:
         description: "Fire one kind on demand: bums, poll, roundup, member, news, ref, bunk, faab, benched"
         default: ""
+      grab:
+        description: "Recover a posted card's image into the archive: the Discord message id"
+        default: ""
+      n:
+        description: "Card number for grab"
+        default: ""
 
 permissions:
   contents: write
