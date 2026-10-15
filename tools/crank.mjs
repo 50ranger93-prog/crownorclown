@@ -25,7 +25,7 @@ import { createHash } from "node:crypto";
 import { everything } from "../lib/crank-material.mjs";
 import { ANGLES, POLLS, render, clean } from "../lib/crank-voice.mjs";
 import { update, readJSON, configured } from "../lib/board-data.mjs";
-import { findChannel, say, conversation, ready } from "../lib/discord-bot.mjs";
+import { findChannel, say, edit, conversation, ready } from "../lib/discord-bot.mjs";
 
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const has = n => process.argv.includes("--" + n);
@@ -346,6 +346,20 @@ async function main() {
   // --say "text" --room announcements : post one thing written by hand, as the bot. An
   // announcement and the odd gameday callout need a voice that isn't generated, and the
   // alternative was a throwaway script with the bot token sitting in it.
+  // --edit <messageId> --say "text" : fix the wording of something the bot already posted,
+  // rather than posting a correction underneath it.
+  if (has("edit")) {
+    const id = arg("edit"), text = arg("say") || "", room = arg("room") || "general";
+    if (!id || !text) { console.error("--edit <messageId> --say \"text\""); process.exitCode = 1; return; }
+    if (DRY) { console.log(`would edit ${id} in #${room}:
+${text}`); return; }
+    const chan = await findChannel([room, "general"]);
+    if (!chan) { console.error("no channel"); process.exitCode = 1; return; }
+    await edit(chan.id, id, text);
+    console.log(`edited ${id} in #${chan.name}`);
+    return;
+  }
+
   if (has("say")) {
     const text = arg("say") || "";
     const room = arg("room") || "general";

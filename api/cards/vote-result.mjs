@@ -55,7 +55,12 @@ export async function GET(request) {
     const open = [
       `**VOTING IS OPEN.** Card of the Year, ${cards.length} cards on the ballot, and **${PRIZE}** for the winner.`,
       "",
-      "Type `/vote` and tap the one you like. One vote each, you cannot vote for your own, and you can change your mind right up until it closes.",
+      "**How to vote — three taps:**",
+      "**1.** Type `/vote` in any channel in here",
+      "**2.** Tap **Open the ballot** in the private reply only you can see",
+      "**3.** Tap **Vote** under the card you like",
+      "",
+      "One vote each. You cannot vote for your own card. You can change your pick any time until it closes.",
       "",
       `Closes **${new Date(CLOSES).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "long", hour: "numeric", minute: "2-digit" })} Mountain** — 48 hours, that is it.`,
       "-# Winner gets the FAAB inside 24 hours of it closing.",

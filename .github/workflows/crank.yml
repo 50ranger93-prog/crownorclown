@@ -49,6 +49,9 @@ on:
       only:
         description: "Fire one kind on demand: bums, poll, roundup, member, news, ref, bunk, faab, benched"
         default: ""
+      edit:
+        description: "Message id to edit (use with say)"
+        default: ""
       grab:
         description: "Recover a posted card's image into the archive: the Discord message id"
         default: ""
@@ -94,6 +97,7 @@ jobs:
           SAY: ${{ inputs.say }}
           ONLY: ${{ inputs.only }}
           GRAB: ${{ inputs.grab }}
+          EDITID: ${{ inputs.edit }}
           CARDN: ${{ inputs.n }}
           ROOM: ${{ inputs.room }}
         run: |
@@ -106,6 +110,8 @@ jobs:
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
           if [ -n "$GRAB" ]; then
             node tools/crank.mjs --grab "$GRAB" --n "$CARDN"
+          elif [ -n "$EDITID" ] && [ -n "$SAY" ]; then
+            node tools/crank.mjs --edit "$EDITID" --say "$SAY" --room "${ROOM:-general}"
           elif [ -n "$SAY" ]; then
             node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
           else
