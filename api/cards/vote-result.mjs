@@ -45,6 +45,33 @@ export async function GET(request) {
 
   const dry = u.searchParams.get("dry") === "1";
 
+  // Voting opening is an event too, and it only happens once. Announcing it from the same endpoint
+  // that announces the winner means one thing to schedule and one place where "has this already
+  // been said" is answered, rather than a second job that can quietly not fire.
+  if (phase() === "open") {
+    const { data: v } = await readJSON(VOTES_FILE, {}).catch(() => ({ data: {} }));
+    if (v && v.openedAnnounced && !dry) return text(`Opening already announced: ${v.openedAnnounced}`);
+    const cards = await ballot();
+    const open = [
+      `**VOTING IS OPEN.** Card of the Year, ${cards.length} cards on the ballot, and **${PRIZE}** for the winner.`,
+      "",
+      "Type `/vote` and tap the one you like. One vote each, you cannot vote for your own, and you can change your mind right up until it closes.",
+      "",
+      `Closes **${new Date(CLOSES).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "long", hour: "numeric", minute: "2-digit" })} Mountain** — 48 hours, that is it.`,
+      "-# Winner gets the FAAB inside 24 hours of it closing.",
+    ].join("\n");
+    if (dry) return text(open + "\n\n--- would post to #announcements ---");
+    const ch = await announcementsChannel();
+    if (!ch) return text("Couldn't find #announcements — check the bot can see it.", 502);
+    const r = await dapi(`/channels/${ch}/messages`, { method: "POST", body: JSON.stringify({ content: open, allowed_mentions: { parse: [] } }) });
+    if (!r.ok) return text(`Discord said no (${r.status}): ${(await r.text().catch(() => "")).slice(0, 200)}`, 502);
+    const msg = await r.json().catch(() => ({}));
+    await update(VOTES_FILE, {}, "Voting opened", x => ({ ...(x || {}), openedAnnounced: String(msg.id || "posted") })).catch(() => {});
+    return text(`Opening posted to #announcements as ${msg.id}.
+
+${open}`);
+  }
+
   // A dry run works before the close too, and reports what the ballot reads. The bot needing
   // Read Message History in #meet-the-crew is the one thing that would silently produce an
   // empty ballot on the day, so it has to be checkable before the day.
