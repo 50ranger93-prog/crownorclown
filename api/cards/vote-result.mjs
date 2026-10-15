@@ -111,10 +111,25 @@ ${open}`);
 
   const ch = await announcementsChannel();
   if (!ch) return text("Couldn't find #announcements — check the bot can see it.", 502);
-  const r = await dapi(`/channels/${ch}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) } }),
-  });
+  // The winner gets a picture. A result that is just text reads like a scoreboard; this is the one
+  // moment in the whole thing somebody actually won something.
+  const art = await fetch(`${process.env.PUBLIC_URL || "https://www.crownorclown.com"}/cards/art/winner.png`)
+    .then(z => (z.ok ? z.arrayBuffer() : null)).catch(() => null);
+  let r;
+  if (art) {
+    const fd = new FormData();
+    fd.append("payload_json", JSON.stringify({
+      content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) },
+      attachments: [{ id: 0, filename: "winner.png" }],
+    }));
+    fd.append("files[0]", new Blob([Buffer.from(art)], { type: "image/png" }), "winner.png");
+    r = await fetch(`${D}/channels/${ch}/messages`, { method: "POST", headers: { authorization: "Bot " + BOT }, body: fd });
+  } else {
+    r = await dapi(`/channels/${ch}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) } }),
+    });
+  }
   if (!r.ok) return text(`Discord said no (${r.status}): ${(await r.text().catch(() => "")).slice(0, 200)}`, 502);
   const msg = await r.json().catch(() => ({}));
 

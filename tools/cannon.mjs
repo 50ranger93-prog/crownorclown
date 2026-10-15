@@ -48,6 +48,8 @@ const FILE = {
   cannon: "cards/art/cannon.png",
   bomber: "cards/art/plane.png",
   nuke:   "cards/art/nuke.png",
+  tank:   "cards/art/tank.png",
+  horde:  "cards/art/zombies.png",
 };
 
 const OPENERS = {
@@ -59,12 +61,16 @@ Week ${w} just set a season record, and that only gets one response.
 **3…**
 **2…**
 **1…**`,
+  tank: w => `**ARMOUR IS MOVING.** Week ${w}, point blank range. These ones were not close.`,
+  horde: () => `**THE HORDE IS AT THE WIRE.** Most of this server has not said a word in weeks.`,
 };
 
 const CLOSERS = {
   cannon: `**Guns cold.** Reload Tuesday.`,
   bomber: `**Back to base.** Check your lineup before you do that again.`,
   nuke: `**Fallout settles Sunday.** Nothing like that has happened all season.`,
+  tank: `**Tracks cooling.** Somebody get a win.`,
+  horde: `**One message turns you back into a person.** That's the whole ask.`,
 };
 
 /** Last completed week's matchups across all three boards, worst beatings first. */
@@ -167,6 +173,26 @@ ${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**.
     return { week: wk, shells };
   }
 
+  if (piece === "tank") {
+    // Who got flattened, rather than who did the flattening. Same week, different end of it.
+    const low = fights.flatMap(f => [{ ...f.lose, league: f.league, by: f.win.name, margin: f.margin }])
+      .sort((a, b) => a.pts - b.pts).slice(0, 4);
+    for (const t of low) {
+      shells.push(`🔥 **POINT BLANK** · ${t.league}
+${t.name} managed **${t.pts}** and lost to ${t.by} by ${t.margin}.`);
+    }
+    return { week: wk, shells };
+  }
+
+  if (piece === "horde") {
+    // Only speaks when the number is real — see quiet() in main.
+    const q = facts.find(f => f.kind === "quietstat");
+    if (!q || q.spoke / Math.max(q.members, 1) > 0.3) return { week: wk, shells: [] };
+    shells.push(`🧟 **HEADCOUNT** · ${q.spoke} of ${q.members} people have said anything in here lately. The rest of you are out there somewhere.`);
+    shells.push(`🧟 **IT IS ONE MESSAGE.** Not a paragraph. Not a take. One.`);
+    return { week: wk, shells };
+  }
+
   // cannon — the head-to-head beatings
   for (const f of fights.slice(0, 4)) {
     shells.push(`💥 **DIRECT HIT** · ${f.league}
@@ -206,6 +232,30 @@ async function main() {
   const fights = await battles();
   if (!fights.length) { console.log("No settled week to fire at yet."); return; }
   const facts = await everything().catch(() => []);
+
+  // How many people have actually spoken lately, counted rather than asserted. The horde only
+  // fires when the room really is quiet, because "nobody talks here" said into a busy channel is
+  // the most annoying thing a bot can do.
+  try {
+    const seen = new Set();
+    let read = 0;
+    for (const name of ["general", "trash-talk", "waivers-and-lineups", "trade-block"]) {
+      const ch = await findChannel([name]).catch(() => null);
+      if (!ch) continue;
+      for (const m of await conversation(ch.id, 100).catch(() => [])) {
+        read++;
+        if (m.author && !m.author.bot && m.author.id) seen.add(m.author.id);
+      }
+    }
+    // Nothing read means the token or the channels failed, not that the room is dead. "0 of 36
+    // have said anything" posted because an API call quietly returned nothing would be a lie
+    // aimed at everybody at once.
+    if (!read) throw new Error("couldn't read any channel");
+    const g = await fetch(`https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID || "1543364312028946432"}?with_counts=true`,
+      { headers: { authorization: "Bot " + (process.env.DISCORD_BOT_TOKEN || "") } }).then(z => (z.ok ? z.json() : null)).catch(() => null);
+    const members = (g && (g.approximate_member_count || 0)) || 36;
+    facts.push({ kind: "quietstat", spoke: seen.size, members });
+  } catch { /* the horde simply will not fire */ }
   // "auto" runs every day and fires whichever piece has something worth firing at and has not
   // already gone off for this week. That is what spreads them across the week instead of stacking
   // everything on a Tuesday: the nuke goes the day a record actually falls, the cannon once the
@@ -221,7 +271,7 @@ async function main() {
   const weekNow = fights.length ? fights[0].week : 0;
   const history = await allWeeks().catch(() => ({}));
 
-  const order = asked === "auto" ? ["nuke", "cannon", "bomber"] : [asked];
+  const order = asked === "auto" ? ["nuke", "cannon", "bomber", "tank", "horde"] : [asked];
   let piece = null, shells = [], week = weekNow;
   for (const cand of order) {
     if (!FORCE && fired.has(`${cand}:${SEASON}:w${weekNow}`)) continue;
