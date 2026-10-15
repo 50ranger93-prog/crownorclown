@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { makeToken } from "../../lib/cards-token.mjs";
-import { OPENS as VOTE_OPENS, PRIZE as VOTE_PRIZE } from "../../lib/cards-vote.mjs";
+import { OPENS as VOTE_OPENS, CLOSES as VOTE_CLOSES, PRIZE as VOTE_PRIZE } from "../../lib/cards-vote.mjs";
 
 function verify(pubHex, sigHex, ts, body) {
   try {
@@ -34,7 +34,13 @@ export async function POST(request) {
     const cmd = asked === "block" ? "block" : asked === "vote" ? "vote" : "intro";
     const user = i.member?.user || i.user || {};
     const name = user.global_name || user.username || "";
-    const t = makeToken({ u: user.id, n: name, c: cmd });
+    // A card link only has to survive one sitting, so 45 minutes is right for it. A vote link has
+    // to survive the whole 48 hours — somebody opening the one the bot sent them yesterday should
+    // not be told it expired — so it is minted to last until voting closes, and a little past.
+    const mins = cmd === "vote"
+      ? Math.max(60, Math.ceil((VOTE_CLOSES + 60 * 60 * 1000 - Date.now()) / 60000))
+      : 45;
+    const t = makeToken({ u: user.id, n: name, c: cmd }, mins);
     const origin = process.env.PUBLIC_URL || new URL(request.url).origin;
 
     // Card of the year. The link carries who you are, which is the only way the page can keep
@@ -47,7 +53,7 @@ export async function POST(request) {
         data: {
           flags: 64,
           content: open
-            ? `Card of the year${name ? ", " + name.split(" ")[0] : ""}. Every card in #meet-the-crew is on the ballot and the winner takes **${VOTE_PRIZE}**. One vote each, you can't vote for your own, and you can change your mind until it closes.\n-# Only you can see this. Link's good for 45 minutes.`
+            ? `Card of the year${name ? ", " + name.split(" ")[0] : ""}. Every card in #meet-the-crew is on the ballot and the winner takes **${VOTE_PRIZE}**. One vote each, you can't vote for your own, and you can change your mind until it closes.\n-# Only you can see this. The link works until voting closes.`
             : `Voting opens on the 15th and runs 48 hours, and the winner takes **${VOTE_PRIZE}**. Every card in #meet-the-crew will be on the ballot — one vote each, and you can't vote for your own. Get yours in with \`/intro\` before the 15th.\n-# Only you can see this.`,
           ...(open ? { components: [{ type: 1, components: [{ type: 2, style: 5, label: "Open the ballot", url: link }] }] } : {}),
         },
