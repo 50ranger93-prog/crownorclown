@@ -24,6 +24,7 @@ import { update, readJSON, configured } from "../lib/board-data.mjs";
 import { findChannel, say, ready, conversation, edit } from "../lib/discord-bot.mjs";
 
 const has = n => process.argv.includes("--" + n);
+const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const DRY = has("dry");
 const FORCE = has("force");
 const LEDGER = "said.json";
@@ -34,7 +35,7 @@ const clean = s => String(s || "").replace(/[*_`~|]/g, "").trim();
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /**
- * Three tiers of ordnance, picked by what the week actually did rather than by a coin toss.
+ * Three pieces of ordnance, picked by what the week actually did rather than by a coin toss.
  *
  *   cannon  — the standard weekly barrage
  *   plane   — a bombing run: one pass, a bomb dropped on every board
@@ -45,23 +46,48 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
  */
 const FILE = {
   cannon: "cards/art/cannon.png",
-  plane:  "cards/art/plane.png",
+  bomber: "cards/art/plane.png",
   nuke:   "cards/art/nuke.png",
 };
 
 const OPENERS = {
   cannon: w => `**THE CANNON IS LOADED.** Week ${w} is settled, and somebody has to answer for it.`,
-  plane: w => `**WHEELS UP.** One pass over all three boards. Week ${w}, bomb bay open.`,
-  nuke: w => `**THIS ONE IS NOT A CANNON.**\nWeek ${w} produced something that needed the big one.\n\n**3…**\n**2…**\n**1…**`,
+  bomber: w => `**WHEELS UP.** Bombing run on week ${w}. These are the ones who didn't turn up.`,
+  nuke: w => `**THIS IS NOT A DRILL.**
+Week ${w} just set a season record, and that only gets one response.
+
+**3…**
+**2…**
+**1…**`,
 };
 
 const CLOSERS = {
-  cannon: `**Guns cold.** Reload is Sunday.\n-# Whose turn is it to take one next week? Name them.`,
-  plane: `**Back to base.** Everybody check your roof.\n-# Who deserves the next run? Make your case.`,
-  nuke: `**Fallout settles Sunday.**\n-# Nothing like that has happened all season. Think you can beat it?`,
+  cannon: `**Guns cold.** Reload Tuesday.`,
+  bomber: `**Back to base.** Check your lineup before you do that again.`,
+  nuke: `**Fallout settles Sunday.** Nothing like that has happened all season.`,
 };
 
 /** Last completed week's matchups across all three boards, worst beatings first. */
+// Every settled week of the season, not just the last one, so the piece can be judged against
+// what this league actually produces rather than a number I guessed at.
+async function allWeeks() {
+  const byWeek = {};
+  for (const L of LEAGUES) {
+    const r = await fetch(`${API}${L.id}?view=mMatchupScore&view=mTeam`);
+    if (!r.ok) continue;
+    const j = await r.json();
+    const now = (j.scoringPeriodId || 1) - 1;
+    for (const m of j.schedule || []) {
+      const wk = m.matchupPeriodId;
+      if (!wk || wk > now || !m.away || !m.home) continue;
+      const hp = r1(m.home.totalPoints || 0), ap = r1(m.away.totalPoints || 0);
+      if (!hp && !ap) continue;
+      (byWeek[wk] ||= []).push(Math.abs(r1(hp - ap)));
+    }
+  }
+  return byWeek;
+}
+
 async function battles() {
   const out = [];
   for (const L of LEAGUES) {
@@ -85,56 +111,74 @@ async function battles() {
 }
 
 /**
- * Which tier the week has earned. A seventy-point beating is a different event from a tight week,
+ * Which piece the week has earned. A seventy-point beating is a different event from a tight week,
  * and the gun should say so. Held to a real threshold so the nuke stays rare enough to matter.
  */
-export function pickTier(fights, forced) {
-  if (forced && FILE[forced]) return forced;
+/**
+ * Three separate set pieces, each with its own day and its own subject. They are not rungs of one
+ * ladder any more: the first version escalated by margin, and because a 75-point beating happens
+ * most weeks across three twelve-team leagues, the nuke went off every single time and the cannon
+ * it was named after never fired once.
+ *
+ *   cannon  Tuesday   — the head-to-head beatings. Who got run off the field.
+ *   bomber  Thursday  — the bust run. Carpet-bombs the starters who didn't turn up.
+ *   nuke    when earned — a season record actually falling, and nothing less.
+ */
+export function recordFell(fights, history) {
   const worst = fights.length ? fights[0].margin : 0;
-  if (worst >= 75) return "nuke";
-  if (worst >= 45) return "plane";
-  return "cannon";
+  const thisWeek = fights.length ? fights[0].week : 0;
+  const priors = Object.entries(history)
+    .filter(([wk]) => Number(wk) < thisWeek)
+    .flatMap(([, margins]) => margins);
+  if (!priors.length) return false;
+  return worst > Math.max(...priors);
 }
 
-/** Everything the gun is pointed at, in the order it fires. */
-export function loadShells(fights, facts, tier = "cannon") {
+/**
+ * What each piece fires at. Separate subjects on purpose — the cannon is about who beat whom,
+ * the bomber is about players who didn't turn up, and the nuke only speaks when a record falls.
+ */
+export function loadShells(fights, facts, piece = "cannon") {
   const shells = [];
   const wk = fights.length ? fights[0].week : 0;
 
-  if (tier === "nuke") {
+  if (piece === "nuke") {
     const f = fights[0];
     shells.push(`☢️ **GROUND ZERO** · ${f.league}
 ${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**.
-**${f.margin} points.** That is not a loss, that is a weather event.`);
+**${f.margin} points.** Biggest beating anyone has handed out all season.`);
+    const allScores = fights.flatMap(x => [x.win, x.lose]).sort((x, y) => y.pts - x.pts);
+    if (allScores.length) shells.push(`☢️ **BLAST RADIUS** · ${allScores[0].name} put up ${allScores[0].pts} the same week. Nobody was safe.`);
+    return { week: wk, shells };
   }
 
-  const hits = tier === "plane" ? 3 : tier === "nuke" ? 2 : 4;
-  for (const f of (tier === "nuke" ? fights.slice(1, 1 + hits) : fights.slice(0, hits))) {
-    const mark = tier === "plane" ? "🛩️ **BOMB AWAY**" : tier === "nuke" ? "💥 **SECONDARY**" : "💥 **DIRECT HIT**";
-    shells.push(`${mark} · ${f.league}\n${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**. ${f.margin} points of daylight.`);
+  if (piece === "bomber") {
+    // The bust run. Lots of small targets rather than one big one, which is what a bombing run is.
+    const seen = new Set();
+    const busts = facts.filter(f => f.kind === "bunk")
+      .sort((x, y) => y.short - x.short)
+      .filter(f => !seen.has(f.player) && seen.add(f.player))
+      .slice(0, 5);
+    for (const f of busts) {
+      shells.push(`🛩️ **BOMB AWAY** · ${f.player} (${f.pos}) — down for ${f.projected}, finished on ${f.scored}.${f.shared > 1 ? ` ${f.shared} of you were holding him.` : ""}`);
+    }
+    const bench = facts.filter(f => f.kind === "benched").sort((x, y) => y.gap - x.gap)[0];
+    if (bench) shells.push(`🛩️ **FRIENDLY FIRE** · ${bench.sat} scored ${bench.satPts} in a shirt and tie, while ${bench.played} started and managed ${bench.playedPts}.`);
+    return { week: wk, shells };
   }
 
-  // "Nothing else came close" has to be true before it is said. Every score that week, both
-  // sides of every matchup, sorted — and the line only claims daylight when there is daylight.
-  const allScores = fights.flatMap(f => [f.win, f.lose]).sort((a, b) => a.pts - b.pts);
+  // cannon — the head-to-head beatings
+  for (const f of fights.slice(0, 4)) {
+    shells.push(`💥 **DIRECT HIT** · ${f.league}
+${f.win.name} **${f.win.pts}** — ${f.lose.name} **${f.lose.pts}**. ${f.margin} points of daylight.`);
+  }
+  const allScores = fights.flatMap(f => [f.win, f.lose]).sort((x, y) => x.pts - y.pts);
   if (allScores.length >= 2) {
     const low = allScores[0], next = allScores[1];
-    const clear = r1(next.pts - low.pts);
-    shells.push(clear >= 10
+    shells.push(r1(next.pts - low.pts) >= 10
       ? `💥 **LOWEST SCORE ON THE BOARD** · ${low.name}, ${low.pts}. The next worst was ${next.pts}, so that one stands alone.`
       : `💥 **LOWEST SCORE ON THE BOARD** · ${low.name}, ${low.pts}. ${next.name} was right behind on ${next.pts}.`);
   }
-
-  const worst = facts.filter(f => f.kind === "bunk").sort((a, b) => b.short - a.short)[0];
-  if (worst) {
-    shells.push(`💥 **CASUALTY REPORT** · ${worst.player} was down for ${worst.projected} and finished on ${worst.scored}. ${worst.shared > 1 ? `${worst.shared} of you were holding him.` : ""}`.trim());
-  }
-
-  const bench = facts.filter(f => f.kind === "benched").sort((a, b) => b.gap - a.gap)[0];
-  if (bench) {
-    shells.push(`💥 **FRIENDLY FIRE** · ${bench.sat} scored ${bench.satPts} in a shirt and tie, while ${bench.played} started and managed ${bench.playedPts}.`);
-  }
-
   return { week: wk, shells };
 }
 
@@ -153,8 +197,8 @@ async function main() {
     const art = (LINK.exec(open.content || "") || [])[0];
     const cleaned = String(open.content || "").replace(new RegExp(`\\s*${LINK.source}\\s*`, "g"), "").trim();
     void art;
-    const tierNow = /IS NOT A CANNON/.test(open.content) ? "nuke" : /WHEELS UP/.test(open.content) ? "plane" : "cannon";
-    await edit(chan.id, open.id, cleaned, { file: FILE[tierNow] });
+    const pieceNow = /IS NOT A CANNON/.test(open.content) ? "nuke" : /WHEELS UP/.test(open.content) ? "plane" : "cannon";
+    await edit(chan.id, open.id, cleaned, { file: FILE[pieceNow] });
     console.log("tidied", open.id);
     return;
   }
@@ -162,23 +206,43 @@ async function main() {
   const fights = await battles();
   if (!fights.length) { console.log("No settled week to fire at yet."); return; }
   const facts = await everything().catch(() => []);
-  const forced = (process.argv[process.argv.indexOf("--tier") + 1] || "").trim();
-  const tier = pickTier(fights, has("tier") ? forced : "");
-  const { week, shells } = loadShells(fights, facts, tier);
+  // "auto" runs every day and fires whichever piece has something worth firing at and has not
+  // already gone off for this week. That is what spreads them across the week instead of stacking
+  // everything on a Tuesday: the nuke goes the day a record actually falls, the cannon once the
+  // beatings are settled, the bomber on the busts — each at most once a week, on whatever day it
+  // earns.
+  const asked = (arg("piece") || "auto").trim();
+  if (asked !== "auto" && !FILE[asked]) { console.error("--piece must be auto, cannon, bomber or nuke"); process.exitCode = 1; return; }
 
-  const key = `cannon:${SEASON}:w${week}`;   // one set piece a week, whichever tier it earned
-  const ledger = configured()
+  const ledgerNow = configured()
     ? (await readJSON(LEDGER, null).catch(() => ({ data: null }))).data || {}
     : {};
-  if (!FORCE && (ledger.keys || []).includes(key)) {
+  const fired = new Set(ledgerNow.keys || []);
+  const weekNow = fights.length ? fights[0].week : 0;
+  const history = await allWeeks().catch(() => ({}));
+
+  const order = asked === "auto" ? ["nuke", "cannon", "bomber"] : [asked];
+  let piece = null, shells = [], week = weekNow;
+  for (const cand of order) {
+    if (!FORCE && fired.has(`${cand}:${SEASON}:w${weekNow}`)) continue;
+    if (cand === "nuke" && !FORCE && !recordFell(fights, history)) continue;
+    const got = loadShells(fights, facts, cand);
+    if (!got.shells.length) continue;
+    piece = cand; shells = got.shells; week = got.week;
+    break;
+  }
+  if (!piece) { console.log("Nothing worth firing at today — everything this week has already gone."); return; }
+
+  const key = `${piece}:${SEASON}:w${week}`;   // one set piece a week, whichever piece it earned
+  if (!FORCE && fired.has(key)) {
     console.log(`Week ${week} cannon has already fired.`);
     return;
   }
 
   // Words first, then the picture — Discord puts the embed under the text, so this reads as the
   // announcement followed by the thing going off rather than a stray link with a caption.
-  const open = OPENERS[tier](week);
-  const close = CLOSERS[tier];
+  const open = OPENERS[piece](week);
+  const close = CLOSERS[piece];
   // The last word is a poll. A barrage that ends in a question gets read; one that ends in four
   // buttons gets answered, and being answered is the entire point of firing it.
   const sitting = [...new Set(fights.map(f => f.lose.name))].slice(0, 4);
@@ -189,7 +253,7 @@ async function main() {
   if (DRY) {
     console.log([open, ...shells, close].join("\n\n— — —\n\n"));
     if (closePoll) console.log("\nPOLL → " + closePoll.question + "\n" + closePoll.answers.map(a => "       ( ) " + a.text).join("\n"));
-    console.log(`\n(tier: ${tier} — ${shells.length + 2} messages, ~${((shells.length + 1) * 1.4).toFixed(1)}s to fire)`);
+    console.log(`\n(piece: ${piece} — ${shells.length + 2} messages, ~${((shells.length + 1) * 1.4).toFixed(1)}s to fire)`);
     return;
   }
   if (!ready()) { console.error("No DISCORD_BOT_TOKEN — nothing fired."); process.exitCode = 1; return; }
@@ -197,7 +261,7 @@ async function main() {
   const chan = await findChannel(["trash-talk", "trash", "general"]);
   if (!chan) { console.error("No channel to fire into."); process.exitCode = 1; return; }
 
-  await say(chan.id, open, { file: FILE[tier] });
+  await say(chan.id, open, { file: FILE[piece] });
   for (const s of shells) { await wait(1400); await say(chan.id, s); }
   await wait(1400);
   await say(chan.id, close, closePoll ? { poll: closePoll } : {});
@@ -206,7 +270,7 @@ async function main() {
     await update(LEDGER, { keys: [] }, `Cannon week ${week}`,
       L => ({ ...(L || {}), keys: ((L && L.keys) || []).concat(key) })).catch(() => {});
   }
-  console.log(`fired ${tier}: ${shells.length + 2} rounds into #${chan.name}`);
+  console.log(`fired ${piece}: ${shells.length + 2} rounds into #${chan.name}`);
 }
 
 main().catch(e => { console.error(e.message || e); process.exitCode = 1; });

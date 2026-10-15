@@ -9,7 +9,11 @@
 name: Cannon
 on:
   schedule:
-    - cron: "41 16 * * 2"   # Tue 10:41 Mountain
+    # Daily, not just Tuesday. Each run fires whichever piece has earned it and has not already
+    # gone off this week, so they spread themselves across the week on merit instead of stacking
+    # everything on one morning: the nuke the day a record actually falls, the cannon once the
+    # beatings settle, the bomber on the busts.
+    - cron: "41 16 * * *"
   workflow_dispatch:
     inputs:
       dry:
@@ -20,6 +24,9 @@ on:
         description: "Fire even if this week's has already gone"
         type: boolean
         default: false
+      piece:
+        description: "auto (default), cannon, bomber or nuke"
+        default: "auto"
       tidy:
         description: "Re-send the last opening shot as an embed instead of a bare link"
         type: boolean
@@ -52,5 +59,6 @@ jobs:
           args=""
           if [ "${{ inputs.dry }}" = "true" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then args="--dry"; fi
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          if [ -n "${{ inputs.piece }}" ]; then args="$args --piece ${{ inputs.piece }}"; fi
           if [ "${{ inputs.tidy }}" = "true" ]; then args="--tidy"; fi
           node tools/cannon.mjs $args
