@@ -25,7 +25,7 @@ on:
         type: boolean
         default: false
       piece:
-        description: "auto (default), cannon, bomber, nuke, tank or horde"
+        description: "auto (default), cannon, bomber, nuke, tank, horde or packed"
         default: "auto"
       tidy:
         description: "Re-send the last opening shot as an embed instead of a bare link"

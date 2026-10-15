@@ -50,6 +50,7 @@ const FILE = {
   nuke:   "cards/art/nuke.png",
   tank:   "cards/art/tank.png",
   horde:  "cards/art/zombies.png",
+  packed: "cards/art/packed.png",
 };
 
 const OPENERS = {
@@ -63,6 +64,7 @@ Week ${w} just set a season record, and that only gets one response.
 **1…**`,
   tank: w => `**ARMOUR IS MOVING.** Week ${w}, point blank range. These ones were not close.`,
   horde: () => `**THE HORDE IS AT THE WIRE.** Most of this server has not said a word in weeks.`,
+  packed: () => `**LOOK AT THIS PLACE.** The room showed up this week.`,
 };
 
 const CLOSERS = {
@@ -71,6 +73,7 @@ const CLOSERS = {
   nuke: `**Fallout settles Sunday.** Nothing like that has happened all season.`,
   tank: `**Tracks cooling.** Somebody get a win.`,
   horde: `**One message turns you back into a person.** That's the whole ask.`,
+  packed: `**More of that.**`,
 };
 
 /** Last completed week's matchups across all three boards, worst beatings first. */
@@ -184,6 +187,15 @@ ${t.name} managed **${t.pts}** and lost to ${t.by} by ${t.margin}.`);
     return { week: wk, shells };
   }
 
+  if (piece === "packed") {
+    // The other side of the horde. A bot that only ever complains about silence is a nag; this
+    // one notices when people turned up, which is the behaviour worth encouraging.
+    const q = facts.find(f => f.kind === "quietstat");
+    if (!q || q.spoke / Math.max(q.members, 1) < 0.45) return { week: wk, shells: [] };
+    shells.push(`🍻 **HEADCOUNT** · ${q.spoke} of ${q.members} of you have actually said something lately. That is the most this place has sounded like a league all season.`);
+    return { week: wk, shells };
+  }
+
   if (piece === "horde") {
     // Only speaks when the number is real — see quiet() in main.
     const q = facts.find(f => f.kind === "quietstat");
@@ -271,7 +283,7 @@ async function main() {
   const weekNow = fights.length ? fights[0].week : 0;
   const history = await allWeeks().catch(() => ({}));
 
-  const order = asked === "auto" ? ["nuke", "cannon", "bomber", "tank", "horde"] : [asked];
+  const order = asked === "auto" ? ["nuke", "cannon", "bomber", "tank", "packed", "horde"] : [asked];
   let piece = null, shells = [], week = weekNow;
   for (const cand of order) {
     if (!FORCE && fired.has(`${cand}:${SEASON}:w${weekNow}`)) continue;
