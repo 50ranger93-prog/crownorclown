@@ -31,6 +31,7 @@ const LEDGER = "said.json";
 const SEASON = Number(process.env.SEASON) || 2026;
 const API = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/`;
 const r1 = n => Math.round(n * 10) / 10;
+const hash = x => createHash("sha256").update(String(x)).digest("hex");
 const clean = s => String(s || "").replace(/[*_`~|]/g, "").trim();
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -51,6 +52,7 @@ const FILE = {
   tank:   "cards/art/tank.png",
   horde:  "cards/art/zombies.png",
   packed: "cards/art/packed.png",
+  floor:  "cards/art/openfloor.png",
 };
 
 const OPENERS = {
@@ -65,6 +67,7 @@ Week ${w} just set a season record, and that only gets one response.
   tank: w => `**ARMOUR IS MOVING.** Week ${w}, point blank range. These ones were not close.`,
   horde: () => `**THE HORDE IS AT THE WIRE.** Most of this server has not said a word in weeks.`,
   packed: () => `**LOOK AT THIS PLACE.** The room showed up this week.`,
+  floor: () => `**OPEN FLOOR.** No scoreboard, no callouts. One question, and anybody can take it.`,
 };
 
 const CLOSERS = {
@@ -74,6 +77,7 @@ const CLOSERS = {
   tank: `**Tracks cooling.** Somebody get a win.`,
   horde: `**One message turns you back into a person.** That's the whole ask.`,
   packed: `**More of that.**`,
+  floor: `**Floor's yours.**`,
 };
 
 /** Last completed week's matchups across all three boards, worst beatings first. */
@@ -187,6 +191,24 @@ ${t.name} managed **${t.pts}** and lost to ${t.by} by ${t.margin}.`);
     return { week: wk, shells };
   }
 
+  if (piece === "floor") {
+    // Everything else the bot says is built on somebody's bad afternoon. This one asks a question
+    // nobody can be wrong about, because a room that only ever gets told who failed stops talking.
+    const asks = [
+      "Best player you have ever drafted, any season, any league. One name.",
+      "The trade you still think about. Did you win it or lose it?",
+      "Who in here would you least like to face in the final?",
+      "One rule you would change about this league if you could change exactly one.",
+      "What is the worst team name on any of the three boards? Yours is not eligible.",
+      "Which of you is going to win this thing, and do not say yourself.",
+      "The player you will never draft again as long as you live. Why.",
+      "If you could undo one start-sit call from this season, which one?",
+    ];
+    const pick = asks[parseInt(hash("floor:" + (fights[0] ? fights[0].week : 0)).slice(0, 4), 16) % asks.length];
+    shells.push("💬 " + pick);
+    return { week: wk, shells };
+  }
+
   if (piece === "packed") {
     // The other side of the horde. A bot that only ever complains about silence is a nag; this
     // one notices when people turned up, which is the behaviour worth encouraging.
@@ -283,7 +305,7 @@ async function main() {
   const weekNow = fights.length ? fights[0].week : 0;
   const history = await allWeeks().catch(() => ({}));
 
-  const order = asked === "auto" ? ["nuke", "cannon", "bomber", "tank", "packed", "horde"] : [asked];
+  const order = asked === "auto" ? ["nuke", "cannon", "bomber", "tank", "packed", "horde", "floor"] : [asked];
   let piece = null, shells = [], week = weekNow;
   for (const cand of order) {
     if (!FORCE && fired.has(`${cand}:${SEASON}:w${weekNow}`)) continue;
