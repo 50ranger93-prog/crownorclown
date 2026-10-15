@@ -25,7 +25,7 @@ import { createHash } from "node:crypto";
 import { everything } from "../lib/crank-material.mjs";
 import { ANGLES, POLLS, render, clean } from "../lib/crank-voice.mjs";
 import { update, readJSON, configured } from "../lib/board-data.mjs";
-import { findChannel, say, react, conversation, ready } from "../lib/discord-bot.mjs";
+import { findChannel, say, conversation, ready } from "../lib/discord-bot.mjs";
 
 const arg = n => { const i = process.argv.indexOf("--" + n); return i > -1 ? process.argv[i + 1] : null; };
 const has = n => process.argv.includes("--" + n);
@@ -284,42 +284,10 @@ export function extras(facts, day) {
   return out;
 }
 
-/**
- * Notice the people who answered.
- *
- * A room stops replying to something that never replies back. Every run, before it says anything
- * new, the bot looks at the rooms it posts in, finds real messages that landed after one of its
- * own, and puts a reaction on them. It costs one API call and it is the difference between a
- * noticeboard and a conversation.
- *
- * It only ever reacts — it never argues, never corrects anybody, and never replies in words,
- * because a bot with opinions about what a member said is exactly the thing that starts fights.
- */
-const NODS = ["👀", "🔥", "😂", "💀", "🫡", "📈", "🤝", "🏈"];
-async function noticeReplies(ledger) {
-  const seen = new Set(ledger.noticed || []);
-  const fresh = [];
-  const rooms = ["general", "trash-talk", "waivers-and-lineups", "trade-block"];
-  for (const name of rooms) {
-    const chan = await findChannel([name]).catch(() => null);
-    if (!chan) continue;
-    const msgs = await conversation(chan.id, 30).catch(() => []);
-    // Newest first from Discord; walk back to the bot's most recent post and take the humans
-    // who have spoken since.
-    const since = [];
-    for (const m of msgs) {
-      if (m.author && m.author.bot) break;
-      since.push(m);
-    }
-    for (const m of since) {
-      if (seen.has(m.id)) continue;
-      if (!m.id || (m.author && m.author.bot)) continue;
-      const nod = NODS[parseInt(hash(m.id).slice(0, 4), 16) % NODS.length];
-      if (await react(chan.id, m.id, nod).catch(() => false)) fresh.push(m.id);
-    }
-  }
-  return fresh;
-}
+// The bot used to react to members so the room felt answered rather than posted at. It worked,
+// and it was also a notification on every single message somebody wrote — which is unbearable
+// when a schedule is running fifteen times a day. Removed. If a version of this comes back it
+// has to be opt-in and it has to be silent.
 
 async function readLedger() {
   if (!configured()) return EMPTY;
@@ -327,7 +295,7 @@ async function readLedger() {
   return data || EMPTY;
 }
 
-async function remember(pick, day, extraNoticed = []) {
+async function remember(pick, day) {
   return update(LEDGER, EMPTY, `Said: ${pick.fact.kind} ${pick.angleId}`, L => {
     const next = {
       keys: (L.keys || []).concat(pick.fact.key),
@@ -336,7 +304,6 @@ async function remember(pick, day, extraNoticed = []) {
       angles: { ...(L.angles || {}) },
       kinds: { ...(L.kinds || {}) },
       days: { ...(L.days || {}) },
-      noticed: (L.noticed || []).concat(extraNoticed).slice(-500),
       lastKind: pick.fact.kind,
     };
     const a = `${pick.fact.kind}/${pick.angleId}`;
@@ -432,11 +399,6 @@ async function main() {
     }
   }
 
-  // Acknowledge anybody who spoke since the bot last did, whether or not this run posts.
-  let noticed = [];
-  if (!DRY && ready()) noticed = await noticeReplies(ledger).catch(() => []);
-  if (noticed.length) console.log(`noticed ${noticed.length} message(s) from members`);
-
   const base = await everything();
   const facts = base.concat(extras(base, now.day));
   const [pick] = choose(facts, ledger, 1, arg("only") || "");
@@ -456,7 +418,7 @@ async function main() {
     ...(pick.fact.poll ? { poll: pick.fact.poll } : {}),
     ...(pick.fact.file ? { file: pick.fact.file } : {}),
   });
-  await remember(pick, now.day, noticed);
+  await remember(pick, now.day);
   console.log(`posted to #${chan.name} [${pick.fact.kind}/${pick.angleId}]`);
 }
 
