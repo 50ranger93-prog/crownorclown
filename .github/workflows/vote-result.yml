@@ -15,7 +15,7 @@ on:
     # Across the whole voting window, not just the close. The endpoint announces the opening and
     # the winner, each exactly once, so running it often is harmless and running it rarely is the
     # only way to miss one.
-    - cron: "7 */3 15-18 10 *"
+    - cron: "7 * 15-18 10 *"
   # GitHub drops scheduled runs under load and this one only gets two chances all season, so it
   # also rides the workflows that demonstrably do fire.
   workflow_run:
