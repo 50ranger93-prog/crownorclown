@@ -46,7 +46,8 @@
   "benched:2026:w5:976183547:9:4428850",
   "cannon:2026:w5",
   "nuke:2026:w5",
-  "poll:cooked:6"
+  "poll:cooked:6",
+  "faab:2026:951407474:3b8b55fc-1353-47b8-9cde-7004bd0694d2"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -91,7 +92,8 @@
   "d19e830fe041d55d",
   "6a021ef4e9844a74",
   "2018eee1a08eb81c",
-  "468e3aff0c15ab09"
+  "468e3aff0c15ab09",
+  "aae2c33ae8dc0991"
  ],
  "managers": {
   "": 19,
@@ -113,7 +115,7 @@
   "Quinn's Tremendous Team": 1,
   "Wait What!?": 1,
   "Tatanka": 1,
-  "The Veep!": 1,
+  "The Veep!": 2,
   "Toxic Toots": 1,
   "Kellen's Top-Notch Team": 1,
   "Lonestar legends": 1
@@ -147,13 +149,14 @@
   "faab/share": 1,
   "surprise/award": 1,
   "bunk/quiet-one": 1,
-  "benched/gap": 1
+  "benched/gap": 1,
+  "faab/anonymous": 1
  },
  "kinds": {
   "poll": 10,
   "member": 9,
   "bunk": 6,
-  "faab": 4,
+  "faab": 5,
   "benched": 3,
   "news": 3,
   "ref": 2,
@@ -169,7 +172,7 @@
   "2026-10-08": 7,
   "2026-10-09": 2,
   "2026-10-11": 1,
-  "2026-10-15": 1
+  "2026-10-15": 2
  },
- "lastKind": "poll"
+ "lastKind": "faab"
 }
