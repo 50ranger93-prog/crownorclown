@@ -49,6 +49,10 @@ on:
       only:
         description: "Fire one kind on demand: bums, poll, roundup, member, news, ref, bunk, faab, benched"
         default: ""
+      everyone:
+        description: "Ping @everyone with this say. Manual only, use sparingly."
+        type: boolean
+        default: false
       edit:
         description: "Message id to edit (use with say)"
         default: ""
@@ -98,6 +102,7 @@ jobs:
           ONLY: ${{ inputs.only }}
           GRAB: ${{ inputs.grab }}
           EDITID: ${{ inputs.edit }}
+          PINGALL: ${{ inputs.everyone }}
           CARDN: ${{ inputs.n }}
           ROOM: ${{ inputs.room }}
         run: |
@@ -113,6 +118,7 @@ jobs:
           elif [ -n "$EDITID" ] && [ -n "$SAY" ]; then
             node tools/crank.mjs --edit "$EDITID" --say "$SAY" --room "${ROOM:-general}"
           elif [ -n "$SAY" ]; then
+            if [ "$PINGALL" = "true" ]; then args="$args --everyone"; fi
             node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
           else
             if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi
