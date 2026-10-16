@@ -45,6 +45,20 @@ export async function GET(request) {
 
   const dry = u.searchParams.get("dry") === "1";
 
+  // ?cards=1 — the ballot with message ids and owners, at any phase. Votes are stored by message
+  // id, so without this there is no way to say whose card a vote was actually for.
+  if (u.searchParams.get("cards") === "1") {
+    const cards = await ballot();
+    let votes = {};
+    try { votes = (await readJSON(VOTES_FILE, {})).data || {}; } catch { /* unconfigured */ }
+    const meta = new Set(["announced", "openedAnnounced"]);
+    const count = {};
+    for (const [k, v] of Object.entries(votes)) if (!meta.has(k) && v && v.card) count[v.card] = (count[v.card] || 0) + 1;
+    return text(cards.map(c =>
+      `${String(count[c.id] || 0).padStart(2)} vote(s)  ${c.at.slice(0, 10)}  ${c.id}  owner ${c.owner}  ${c.team || ""}`
+    ).join("\n") + `\n\ntotal cast: ${Object.keys(votes).filter(k => !meta.has(k)).length}`);
+  }
+
   // Voting opening is an event too, and it only happens once. Announcing it from the same endpoint
   // that announces the winner means one thing to schedule and one place where "has this already
   // been said" is answered, rather than a second job that can quietly not fire.
