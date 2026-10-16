@@ -124,7 +124,7 @@ ${open}`);
   const head = tied.length > 1
     ? `**Card of the Year — a ${tied.length}-way tie.** ${tied.map(c => `<@${c.owner}>`).join(" and ")}, ${top.votes} votes each.
 
-This is an award, not a playoff, so it is settled the way the Academy and the Olympics settle one: **everybody tied wins it, and everybody tied gets the full ${PRIZE}.** Nothing split.`
+Both win it. **${PRIZE} each, nothing split.`
     : `**Card of the Year goes to <@${top.owner}>**${top.team ? ` — ${top.team}` : ""}, with ${top.votes} vote${top.votes === 1 ? "" : "s"}. That's **${PRIZE}**, posted within 24 hours.`;
   // Every card and every count, including the zeroes. The tally stays hidden while voting is open
   // so nobody bandwagons onto whoever is ahead, and then all of it goes up at once — if a result
