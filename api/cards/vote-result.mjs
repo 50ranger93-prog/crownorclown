@@ -121,7 +121,9 @@ ${open}`);
   const runners = ranked.slice(tied.length, tied.length + 3);
 
   const head = tied.length > 1
-    ? `**Card of the Year — a ${tied.length}-way tie.** ${tied.map(c => `<@${c.owner}>`).join(" and ")}, ${top.votes} votes each.`
+    ? `**Card of the Year — a ${tied.length}-way tie.** ${tied.map(c => `<@${c.owner}>`).join(" and ")}, ${top.votes} votes each.
+
+This is an award, not a playoff, so it is settled the way the Academy and the Olympics settle one: **everybody tied wins it, and everybody tied gets the full ${PRIZE}.** Nothing split.`
     : `**Card of the Year goes to <@${top.owner}>**${top.team ? ` — ${top.team}` : ""}, with ${top.votes} vote${top.votes === 1 ? "" : "s"}. That's **${PRIZE}**, posted within 24 hours.`;
   const rest = runners.length
     ? "\n" + runners.map(c => `-# <@${c.owner}>${c.team ? ` · ${c.team}` : ""} — ${c.votes}`).join("\n")
