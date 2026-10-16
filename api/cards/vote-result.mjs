@@ -62,7 +62,9 @@ export async function GET(request) {
       "",
       "One vote each. You cannot vote for your own card. You can change your pick any time until it closes.",
       "",
-      `Closes **${new Date(CLOSES).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "long", hour: "numeric", minute: "2-digit" })} Mountain** — 48 hours, that is it.`,
+      // "Saturday 12:00 AM" is midnight at the END of Friday, and everybody reads it as Saturday
+      // night. Name the night it actually ends on.
+      `Closes **Friday night at midnight Mountain** — last chance is Friday 11:59 PM.`,
       "-# Winner gets the FAAB inside 24 hours of it closing.",
     ].join("\n");
     if (dry) return text(open + "\n\n--- would post to #announcements ---");
