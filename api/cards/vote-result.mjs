@@ -112,7 +112,8 @@ ${open}`);
   if (already && !dry) return text(`Already announced: message ${already}`);
 
   const cards = await ballot();
-  const ranked = tally(votes || {}, cards).filter(c => c.votes > 0);
+  const everyCard = tally(votes || {}, cards);            // all of them, zeroes included
+  const ranked = everyCard.filter(c => c.votes > 0);
   const cast = Object.keys(votes || {}).filter(k => k !== "announced").length;
   if (!ranked.length) return text("Nobody voted, so there is nothing to announce.", 409);
 
@@ -125,10 +126,14 @@ ${open}`);
 
 This is an award, not a playoff, so it is settled the way the Academy and the Olympics settle one: **everybody tied wins it, and everybody tied gets the full ${PRIZE}.** Nothing split.`
     : `**Card of the Year goes to <@${top.owner}>**${top.team ? ` — ${top.team}` : ""}, with ${top.votes} vote${top.votes === 1 ? "" : "s"}. That's **${PRIZE}**, posted within 24 hours.`;
-  const rest = runners.length
-    ? "\n" + runners.map(c => `-# <@${c.owner}>${c.team ? ` · ${c.team}` : ""} — ${c.votes}`).join("\n")
-    : "";
-  const content = `${head}\n${cast} of you voted. Nobody could vote for their own.${rest}`;
+  // Every card and every count, including the zeroes. The tally stays hidden while voting is open
+  // so nobody bandwagons onto whoever is ahead, and then all of it goes up at once — if a result
+  // is going to be argued about, the argument should start from the numbers everybody can see.
+  void runners;
+  const full = ranked
+    .map(c => `\`${String(c.votes).padStart(2)}\`  <@${c.owner}>${c.team ? ` · ${c.team}` : ""}`)
+    .join("\n");
+  const content = `${head}\n\n**Every vote, in full:**\n${full}\n\n${cast} voted. Nobody could vote for their own card, and no count was visible to anyone until now.`;
 
   if (dry) return text(content + `\n\n--- would post to #announcements ---\nalready announced: ${already || "no"}`);
 
