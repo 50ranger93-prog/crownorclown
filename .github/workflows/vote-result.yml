@@ -27,6 +27,10 @@ on:
         description: "Print what it would say without posting"
         type: boolean
         default: false
+      redo:
+        description: "Delete the result already posted and post it again (use when it posted wrong)"
+        type: boolean
+        default: false
 
 jobs:
   announce:
@@ -36,6 +40,7 @@ jobs:
         env:
           KEY: ${{ secrets.CARDS_KEY }}
           DRY: ${{ inputs.dry && '1' || '' }}
+          REDO: ${{ inputs.redo && '1' || '' }}
         run: |
           if [ -z "$KEY" ]; then
             echo "CARDS_KEY isn't set — add it in Settings → Secrets and variables → Actions."
@@ -43,6 +48,7 @@ jobs:
           fi
           url="https://www.crownorclown.com/api/cards/vote-result?key=$KEY"
           [ -n "$DRY" ] && url="$url&dry=1"
+          [ -n "$REDO" ] && url="$url&redo=1"
           code=$(curl -sS -o body.txt -w "%{http_code}" "$url")
           echo "HTTP $code"
           cat body.txt

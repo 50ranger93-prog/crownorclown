@@ -20,6 +20,10 @@ const GUILD = process.env.DISCORD_GUILD_ID || "1543364312028946432";
 const D = "https://discord.com/api/v10";
 const text = (s, code = 200) => new Response(s, { status: code, headers: { "content-type": "text/plain; charset=utf-8" } });
 
+// votes.json holds the ballots AND its own bookkeeping in the same object. These two keys are not
+// voters, and counting them as voters is how the result post claimed six votes out of five.
+const META = new Set(["announced", "openedAnnounced"]);
+
 const dapi = (path, opts = {}) => fetch(D + path, {
   ...opts,
   headers: { authorization: "Bot " + BOT, "content-type": "application/json", ...(opts.headers || {}) },
@@ -44,6 +48,7 @@ export async function GET(request) {
   if (!configured()) return text("Board storage isn't configured, so there are no votes to read.", 500);
 
   const dry = u.searchParams.get("dry") === "1";
+  const redo = u.searchParams.get("redo") === "1";
 
   // ?cards=1 — the ballot with message ids and owners, at any phase. Votes are stored by message
   // id, so without this there is no way to say whose card a vote was actually for.
@@ -51,12 +56,11 @@ export async function GET(request) {
     const cards = await ballot();
     let votes = {};
     try { votes = (await readJSON(VOTES_FILE, {})).data || {}; } catch { /* unconfigured */ }
-    const meta = new Set(["announced", "openedAnnounced"]);
     const count = {};
-    for (const [k, v] of Object.entries(votes)) if (!meta.has(k) && v && v.card) count[v.card] = (count[v.card] || 0) + 1;
+    for (const [k, v] of Object.entries(votes)) if (!META.has(k) && v && v.card) count[v.card] = (count[v.card] || 0) + 1;
     return text(cards.map(c =>
       `${String(count[c.id] || 0).padStart(2)} vote(s)  ${c.at.slice(0, 10)}  ${c.id}  owner ${c.owner}  ${c.team || ""}`
-    ).join("\n") + `\n\ntotal cast: ${Object.keys(votes).filter(k => !meta.has(k)).length}`);
+    ).join("\n") + `\n\ntotal cast: ${Object.keys(votes).filter(k => !META.has(k)).length}`);
   }
 
   // Voting opening is an event too, and it only happens once. Announcing it from the same endpoint
@@ -109,12 +113,20 @@ ${open}`);
 
   const { data: votes } = await readJSON(VOTES_FILE, {});
   const already = votes && votes.announced;
-  if (already && !dry) return text(`Already announced: message ${already}`);
+  // `redo=1` is the repair hatch: a result that posted but posted WRONG can't be left standing,
+  // and it can't be fixed with an edit either, because a broken attachment stays broken through
+  // an edit. So the bad message is deleted and the announcement is made again from scratch.
+  if (already && redo && !dry) {
+    const ch0 = await announcementsChannel();
+    if (ch0) await dapi(`/channels/${ch0}/messages/${already}`, { method: "DELETE" }).catch(() => {});
+  } else if (already && !dry) {
+    return text(`Already announced: message ${already}`);
+  }
 
   const cards = await ballot();
   const everyCard = tally(votes || {}, cards);            // all of them, zeroes included
   const ranked = everyCard.filter(c => c.votes > 0);
-  const cast = Object.keys(votes || {}).filter(k => k !== "announced").length;
+  const cast = Object.keys(votes || {}).filter(k => !META.has(k)).length;
   if (!ranked.length) return text("Nobody voted, so there is nothing to announce.", 409);
 
   const top = ranked[0];
@@ -149,18 +161,21 @@ Both win it — **${PRIZE} each**, nothing split. Same as the Grammys do it.`
     .then(z => (z.ok ? z.arrayBuffer() : null)).catch(() => null);
   let r;
   if (art) {
+    // The name in `attachments` has to be the SAME string as the name the file is uploaded under.
+    // It said "winner" here and "winner.png" below, and Discord rendered the mismatch as a broken
+    // link instead of the picture. Work the name out once, up front, and use that one value twice.
+    const b0 = Buffer.from(art);
+    const png = b0[0] === 0x89 && b0[1] === 0x50 && b0[2] === 0x4e && b0[3] === 0x47;
+    const fileName = png ? "winner.png" : "winner.jpg";
     const fd = new FormData();
     fd.append("payload_json", JSON.stringify({
       content, allowed_mentions: { users: ping },
-      attachments: [{ id: 0, filename: "winner" }],
+      attachments: [{ id: 0, filename: fileName }],
     }));
     // The artwork came in as a JPEG with a .png name. Discord usually sniffs the bytes and
     // renders it anyway, but "usually" is not a thing to bet an announcement on — so the type
     // and the filename are taken from what the bytes actually are.
-    const b = Buffer.from(art);
-    const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
-    const ext = isPng ? "png" : "jpg";
-    fd.append("files[0]", new Blob([b], { type: isPng ? "image/png" : "image/jpeg" }), `winner.${ext}`);
+    fd.append("files[0]", new Blob([b0], { type: png ? "image/png" : "image/jpeg" }), fileName);
     r = await fetch(`${D}/channels/${ch}/messages`, { method: "POST", headers: { authorization: "Bot " + BOT }, body: fd });
   } else {
     r = await dapi(`/channels/${ch}/messages`, {
