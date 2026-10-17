@@ -135,6 +135,10 @@ Both win it — **${PRIZE} each**, nothing split. Same as the Grammys do it.`
     .join("\n");
   const content = `${head}\n\n**Every vote, in full:**\n${full}\n\n${cast} voted. Nobody could vote for their own card, and no count was visible to anyone until now.`;
 
+  // One manager can own more than one card on the ballot — John owns two — and Discord rejects
+  // the whole message if the same id appears twice in allowed_mentions.users. Dedupe, don't trim.
+  const ping = [...new Set(ranked.map(c => c.owner))].slice(0, 6);
+
   if (dry) return text(content + `\n\n--- would post to #announcements ---\nalready announced: ${already || "no"}`);
 
   const ch = await announcementsChannel();
@@ -147,7 +151,7 @@ Both win it — **${PRIZE} each**, nothing split. Same as the Grammys do it.`
   if (art) {
     const fd = new FormData();
     fd.append("payload_json", JSON.stringify({
-      content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) },
+      content, allowed_mentions: { users: ping },
       attachments: [{ id: 0, filename: "winner" }],
     }));
     // The artwork came in as a JPEG with a .png name. Discord usually sniffs the bytes and
@@ -161,7 +165,7 @@ Both win it — **${PRIZE} each**, nothing split. Same as the Grammys do it.`
   } else {
     r = await dapi(`/channels/${ch}/messages`, {
       method: "POST",
-      body: JSON.stringify({ content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) } }),
+      body: JSON.stringify({ content, allowed_mentions: { users: ping } }),
     });
   }
   if (!r.ok) return text(`Discord said no (${r.status}): ${(await r.text().catch(() => "")).slice(0, 200)}`, 502);
