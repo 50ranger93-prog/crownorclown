@@ -148,9 +148,15 @@ Both win it — **${PRIZE} each**, nothing split. Same as the Grammys do it.`
     const fd = new FormData();
     fd.append("payload_json", JSON.stringify({
       content, allowed_mentions: { users: ranked.slice(0, 6).map(c => c.owner) },
-      attachments: [{ id: 0, filename: "winner.png" }],
+      attachments: [{ id: 0, filename: "winner" }],
     }));
-    fd.append("files[0]", new Blob([Buffer.from(art)], { type: "image/png" }), "winner.png");
+    // The artwork came in as a JPEG with a .png name. Discord usually sniffs the bytes and
+    // renders it anyway, but "usually" is not a thing to bet an announcement on — so the type
+    // and the filename are taken from what the bytes actually are.
+    const b = Buffer.from(art);
+    const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+    const ext = isPng ? "png" : "jpg";
+    fd.append("files[0]", new Blob([b], { type: isPng ? "image/png" : "image/jpeg" }), `winner.${ext}`);
     r = await fetch(`${D}/channels/${ch}/messages`, { method: "POST", headers: { authorization: "Bot " + BOT }, body: fd });
   } else {
     r = await dapi(`/channels/${ch}/messages`, {
