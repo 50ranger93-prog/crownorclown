@@ -54,7 +54,8 @@
   "floor:2026:w5",
   "cannon:2026:w6",
   "bomber:2026:w6",
-  "tank:2026:w6"
+  "tank:2026:w6",
+  "poll:cooked:7"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -100,10 +101,11 @@
   "6a021ef4e9844a74",
   "2018eee1a08eb81c",
   "468e3aff0c15ab09",
-  "aae2c33ae8dc0991"
+  "aae2c33ae8dc0991",
+  "1528dffc7221e18c"
  ],
  "managers": {
-  "": 19,
+  "": 20,
   "TumbleWEED Tactics": 2,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -128,7 +130,7 @@
   "Lonestar legends": 1
  },
  "angles": {
-  "poll/poll": 10,
+  "poll/poll": 11,
   "member/record": 3,
   "bunk/crowd": 1,
   "faab/bold": 1,
@@ -160,7 +162,7 @@
   "faab/anonymous": 1
  },
  "kinds": {
-  "poll": 10,
+  "poll": 11,
   "member": 9,
   "bunk": 6,
   "faab": 5,
@@ -179,7 +181,8 @@
   "2026-10-08": 7,
   "2026-10-09": 2,
   "2026-10-11": 1,
-  "2026-10-15": 2
+  "2026-10-15": 2,
+  "2026-10-22": 1
  },
- "lastKind": "faab"
+ "lastKind": "poll"
 }
