@@ -58,7 +58,8 @@
   "poll:cooked:7",
   "member:2026:w6:951407474:18",
   "packed:2026:w6",
-  "floor:2026:w6"
+  "floor:2026:w6",
+  "benched:2026:w7:976183547:10:4038815"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -106,7 +107,8 @@
   "468e3aff0c15ab09",
   "aae2c33ae8dc0991",
   "1528dffc7221e18c",
-  "5a857d5b051bafc3"
+  "5a857d5b051bafc3",
+  "81bdad78ed18ec4f"
  ],
  "managers": {
   "": 20,
@@ -132,7 +134,8 @@
   "Toxic Toots": 1,
   "Kellen's Top-Notch Team": 1,
   "Lonestar legends": 1,
-  "801 BOLTGNG ⚡️": 1
+  "801 BOLTGNG ⚡️": 1,
+  "Sack Queen Supreme": 1
  },
  "angles": {
   "poll/poll": 11,
@@ -164,14 +167,15 @@
   "surprise/award": 1,
   "bunk/quiet-one": 1,
   "benched/gap": 1,
-  "faab/anonymous": 1
+  "faab/anonymous": 1,
+  "benched/math": 1
  },
  "kinds": {
   "poll": 11,
   "member": 10,
   "bunk": 6,
   "faab": 5,
-  "benched": 3,
+  "benched": 4,
   "news": 3,
   "ref": 2,
   "roundup": 2,
@@ -187,7 +191,8 @@
   "2026-10-09": 2,
   "2026-10-11": 1,
   "2026-10-15": 2,
-  "2026-10-22": 2
+  "2026-10-22": 2,
+  "2026-10-25": 1
  },
- "lastKind": "member"
+ "lastKind": "benched"
 }
