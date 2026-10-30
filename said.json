@@ -63,7 +63,8 @@
   "cannon:2026:w7",
   "bomber:2026:w7",
   "tank:2026:w7",
-  "poll:cooked:8"
+  "poll:cooked:8",
+  "bunk:2026:w8:1963204215:4695883"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -113,7 +114,8 @@
   "1528dffc7221e18c",
   "5a857d5b051bafc3",
   "81bdad78ed18ec4f",
-  "35add25180e2ee02"
+  "35add25180e2ee02",
+  "3c37444146c4fb44"
  ],
  "managers": {
   "": 21,
@@ -140,12 +142,13 @@
   "Kellen's Top-Notch Team": 1,
   "Lonestar legends": 1,
   "801 BOLTGNG ⚡️": 1,
-  "Sack Queen Supreme": 1
+  "Sack Queen Supreme": 1,
+  "AREA 51": 1
  },
  "angles": {
   "poll/poll": 12,
   "member/record": 3,
-  "bunk/crowd": 1,
+  "bunk/crowd": 2,
   "faab/bold": 1,
   "benched/crowd": 1,
   "news/desk": 1,
@@ -178,7 +181,7 @@
  "kinds": {
   "poll": 12,
   "member": 10,
-  "bunk": 6,
+  "bunk": 7,
   "faab": 5,
   "benched": 4,
   "news": 3,
@@ -198,7 +201,7 @@
   "2026-10-15": 2,
   "2026-10-22": 2,
   "2026-10-25": 1,
-  "2026-10-29": 1
+  "2026-10-29": 2
  },
- "lastKind": "poll"
+ "lastKind": "bunk"
 }
