@@ -72,7 +72,8 @@
   "cannon:2026:w8",
   "bomber:2026:w8",
   "poll:cooked:9",
-  "member:2026:w8:1963204215:3"
+  "member:2026:w8:1963204215:3",
+  "bunk:2026:w9:1963204215:4360310"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -126,7 +127,8 @@
   "3c37444146c4fb44",
   "118535ed9864ef77",
   "f6f904f0f87805cf",
-  "1f68b8467f5c450d"
+  "1f68b8467f5c450d",
+  "4e964e3992468442"
  ],
  "managers": {
   "": 23,
@@ -155,7 +157,8 @@
   "801 BOLTGNG ⚡️": 1,
   "Sack Queen Supreme": 1,
   "AREA 51": 1,
-  "Jack X": 1
+  "Jack X": 1,
+  "Last Jaxon Hero": 1
  },
  "angles": {
   "poll/poll": 13,
@@ -167,7 +170,7 @@
   "member/points": 3,
   "ref/named": 1,
   "roundup/board": 1,
-  "bunk/ledger": 1,
+  "bunk/ledger": 2,
   "member/streak": 3,
   "faab/price": 1,
   "benched/coin": 1,
@@ -195,7 +198,7 @@
  "kinds": {
   "poll": 13,
   "member": 11,
-  "bunk": 7,
+  "bunk": 8,
   "faab": 5,
   "benched": 4,
   "news": 4,
@@ -216,7 +219,7 @@
   "2026-10-22": 2,
   "2026-10-25": 1,
   "2026-10-29": 3,
-  "2026-11-05": 2
+  "2026-11-05": 3
  },
- "lastKind": "member"
+ "lastKind": "bunk"
 }
