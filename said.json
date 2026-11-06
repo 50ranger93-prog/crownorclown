@@ -70,7 +70,8 @@
   "floor:2026:w7",
   "nuke:2026:w8",
   "cannon:2026:w8",
-  "bomber:2026:w8"
+  "bomber:2026:w8",
+  "poll:cooked:9"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -122,10 +123,11 @@
   "81bdad78ed18ec4f",
   "35add25180e2ee02",
   "3c37444146c4fb44",
-  "118535ed9864ef77"
+  "118535ed9864ef77",
+  "f6f904f0f87805cf"
  ],
  "managers": {
-  "": 22,
+  "": 23,
   "TumbleWEED Tactics": 2,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -153,7 +155,7 @@
   "AREA 51": 1
  },
  "angles": {
-  "poll/poll": 12,
+  "poll/poll": 13,
   "member/record": 3,
   "bunk/crowd": 2,
   "faab/bold": 1,
@@ -187,7 +189,7 @@
   "news/blurb": 1
  },
  "kinds": {
-  "poll": 12,
+  "poll": 13,
   "member": 10,
   "bunk": 7,
   "faab": 5,
@@ -209,7 +211,8 @@
   "2026-10-15": 2,
   "2026-10-22": 2,
   "2026-10-25": 1,
-  "2026-10-29": 3
+  "2026-10-29": 3,
+  "2026-11-05": 1
  },
- "lastKind": "news"
+ "lastKind": "poll"
 }
