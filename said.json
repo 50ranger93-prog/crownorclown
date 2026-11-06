@@ -71,7 +71,8 @@
   "nuke:2026:w8",
   "cannon:2026:w8",
   "bomber:2026:w8",
-  "poll:cooked:9"
+  "poll:cooked:9",
+  "member:2026:w8:1963204215:3"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -124,7 +125,8 @@
   "35add25180e2ee02",
   "3c37444146c4fb44",
   "118535ed9864ef77",
-  "f6f904f0f87805cf"
+  "f6f904f0f87805cf",
+  "1f68b8467f5c450d"
  ],
  "managers": {
   "": 23,
@@ -152,7 +154,8 @@
   "Lonestar legends": 1,
   "801 BOLTGNG ⚡️": 1,
   "Sack Queen Supreme": 1,
-  "AREA 51": 1
+  "AREA 51": 1,
+  "Jack X": 1
  },
  "angles": {
   "poll/poll": 13,
@@ -186,11 +189,12 @@
   "benched/gap": 1,
   "faab/anonymous": 1,
   "benched/math": 1,
-  "news/blurb": 1
+  "news/blurb": 1,
+  "member/unlucky": 1
  },
  "kinds": {
   "poll": 13,
-  "member": 10,
+  "member": 11,
   "bunk": 7,
   "faab": 5,
   "benched": 4,
@@ -212,7 +216,7 @@
   "2026-10-22": 2,
   "2026-10-25": 1,
   "2026-10-29": 3,
-  "2026-11-05": 1
+  "2026-11-05": 2
  },
- "lastKind": "poll"
+ "lastKind": "member"
 }
