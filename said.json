@@ -73,7 +73,8 @@
   "bomber:2026:w8",
   "poll:cooked:9",
   "member:2026:w8:1963204215:3",
-  "bunk:2026:w9:1963204215:4360310"
+  "bunk:2026:w9:1963204215:4360310",
+  "benched:2026:w9:1963204215:7:4038441"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -128,7 +129,8 @@
   "118535ed9864ef77",
   "f6f904f0f87805cf",
   "1f68b8467f5c450d",
-  "4e964e3992468442"
+  "4e964e3992468442",
+  "0da482326925e008"
  ],
  "managers": {
   "": 23,
@@ -158,7 +160,8 @@
   "Sack Queen Supreme": 1,
   "AREA 51": 1,
   "Jack X": 1,
-  "Last Jaxon Hero": 1
+  "Last Jaxon Hero": 1,
+  "Fumbles and Pick6s": 1
  },
  "angles": {
   "poll/poll": 13,
@@ -193,14 +196,15 @@
   "faab/anonymous": 1,
   "benched/math": 1,
   "news/blurb": 1,
-  "member/unlucky": 1
+  "member/unlucky": 1,
+  "benched/left-behind": 1
  },
  "kinds": {
   "poll": 13,
   "member": 11,
   "bunk": 8,
   "faab": 5,
-  "benched": 4,
+  "benched": 5,
   "news": 4,
   "ref": 2,
   "roundup": 2,
@@ -219,7 +223,7 @@
   "2026-10-22": 2,
   "2026-10-25": 1,
   "2026-10-29": 3,
-  "2026-11-05": 3
+  "2026-11-05": 4
  },
- "lastKind": "bunk"
+ "lastKind": "benched"
 }
