@@ -82,7 +82,8 @@
   "cannon:2026:w9",
   "bomber:2026:w9",
   "poll:cooked:10",
-  "member:2026:w9:1963204215:5"
+  "member:2026:w9:1963204215:5",
+  "faab:2026:951407474:3e1f91a3-d0ad-4029-8599-ef3a7d4402d8"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -140,7 +141,8 @@
   "4e964e3992468442",
   "0da482326925e008",
   "22b7193cd8bd061e",
-  "ff86d2118f1f9219"
+  "ff86d2118f1f9219",
+  "516ec164abbca24d"
  ],
  "managers": {
   "": 24,
@@ -156,7 +158,7 @@
   "Payton's Pointed Team": 2,
   "Walt's Fault": 1,
   "BorderPatrol Vol 2": 1,
-  "OnlyFins": 1,
+  "OnlyFins": 2,
   "Quintin's Marvelous Team": 1,
   "REDBIRDSKELLY": 1,
   "Quinn's Tremendous Team": 1,
@@ -186,7 +188,7 @@
   "roundup/board": 1,
   "bunk/ledger": 2,
   "member/streak": 3,
-  "faab/price": 1,
+  "faab/price": 2,
   "benched/coin": 1,
   "bunk/goose": 1,
   "bums/roll": 1,
@@ -214,7 +216,7 @@
   "poll": 14,
   "member": 12,
   "bunk": 8,
-  "faab": 5,
+  "faab": 6,
   "benched": 5,
   "news": 4,
   "ref": 2,
@@ -235,7 +237,7 @@
   "2026-10-25": 1,
   "2026-10-29": 3,
   "2026-11-05": 4,
-  "2026-11-12": 2
+  "2026-11-12": 3
  },
- "lastKind": "member"
+ "lastKind": "faab"
 }
