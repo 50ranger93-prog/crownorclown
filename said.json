@@ -81,7 +81,8 @@
   "nuke:2026:w9",
   "cannon:2026:w9",
   "bomber:2026:w9",
-  "poll:cooked:10"
+  "poll:cooked:10",
+  "member:2026:w9:1963204215:5"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -138,7 +139,8 @@
   "1f68b8467f5c450d",
   "4e964e3992468442",
   "0da482326925e008",
-  "22b7193cd8bd061e"
+  "22b7193cd8bd061e",
+  "ff86d2118f1f9219"
  ],
  "managers": {
   "": 24,
@@ -169,11 +171,12 @@
   "AREA 51": 1,
   "Jack X": 1,
   "Last Jaxon Hero": 1,
-  "Fumbles and Pick6s": 1
+  "Fumbles and Pick6s": 1,
+  "Flag Throwers": 1
  },
  "angles": {
   "poll/poll": 14,
-  "member/record": 3,
+  "member/record": 4,
   "bunk/crowd": 2,
   "faab/bold": 1,
   "benched/crowd": 1,
@@ -209,7 +212,7 @@
  },
  "kinds": {
   "poll": 14,
-  "member": 11,
+  "member": 12,
   "bunk": 8,
   "faab": 5,
   "benched": 5,
@@ -232,7 +235,7 @@
   "2026-10-25": 1,
   "2026-10-29": 3,
   "2026-11-05": 4,
-  "2026-11-12": 1
+  "2026-11-12": 2
  },
- "lastKind": "poll"
+ "lastKind": "member"
 }
