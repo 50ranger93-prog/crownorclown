@@ -360,16 +360,26 @@ ${text}`); return; }
     return;
   }
 
-  if (has("say")) {
+  // --poll "Question|answer|answer|..." [--hours 168] : a native Discord poll written by hand,
+  // with --say as the text above it (optional). Same reason as --say: a one-off vote should not
+  // need a throwaway script with the bot token in it. Up to 10 answers, 55 characters each.
+  if (has("say") || has("poll")) {
     const text = arg("say") || "";
     const room = arg("room") || "general";
-    if (!text) { console.error("--say needs something to say"); process.exitCode = 1; return; }
-    if (DRY) { console.log(`→ #${room}\n${text}`); return; }
+    let poll = null;
+    if (has("poll")) {
+      const parts = String(arg("poll") || "").split("|").map(s => s.trim()).filter(Boolean);
+      if (parts.length < 3) { console.error("--poll needs \"Question|answer|answer\" (at least two answers)"); process.exitCode = 1; return; }
+      const hours = Math.min(768, Math.max(1, parseInt(arg("hours") || "168", 10) || 168));
+      poll = { question: parts[0], answers: parts.slice(1, 11).map(t => ({ text: t })), hours };
+    }
+    if (!text && !poll) { console.error("--say needs something to say"); process.exitCode = 1; return; }
+    if (DRY) { console.log(`→ #${room}\n${text}` + (poll ? `\n[poll ${poll.hours}h] ${poll.question}\n` + poll.answers.map(a => "  - " + a.text).join("\n") : "")); return; }
     if (!ready()) { console.error("No DISCORD_BOT_TOKEN."); process.exitCode = 1; return; }
     const chan = await findChannel([room, "general"]);
     if (!chan) { console.error(`no channel matched ${room}`); process.exitCode = 1; return; }
-    const m = await say(chan.id, text);
-    console.log(`said it in #${chan.name} (${m.id || "?"})`);
+    const m = await say(chan.id, text, poll ? { poll } : {});
+    console.log(`said it in #${chan.name} (${m.id || "?"})` + (poll ? (m.poll ? " with the poll" : " — poll refused, posted as text") : ""));
     return;
   }
   const now = mt();

@@ -44,8 +44,14 @@ on:
         description: "Post this exact text as the bot instead of generating one"
         default: ""
       room:
-        description: "Channel for --say (general, announcements, trash-talk, ...)"
+        description: "Channel for --say / --poll (general, announcements, trash-talk, ...)"
         default: "general"
+      poll:
+        description: "Native poll, hand-written: Question|answer|answer|... (up to 10). Posts under the say text, or alone."
+        default: ""
+      hours:
+        description: "How long the poll stays open (1-768 hours)"
+        default: "168"
       only:
         description: "Fire one kind on demand: bums, poll, roundup, member, news, ref, bunk, faab, benched"
         default: ""
@@ -105,6 +111,8 @@ jobs:
           PINGALL: ${{ inputs.everyone }}
           CARDN: ${{ inputs.n }}
           ROOM: ${{ inputs.room }}
+          POLL: ${{ inputs.poll }}
+          HOURS: ${{ inputs.hours }}
         run: |
           args=""
           if [ -n "${{ inputs.plan }}" ]; then
@@ -117,9 +125,13 @@ jobs:
             node tools/crank.mjs --grab "$GRAB" --n "$CARDN"
           elif [ -n "$EDITID" ] && [ -n "$SAY" ]; then
             node tools/crank.mjs --edit "$EDITID" --say "$SAY" --room "${ROOM:-general}"
-          elif [ -n "$SAY" ]; then
+          elif [ -n "$SAY" ] || [ -n "$POLL" ]; then
             if [ "$PINGALL" = "true" ]; then args="$args --everyone"; fi
-            node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
+            if [ -n "$POLL" ]; then
+              node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" --poll "$POLL" --hours "${HOURS:-168}" $args
+            else
+              node tools/crank.mjs --say "$SAY" --room "${ROOM:-general}" $args
+            fi
           else
             if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi
             node tools/crank.mjs $args
