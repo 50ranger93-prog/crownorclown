@@ -91,7 +91,8 @@
   "bomber:2026:w10",
   "tank:2026:w10",
   "poll:cooked:11",
-  "member:2026:w10:976183547:4"
+  "member:2026:w10:976183547:4",
+  "bunk:2026:w11:976183547:4571557"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -152,7 +153,8 @@
   "ff86d2118f1f9219",
   "516ec164abbca24d",
   "b72e64e7802fb882",
-  "3538f094a2aad269"
+  "3538f094a2aad269",
+  "7668e15e746859c3"
  ],
  "managers": {
   "": 25,
@@ -185,7 +187,8 @@
   "Last Jaxon Hero": 1,
   "Fumbles and Pick6s": 1,
   "Flag Throwers": 1,
-  "Da Bomb": 1
+  "Da Bomb": 1,
+  "Batman": 1
  },
  "angles": {
   "poll/poll": 15,
@@ -201,7 +204,7 @@
   "member/streak": 4,
   "faab/price": 2,
   "benched/coin": 1,
-  "bunk/goose": 1,
+  "bunk/goose": 2,
   "bums/roll": 1,
   "news/plain": 1,
   "quiet/lurk": 1,
@@ -226,7 +229,7 @@
  "kinds": {
   "poll": 15,
   "member": 13,
-  "bunk": 8,
+  "bunk": 9,
   "faab": 6,
   "benched": 5,
   "news": 4,
@@ -249,7 +252,7 @@
   "2026-10-29": 3,
   "2026-11-05": 4,
   "2026-11-12": 3,
-  "2026-11-19": 2
+  "2026-11-19": 3
  },
- "lastKind": "member"
+ "lastKind": "bunk"
 }
