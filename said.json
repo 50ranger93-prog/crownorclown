@@ -92,7 +92,8 @@
   "tank:2026:w10",
   "poll:cooked:11",
   "member:2026:w10:976183547:4",
-  "bunk:2026:w11:976183547:4571557"
+  "bunk:2026:w11:976183547:4571557",
+  "news:50535018"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -154,10 +155,11 @@
   "516ec164abbca24d",
   "b72e64e7802fb882",
   "3538f094a2aad269",
-  "7668e15e746859c3"
+  "7668e15e746859c3",
+  "1f63e814c91728ca"
  ],
  "managers": {
-  "": 25,
+  "": 26,
   "TumbleWEED Tactics": 2,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -196,7 +198,7 @@
   "bunk/crowd": 2,
   "faab/bold": 1,
   "benched/crowd": 1,
-  "news/desk": 1,
+  "news/desk": 2,
   "member/points": 3,
   "ref/named": 1,
   "roundup/board": 1,
@@ -232,7 +234,7 @@
   "bunk": 9,
   "faab": 6,
   "benched": 5,
-  "news": 4,
+  "news": 5,
   "ref": 2,
   "roundup": 2,
   "bums": 1,
@@ -252,7 +254,7 @@
   "2026-10-29": 3,
   "2026-11-05": 4,
   "2026-11-12": 3,
-  "2026-11-19": 3
+  "2026-11-19": 4
  },
- "lastKind": "bunk"
+ "lastKind": "news"
 }
