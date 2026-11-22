@@ -95,7 +95,8 @@
   "bunk:2026:w11:976183547:4571557",
   "news:50535018",
   "packed:2026:w10",
-  "floor:2026:w10"
+  "floor:2026:w10",
+  "benched:2026:w11:976183547:7:4431268"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -158,7 +159,8 @@
   "b72e64e7802fb882",
   "3538f094a2aad269",
   "7668e15e746859c3",
-  "1f63e814c91728ca"
+  "1f63e814c91728ca",
+  "a23b6936172c538a"
  ],
  "managers": {
   "": 26,
@@ -172,7 +174,7 @@
   "Slapworthy": 1,
   "Ashton Powers": 1,
   "Payton's Pointed Team": 2,
-  "Walt's Fault": 1,
+  "Walt's Fault": 2,
   "BorderPatrol Vol 2": 1,
   "OnlyFins": 2,
   "Quintin's Marvelous Team": 1,
@@ -223,7 +225,7 @@
   "faab/share": 1,
   "surprise/award": 1,
   "bunk/quiet-one": 1,
-  "benched/gap": 1,
+  "benched/gap": 2,
   "faab/anonymous": 1,
   "benched/math": 1,
   "news/blurb": 1,
@@ -235,7 +237,7 @@
   "member": 13,
   "bunk": 9,
   "faab": 6,
-  "benched": 5,
+  "benched": 6,
   "news": 5,
   "ref": 2,
   "roundup": 2,
@@ -256,7 +258,8 @@
   "2026-10-29": 3,
   "2026-11-05": 4,
   "2026-11-12": 3,
-  "2026-11-19": 4
+  "2026-11-19": 4,
+  "2026-11-22": 1
  },
- "lastKind": "news"
+ "lastKind": "benched"
 }
