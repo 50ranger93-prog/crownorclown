@@ -99,7 +99,8 @@
   "benched:2026:w11:976183547:7:4431268",
   "cannon:2026:w11",
   "bomber:2026:w11",
-  "poll:cooked:12"
+  "poll:cooked:12",
+  "faab:2026:976183547:cfc5581c-ea93-4a10-bc2a-a1e59eefc4a8"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -164,7 +165,8 @@
   "7668e15e746859c3",
   "1f63e814c91728ca",
   "a23b6936172c538a",
-  "52fc54ffd3d14ba4"
+  "52fc54ffd3d14ba4",
+  "a0ec082dff0572bc"
  ],
  "managers": {
   "": 27,
@@ -198,7 +200,8 @@
   "Fumbles and Pick6s": 1,
   "Flag Throwers": 1,
   "Da Bomb": 1,
-  "Batman": 1
+  "Batman": 1,
+  "Davometer": 1
  },
  "angles": {
   "poll/poll": 16,
@@ -224,7 +227,7 @@
   "ref/quiet": 1,
   "roundup/board-points": 1,
   "bunk/arith": 1,
-  "faab/terse": 1,
+  "faab/terse": 2,
   "bunk/percent": 1,
   "faab/share": 1,
   "surprise/award": 1,
@@ -240,7 +243,7 @@
   "poll": 16,
   "member": 13,
   "bunk": 9,
-  "faab": 6,
+  "faab": 7,
   "benched": 6,
   "news": 5,
   "ref": 2,
@@ -264,7 +267,7 @@
   "2026-11-12": 3,
   "2026-11-19": 4,
   "2026-11-22": 1,
-  "2026-11-25": 1
+  "2026-11-25": 2
  },
- "lastKind": "poll"
+ "lastKind": "faab"
 }
