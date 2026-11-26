@@ -101,7 +101,8 @@
   "bomber:2026:w11",
   "poll:cooked:12",
   "faab:2026:976183547:cfc5581c-ea93-4a10-bc2a-a1e59eefc4a8",
-  "member:2026:w11:976183547:5"
+  "member:2026:w11:976183547:5",
+  "bums:12"
  ],
  "texts": [
   "40aeea709920a2b1",
@@ -168,10 +169,11 @@
   "a23b6936172c538a",
   "52fc54ffd3d14ba4",
   "a0ec082dff0572bc",
-  "6373167eaaeb0e73"
+  "6373167eaaeb0e73",
+  "68a7c44906acdf5c"
  ],
  "managers": {
-  "": 27,
+  "": 28,
   "TumbleWEED Tactics": 2,
   "Stockholm Sack Exchange": 1,
   "Miami Hurriphins": 1,
@@ -221,7 +223,7 @@
   "faab/price": 2,
   "benched/coin": 1,
   "bunk/goose": 2,
-  "bums/roll": 1,
+  "bums/roll": 2,
   "news/plain": 1,
   "quiet/lurk": 1,
   "tightwad/untouched": 1,
@@ -251,7 +253,7 @@
   "news": 5,
   "ref": 2,
   "roundup": 2,
-  "bums": 1,
+  "bums": 2,
   "quiet": 1,
   "tightwad": 1,
   "surprise": 1
@@ -270,7 +272,7 @@
   "2026-11-12": 3,
   "2026-11-19": 4,
   "2026-11-22": 1,
-  "2026-11-25": 3
+  "2026-11-25": 4
  },
- "lastKind": "member"
+ "lastKind": "bums"
 }
